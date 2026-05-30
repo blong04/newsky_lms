@@ -1,0 +1,6 @@
+backend/target/
+.vscode/
+frontend/node_modules/
+frontend/build/
+.env
+backend/src/main/resources/application.properties
