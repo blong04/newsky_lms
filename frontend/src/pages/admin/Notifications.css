@@ -1,0 +1,208 @@
+.admin-notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.admin-notifications__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  padding: 24px 26px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at right top, rgba(249, 115, 115, 0.15), transparent 28%),
+    linear-gradient(135deg, #ffffff 0%, #fff7ed 48%, #f8fafc 100%);
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  box-shadow: var(--shadow);
+}
+
+.admin-notifications__eyebrow,
+.admin-notifications__section-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+
+.admin-notifications__hero h1 {
+  margin-top: 8px;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  color: var(--gray-900);
+}
+
+.admin-notifications__subtitle {
+  margin-top: 10px;
+  max-width: 640px;
+  line-height: 1.7;
+  color: var(--gray-600);
+}
+
+.admin-notifications__tips {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-notifications__tip-card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.admin-notifications__tip-card--alt {
+  background: linear-gradient(135deg, #eff6ff, #ffffff);
+}
+
+.admin-notifications__tip-card strong {
+  display: block;
+  font-size: 0.98rem;
+  color: var(--gray-900);
+}
+
+.admin-notifications__tip-card span {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.84rem;
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+.admin-notifications__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.85fr);
+  gap: 20px;
+}
+
+.admin-notifications__composer,
+.admin-notifications__guide {
+  margin-bottom: 0;
+}
+
+.admin-notifications__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.admin-notifications__form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-notifications__full {
+  grid-column: 1 / -1;
+}
+
+.admin-notifications__field,
+.admin-notifications__textarea {
+  width: 100%;
+}
+
+.admin-notifications__textarea {
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  min-height: 160px;
+}
+
+.admin-notifications__textarea:focus {
+  border-color: var(--primary);
+}
+
+.admin-notifications__recipient {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--primary-light), #ffffff);
+  border: 1px solid rgba(251, 146, 60, 0.22);
+}
+
+.admin-notifications__recipient span {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-notifications__recipient strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1rem;
+  color: var(--primary);
+}
+
+.admin-notifications__submit {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.admin-notifications__side {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.admin-notifications__guide-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-notifications__guide-item {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  border: 1px solid var(--gray-100);
+}
+
+.admin-notifications__guide-item strong {
+  display: block;
+  color: var(--gray-900);
+}
+
+.admin-notifications__guide-item p {
+  margin-top: 6px;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--gray-600);
+}
+
+@media (max-width: 1024px) {
+  .admin-notifications__hero,
+  .admin-notifications__layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-notifications__hero {
+    padding: 20px 18px;
+  }
+
+  .admin-notifications__form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-notifications__section-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-notifications__submit {
+    justify-content: stretch;
+  }
+
+  .admin-notifications__submit .btn {
+    width: 100%;
+  }
+}

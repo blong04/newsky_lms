@@ -1,0 +1,75 @@
+.student-notifications {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.student-notifications__hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.student-notifications__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.student-notifications__subtitle {
+  margin-top: 6px;
+  color: var(--gray-600);
+}
+
+.student-notifications__tabs {
+  margin-bottom: 0;
+}
+
+.student-notifications__item--clickable {
+  cursor: pointer;
+}
+
+.student-notifications__content {
+  flex: 1;
+}
+
+.student-notifications__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.student-notifications__title {
+  font-size: 0.9rem;
+  color: var(--gray-900);
+  font-weight: 500;
+}
+
+.student-notifications__title--unread {
+  font-weight: 700;
+}
+
+.student-notifications__time {
+  font-size: 0.72rem;
+  color: var(--gray-400);
+  flex-shrink: 0;
+}
+
+.student-notifications__body {
+  margin-top: 3px;
+  font-size: 0.82rem;
+  color: var(--gray-600);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .student-notifications__hero,
+  .student-notifications__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

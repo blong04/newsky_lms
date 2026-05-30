@@ -1,0 +1,144 @@
+.teacher-students {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.teacher-students__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.85fr);
+  gap: 18px;
+  padding: 24px 26px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(34, 197, 94, 0.14), transparent 28%),
+    linear-gradient(135deg, #f0fdf4 0%, #ffffff 48%, #eff6ff 100%);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.teacher-students__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #16a34a;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.teacher-students__hero h1 {
+  margin-top: 8px;
+  font-size: clamp(1.55rem, 2.5vw, 2rem);
+  color: var(--gray-900);
+}
+
+.teacher-students__subtitle {
+  margin-top: 10px;
+  max-width: 620px;
+  line-height: 1.7;
+  color: var(--gray-600);
+}
+
+.teacher-students__hero-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.teacher-students__hero-card span,
+.teacher-students__counter,
+.teacher-students__muted {
+  color: var(--gray-500);
+}
+
+.teacher-students__hero-card span {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.teacher-students__hero-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.2rem;
+  color: var(--gray-900);
+}
+
+.teacher-students__hero-card p {
+  margin-top: 8px;
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.teacher-students__identity,
+.teacher-students__course {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.teacher-students__name {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.teacher-students__tiny {
+  font-size: 0.75rem;
+}
+
+.teacher-students__class-cell {
+  font-size: 0.85rem;
+  color: var(--gray-700);
+}
+
+.teacher-students__course-title {
+  font-size: 0.82rem;
+  color: var(--gray-700);
+}
+
+.teacher-students__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.teacher-students__progress progress {
+  width: 82px;
+  height: 6px;
+  border: none;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.teacher-students__progress progress::-webkit-progress-bar {
+  background: var(--gray-100);
+  border-radius: 999px;
+}
+
+.teacher-students__progress progress::-webkit-progress-value {
+  background: var(--primary);
+  border-radius: 999px;
+}
+
+.teacher-students__progress progress::-moz-progress-bar {
+  background: var(--primary);
+  border-radius: 999px;
+}
+
+.teacher-students__progress span {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+}
+
+@media (max-width: 960px) {
+  .teacher-students__hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .teacher-students__hero {
+    padding: 20px 18px;
+  }
+}

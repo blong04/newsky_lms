@@ -1,0 +1,345 @@
+.student-courses {
+  display: flex;
+  flex-direction: column;
+}
+
+.student-courses__sticky-bar {
+  margin-bottom: 4px;
+}
+
+.student-courses__sticky-inner {
+  gap: 12px;
+}
+
+.student-courses__heading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.student-courses__heading-count {
+  color: var(--primary);
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.student-courses__filters,
+.student-courses__actions,
+.student-courses__select-head {
+  display: flex;
+  align-items: center;
+}
+
+.student-courses__filters {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.student-courses__search {
+  width: 220px;
+}
+
+.student-courses__table {
+  margin-top: 16px;
+}
+
+.student-courses__course-title,
+.student-courses__count-main,
+.student-courses__class-name {
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.student-courses__course-note {
+  max-width: 200px;
+  font-size: 0.82rem;
+  color: var(--gray-500);
+}
+
+.student-courses__count-main {
+  font-weight: 500;
+}
+
+.student-courses__count-sub {
+  margin-left: 4px;
+  font-size: 0.75rem;
+  color: var(--gray-400);
+}
+
+.student-courses__price {
+  font-weight: 500;
+}
+
+.student-courses__price--paid {
+  color: var(--primary);
+}
+
+.student-courses__price--free {
+  color: var(--success);
+}
+
+.student-courses__actions {
+  gap: 6px;
+}
+
+.student-courses__pagination {
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+}
+
+.student-courses__detail-modal {
+  max-width: 640px;
+}
+
+.student-courses__detail-header {
+  background: linear-gradient(135deg, #6b7280, #9ca3af);
+}
+
+.student-courses__detail-header--ielts {
+  background: linear-gradient(135deg, #3b82f6, #93c5fd);
+}
+
+.student-courses__detail-header--toeic {
+  background: linear-gradient(135deg, #16a34a, #86efac);
+}
+
+.student-courses__detail-header--other {
+  background: linear-gradient(135deg, #6b7280, #9ca3af);
+}
+
+.student-courses__detail-eyebrow {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+.student-courses__detail-title {
+  margin-top: 2px;
+}
+
+.student-courses__detail-description {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  line-height: 1.7;
+}
+
+.student-courses__detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.student-courses__detail-card,
+.student-courses__payment-summary {
+  background: var(--gray-50);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.student-courses__detail-label {
+  font-size: 0.7rem;
+  color: var(--gray-400);
+  text-transform: uppercase;
+}
+
+.student-courses__detail-label--spaced {
+  margin-top: 6px;
+}
+
+.student-courses__detail-value {
+  font-weight: 600;
+}
+
+.student-courses__detail-value--price,
+.student-courses__payment-price,
+.student-courses__payment-title {
+  color: var(--primary);
+}
+
+.student-courses__detail-section-title {
+  margin: 14px 0 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.student-courses__empty-inline,
+.student-courses__class-meta,
+.student-courses__payment-note,
+.student-courses__modal-note,
+.student-courses__payment-method-desc {
+  color: var(--gray-500);
+}
+
+.student-courses__empty-inline {
+  font-size: 0.82rem;
+}
+
+.student-courses__empty-inline--center {
+  padding: 24px 12px;
+  text-align: center;
+  border: 1px dashed var(--gray-200);
+  border-radius: 12px;
+  background: var(--gray-50);
+}
+
+.student-courses__class-meta {
+  font-size: 0.75rem;
+}
+
+.student-courses__class-side {
+  text-align: right;
+}
+
+.student-courses__class-enroll-status {
+  margin-top: 4px;
+}
+
+.student-courses__payment-box {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--primary-light);
+}
+
+.student-courses__payment-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.student-courses__payment-note {
+  margin-top: 4px;
+  font-size: 0.78rem;
+}
+
+.student-courses__select-modal {
+  max-width: 520px;
+}
+
+.student-courses__payment-modal {
+  max-width: 480px;
+}
+
+.student-courses__modal-note {
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+}
+
+.student-courses__select-head {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.class-select-item {
+  padding: 12px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.class-select-item + .class-select-item {
+  margin-top: 10px;
+}
+
+.class-select-item:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.class-select-item.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+
+.radio-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--gray-300);
+  flex-shrink: 0;
+}
+
+.radio-circle.checked {
+  border-color: var(--primary);
+  background: radial-gradient(circle, var(--primary) 45%, transparent 46%);
+}
+
+.student-courses__payment-total {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--gray-200);
+  font-weight: 600;
+}
+
+.student-courses__payment-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.student-courses__payment-method-title {
+  margin-bottom: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.student-courses__payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-courses__payment-method {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.student-courses__payment-icon {
+  font-size: 1.3rem;
+}
+
+.student-courses__payment-method-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.student-courses__payment-method-desc {
+  font-size: 0.72rem;
+}
+
+.student-courses__payment-warning {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  background: #fff8f0;
+  color: #92400e;
+  font-size: 0.78rem;
+}
+
+.student-courses__payment-footer {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.student-courses__payment-btn {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .student-courses__detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-courses__class-side {
+    text-align: left;
+  }
+}

@@ -1,0 +1,196 @@
+.admin-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-dashboard__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.9fr);
+  gap: 18px;
+  padding: 28px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.18), transparent 32%),
+    linear-gradient(135deg, #fff7ed 0%, #ffffff 46%, #eff6ff 100%);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.admin-dashboard__eyebrow,
+.admin-dashboard__section-kicker {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.admin-dashboard__hero h1 {
+  margin-top: 8px;
+  font-size: clamp(1.7rem, 2.8vw, 2.3rem);
+  line-height: 1.15;
+  color: var(--gray-900);
+}
+
+.admin-dashboard__subtitle {
+  margin-top: 12px;
+  max-width: 640px;
+  color: var(--gray-600);
+  line-height: 1.7;
+}
+
+.admin-dashboard__notes {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-dashboard__note {
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.admin-dashboard__note--teachers {
+  background: linear-gradient(135deg, #eff6ff, #ffffff);
+}
+
+.admin-dashboard__note--classes {
+  background: linear-gradient(135deg, #fef3c7, #ffffff);
+}
+
+.admin-dashboard__note-title {
+  font-size: 0.78rem;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-dashboard__note strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.2rem;
+  color: var(--gray-900);
+}
+
+.admin-dashboard__note span {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.84rem;
+  color: var(--gray-600);
+  line-height: 1.5;
+}
+
+.admin-dashboard__grid {
+  margin-bottom: 0;
+}
+
+.admin-dashboard__stat-card {
+  position: relative;
+  overflow: hidden;
+  border-left-width: 0;
+}
+
+.admin-dashboard__stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--dashboard-accent, var(--primary)), transparent);
+}
+
+.admin-dashboard__stat-card--users { --dashboard-accent: #2563eb; }
+.admin-dashboard__stat-card--students { --dashboard-accent: #16a34a; }
+.admin-dashboard__stat-card--teachers { --dashboard-accent: #0ea5e9; }
+.admin-dashboard__stat-card--courses { --dashboard-accent: #d97706; }
+.admin-dashboard__stat-card--classes { --dashboard-accent: #7c3aed; }
+.admin-dashboard__stat-card--enrollments { --dashboard-accent: #dc2626; }
+
+.admin-dashboard__stat-glow {
+  position: absolute;
+  inset: auto -24px -32px auto;
+  width: 94px;
+  height: 94px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dashboard-accent) 24%, transparent);
+  filter: blur(14px);
+  pointer-events: none;
+}
+
+.admin-dashboard__content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.9fr);
+  gap: 20px;
+}
+
+.admin-dashboard__chart-card,
+.admin-dashboard__summary-card {
+  margin-bottom: 0;
+}
+
+.admin-dashboard__section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-dashboard__summary-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-dashboard__summary-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f8fafc, #ffffff);
+  border: 1px solid var(--gray-100);
+}
+
+.admin-dashboard__summary-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--primary-light), #ffffff);
+  font-size: 1.1rem;
+}
+
+.admin-dashboard__summary-item strong {
+  display: block;
+  font-size: 1rem;
+  color: var(--gray-900);
+}
+
+.admin-dashboard__summary-item p {
+  margin-top: 4px;
+  font-size: 0.84rem;
+  color: var(--gray-600);
+  line-height: 1.5;
+}
+
+@media (max-width: 1024px) {
+  .admin-dashboard__hero,
+  .admin-dashboard__content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-dashboard__hero {
+    padding: 22px 18px;
+    border-radius: 20px;
+  }
+
+  .admin-dashboard__section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

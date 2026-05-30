@@ -1,0 +1,17 @@
+.take-quiz__timer--danger {
+  color: var(--danger);
+}
+
+.take-quiz__audio,
+.take-quiz__group-audio {
+  width: 100%;
+}
+
+.take-quiz__group-audio {
+  margin-bottom: 12px;
+}
+
+.take-quiz__answered-count {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}

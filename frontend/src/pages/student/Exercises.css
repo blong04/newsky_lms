@@ -1,0 +1,133 @@
+.student-exercises__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.student-exercises__card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  background: #fff;
+  box-shadow: var(--shadow);
+  border-left: 3px solid var(--primary-mid);
+}
+
+.student-exercises__card--warning {
+  border-left-color: var(--warning);
+}
+
+.student-exercises__card--expired {
+  border-left-color: var(--danger);
+}
+
+.student-exercises__card--normal {
+  border-left-color: var(--primary-mid);
+}
+
+.student-exercises__main {
+  flex: 1;
+}
+
+.student-exercises__badge-row,
+.student-exercises__meta {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.student-exercises__badge-row {
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.student-exercises__title {
+  margin-bottom: 4px;
+  font-weight: 600;
+  color: var(--gray-900);
+}
+
+.student-exercises__description {
+  font-size: 0.82rem;
+  color: var(--gray-500);
+  line-height: 1.5;
+}
+
+.student-exercises__meta {
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--gray-400);
+}
+
+.student-exercises__meta-alert--warning {
+  color: var(--warning);
+}
+
+.student-exercises__meta-alert--danger {
+  color: var(--danger);
+}
+
+.student-exercises__score,
+.student-exercises__quiz-score {
+  font-weight: 600;
+}
+
+.student-exercises__score {
+  color: var(--success);
+}
+
+.student-exercises__quiz-score {
+  margin-top: 4px;
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+.student-exercises__comment {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--success-light);
+  color: var(--gray-700);
+  font-size: 0.78rem;
+}
+
+.student-exercises__pending-grade,
+.student-exercises__deadline {
+  font-size: 0.75rem;
+  color: var(--gray-400);
+}
+
+.student-exercises__submit-modal {
+  max-width: 560px;
+}
+
+.student-exercises__prompt-box {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--gray-50);
+  color: var(--gray-600);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.student-exercises__textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 8px;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  .student-exercises__card {
+    flex-direction: column;
+  }
+}
