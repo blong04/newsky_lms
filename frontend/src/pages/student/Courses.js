@@ -1,23 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
+import { classService } from "../../services/classService";
+import { courseService } from "../../services/courseService";
+import { enrollmentService } from "../../services/enrollmentService";
+import { CLASS_STATUS_BADGES, CLASS_STATUS_LABELS } from "../../constants/classes";
+import { LEVEL_LABELS } from "../../constants/courses";
+import { ENROLLMENT_STATUS_META } from "../../constants/enrollments";
+import { STUDENT_COURSE_PAGE_SIZE } from "../../constants/pagination";
 import toast from "react-hot-toast";
-import "../admin/Admin.css";
-import "./Student.css";
 import "./Courses.css";
-
-const PAGE_SIZE = 9;
-
-const ENROLL_STATUS = {
-  pending: { label: "⏳ Chờ duyệt", badge: "badge-yellow" },
-  approved: { label: "✅ Đã duyệt", badge: "badge-blue" },
-  enrolled: { label: "📚 Đang học", badge: "badge-green" },
-  completed: { label: "🎓 Hoàn thành", badge: "badge-gray" },
-  dropped: { label: "❌ Đã hủy", badge: "badge-red" },
-};
-
-const LEVEL_LABEL = { beginner: "Cơ bản", intermediate: "Trung cấp", advanced: "Nâng cao" };
-const CLASS_STATUS_BADGE = { pending: "badge-yellow", active: "badge-green", completed: "badge-gray", cancelled: "badge-red" };
-const CLASS_STATUS_LABEL = { pending: "Chờ khai giảng", active: "Đang học", completed: "Kết thúc", cancelled: "Đã hủy" };
 
 export default function StudentCourses() {
   // State dữ liệu khóa học, lớp và đăng ký hiện có.
@@ -45,15 +35,15 @@ export default function StudentCourses() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [courseResponse, enrollmentResponse, classResponse] = await Promise.all([
-          api.get("/courses"),
-          api.get("/student/enrollments"),
-          api.get("/classes"),
+        const [courseData, enrollmentData, classData] = await Promise.all([
+          courseService.getAll(),
+          enrollmentService.getStudentEnrollments(),
+          classService.getPublicClasses(),
         ]);
 
-        setCourses((courseResponse.data.data || []).filter((course) => course.status === "active"));
-        setEnrollments(enrollmentResponse.data.data || []);
-        setClasses(classResponse.data.data || []);
+        setCourses((courseData || []).filter((course) => course.status === "active"));
+        setEnrollments(enrollmentData || []);
+        setClasses(classData || []);
       } catch (error) {
         console.error(error);
         toast.error("Không thể tải dữ liệu");
@@ -92,12 +82,12 @@ export default function StudentCourses() {
     })
   ), [courses, search, examFilter, levelFilter, enrollFilter, enrollments]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / PAGE_SIZE));
-  const paginatedCourses = filteredCourses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / STUDENT_COURSE_PAGE_SIZE));
+  const paginatedCourses = filteredCourses.slice((page - 1) * STUDENT_COURSE_PAGE_SIZE, page * STUDENT_COURSE_PAGE_SIZE);
 
   const refreshEnrollments = async () => {
-    const response = await api.get("/student/enrollments");
-    setEnrollments(response.data.data || []);
+    const response = await enrollmentService.getStudentEnrollments();
+    setEnrollments(response || []);
   };
 
   const handleEnrollClick = (course) => {
@@ -121,7 +111,7 @@ export default function StudentCourses() {
       return;
     }
     try {
-      await api.put(`/enrollments/${enrollment.id}/cancel`);
+      await enrollmentService.cancel(enrollment.id);
       toast.success("Đã hủy đăng ký");
       await refreshEnrollments();
     } catch {
@@ -137,7 +127,7 @@ export default function StudentCourses() {
 
     setEnrolling(true);
     try {
-      await api.post("/student/enroll", {
+      await enrollmentService.createStudentEnrollment({
         courseId: enrollModal.id,
         classId: selectedClass.id,
         paid,
@@ -240,7 +230,7 @@ export default function StudentCourses() {
                     </td>
                     <td>
                       {enrollment
-                        ? <span className={`badge ${ENROLL_STATUS[enrollment.status]?.badge}`}>{ENROLL_STATUS[enrollment.status]?.label}</span>
+                        ? <span className={`badge ${ENROLLMENT_STATUS_META[enrollment.status]?.badge}`}>{ENROLLMENT_STATUS_META[enrollment.status]?.label}</span>
                         : <span className="badge badge-gray">Chưa đăng ký</span>}
                     </td>
                     <td>
@@ -291,7 +281,7 @@ export default function StudentCourses() {
           <div className="modal student-courses__detail-modal" onClick={(event) => event.stopPropagation()}>
             <div className={`modal-header student-courses__detail-header student-courses__detail-header--${(detailModal.examType || "OTHER").toLowerCase()}`}>
               <div>
-                <span className="student-courses__detail-eyebrow">{detailModal.examType} · {LEVEL_LABEL[detailModal.level]}</span>
+                <span className="student-courses__detail-eyebrow">{detailModal.examType} · {LEVEL_LABELS[detailModal.level]}</span>
                 <h3 className="student-courses__detail-title">{detailModal.title}</h3>
               </div>
               <button className="modal-close" onClick={() => setDetailModal(null)}>✕</button>
@@ -308,7 +298,7 @@ export default function StudentCourses() {
                 </div>
                 <div className="student-courses__detail-card">
                   <p className="student-courses__detail-label">Cấp độ</p>
-                  <p className="student-courses__detail-value">{LEVEL_LABEL[detailModal.level]}</p>
+                  <p className="student-courses__detail-value">{LEVEL_LABELS[detailModal.level]}</p>
                 </div>
               </div>
 
@@ -328,10 +318,10 @@ export default function StudentCourses() {
                         <p className="student-courses__class-meta">👥 {classroom.currentStudents || 0}/{classroom.maxStudents} học viên</p>
                       </div>
                       <div className="student-courses__class-side">
-                        <span className={`badge ${CLASS_STATUS_BADGE[classroom.status]}`}>{CLASS_STATUS_LABEL[classroom.status]}</span>
+                        <span className={`badge ${CLASS_STATUS_BADGES[classroom.status]}`}>{CLASS_STATUS_LABELS[classroom.status]}</span>
                         {myEnrollment && myEnrollment.classId === classroom.id && (
                           <p className="student-courses__class-enroll-status">
-                            <span className={`badge ${ENROLL_STATUS[myEnrollment.status]?.badge}`}>{ENROLL_STATUS[myEnrollment.status]?.label}</span>
+                            <span className={`badge ${ENROLLMENT_STATUS_META[myEnrollment.status]?.badge}`}>{ENROLLMENT_STATUS_META[myEnrollment.status]?.label}</span>
                           </p>
                         )}
                       </div>

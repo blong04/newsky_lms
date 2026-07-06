@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
-import "../admin/Admin.css";
-import "./Teacher.css";
+import { classService } from "../../services/classService";
+import { dashboardService } from "../../services/dashboardService";
+import { useAuth } from "../../contexts/AuthContext";
 import "./Dashboard.css";
 
 const DASHBOARD_CARDS = [
@@ -27,12 +26,12 @@ export default function TeacherDashboard() {
   // Load danh sách lớp phụ trách để render overview ban đầu.
   useEffect(() => {
     Promise.all([
-      api.get("/teacher/classes").catch(() => ({ data: { data: [] } })),
-      api.get("/teacher/dashboard").catch(() => ({ data: { data: null } })),
+      classService.getTeacherClasses().catch(() => []),
+      dashboardService.getTeacherDashboard().catch(() => null),
     ])
       .then(([classResponse, summaryResponse]) => {
-        setClasses(classResponse.data.data || []);
-        setSummary(summaryResponse.data.data || {
+        setClasses(classResponse || []);
+        setSummary(summaryResponse || {
           classCount: 0,
           assignmentCount: 0,
           pendingCount: 0,

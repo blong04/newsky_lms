@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-import api from "../../api/axios";
+import { useAuth } from "../../contexts/AuthContext";
+import { assignmentService } from "../../services/assignmentService";
+import { classService } from "../../services/classService";
+import { quizService } from "../../services/quizService";
+import { userService } from "../../services/userService";
+import { TEACHER_ASSIGNMENT_PAGE_SIZE } from "../../constants/pagination";
+import { buildQuizSections, parseAnswerMap } from "../../utils/quiz";
 import toast from "react-hot-toast";
-import "../admin/Admin.css";
-import "./Teacher.css";
 import "./Assignments.css";
 
 const IELTS_PARTS = ["Writing Task 1", "Writing Task 2", "Speaking Part 1", "Speaking Part 2", "Speaking Part 3"];
@@ -18,33 +21,9 @@ const INITIAL_FORM = {
   maxScore: 100,
   deadline: "",
 };
-const PAGE_SIZE = 8;
-
 const dedupeById = (items) => Array.from(
   new Map((items || []).map((item) => [item.id, item])).values()
 );
-
-const parseAnswerMap = (rawAnswers) => {
-  if (!rawAnswers) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(rawAnswers);
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
-  } catch {
-    return String(rawAnswers)
-      .split("|")
-      .filter(Boolean)
-      .reduce((answerMap, pair) => {
-        const [questionId, value] = pair.split(":");
-        if (questionId) {
-          answerMap[questionId] = value ?? "";
-        }
-        return answerMap;
-      }, {});
-  }
-};
 
 function Pagination({ page, total, onChange }) {
   if (total <= 1) {
@@ -104,26 +83,17 @@ export default function TeacherAssignments() {
     setLoading(true);
 
     try {
-      const [assignmentResponse, classResponse, userResponse] = await Promise.all([
-        api.get("/teacher/assignments"),
-        api.get("/teacher/classes").catch(() => ({ data: { data: [] } })),
-        api.get("/users"),
+      const [assignmentData, classData, userData, quizData] = await Promise.all([
+        assignmentService.getTeacherAssignments(),
+        classService.getTeacherClasses().catch(() => []),
+        userService.getAll(),
+        quizService.getTeacherQuizzes().catch(() => []),
       ]);
 
-      const teacherClasses = classResponse.data.data || [];
-      const quizResponses = await Promise.all(
-        teacherClasses.map((classroom) =>
-          api.get(`/quizzes/class/${classroom.id}`).catch(() => ({ data: { data: [] } }))
-        )
-      );
-      const teacherQuizzes = dedupeById(
-        quizResponses.flatMap((response) => response.data.data || [])
-      );
-
-      setClasses(classResponse.data.data || []);
-      setAssignments(assignmentResponse.data.data || []);
-      setQuizzes(teacherQuizzes);
-      setUsers(userResponse.data.data || []);
+      setClasses(classData || []);
+      setAssignments(assignmentData || []);
+      setQuizzes(dedupeById(quizData || []));
+      setUsers(userData || []);
     } catch (error) {
       console.error(error);
       toast.error("Không thể tải dữ liệu");
@@ -136,10 +106,10 @@ export default function TeacherAssignments() {
     fetchData();
   }, [user]);
 
-  const totalAssignPages = Math.max(1, Math.ceil(assignments.length / PAGE_SIZE));
-  const paginatedAssignments = assignments.slice((assignPage - 1) * PAGE_SIZE, assignPage * PAGE_SIZE);
-  const totalQuizPages = Math.max(1, Math.ceil(quizzes.length / PAGE_SIZE));
-  const paginatedQuizzes = quizzes.slice((quizPage - 1) * PAGE_SIZE, quizPage * PAGE_SIZE);
+  const totalAssignPages = Math.max(1, Math.ceil(assignments.length / TEACHER_ASSIGNMENT_PAGE_SIZE));
+  const paginatedAssignments = assignments.slice((assignPage - 1) * TEACHER_ASSIGNMENT_PAGE_SIZE, assignPage * TEACHER_ASSIGNMENT_PAGE_SIZE);
+  const totalQuizPages = Math.max(1, Math.ceil(quizzes.length / TEACHER_ASSIGNMENT_PAGE_SIZE));
+  const paginatedQuizzes = quizzes.slice((quizPage - 1) * TEACHER_ASSIGNMENT_PAGE_SIZE, quizPage * TEACHER_ASSIGNMENT_PAGE_SIZE);
 
   const getUserName = (id) => users.find((account) => account.id === id || account.id === Number(id))?.name || `ID: ${id}`;
   const getUserEmail = (id) => users.find((account) => account.id === id || account.id === Number(id))?.email || "";
@@ -154,8 +124,8 @@ export default function TeacherAssignments() {
 
   const loadSubmissions = async (assignmentId) => {
     try {
-      const response = await api.get(`/assignments/${assignmentId}/submissions`).catch(() => ({ data: { data: [] } }));
-      setSubmissions(response.data.data || []);
+      const submissionData = await assignmentService.getSubmissions(assignmentId).catch(() => []);
+      setSubmissions(submissionData || []);
     } catch {
       setSubmissions([]);
     }
@@ -163,8 +133,8 @@ export default function TeacherAssignments() {
 
   const loadQuizResults = async (quizId) => {
     try {
-      const response = await api.get(`/teacher/quizzes/${quizId}/submissions`).catch(() => ({ data: { data: [] } }));
-      setQuizResults(response.data.data || []);
+      const resultData = await quizService.getTeacherQuizSubmissions(quizId).catch(() => []);
+      setQuizResults(resultData || []);
     } catch {
       setQuizResults([]);
     }
@@ -172,8 +142,7 @@ export default function TeacherAssignments() {
 
   const loadQuizDetail = async (quizId) => {
     try {
-      const response = await api.get(`/quizzes/${quizId}/full`).catch(() => ({ data: { data: null } }));
-      const detail = response.data.data || null;
+      const detail = await quizService.getFullQuiz(quizId).catch(() => null);
       setQuizDetail(detail);
       return detail;
     } catch {
@@ -200,9 +169,9 @@ export default function TeacherAssignments() {
       };
 
       if (modal === "add") {
-        await api.post("/teacher/assignments", payload);
+        await assignmentService.createTeacherAssignment(payload);
       } else {
-        await api.put(`/assignments/${selected.id}`, payload);
+        await assignmentService.update(selected.id, payload);
       }
 
       toast.success(modal === "add" ? "Tạo bài tập thành công" : "Cập nhật thành công");
@@ -219,7 +188,7 @@ export default function TeacherAssignments() {
     }
 
     try {
-      await api.delete(`/assignments/${id}`);
+      await assignmentService.delete(id);
       toast.success("Đã xóa");
       setAssignments((current) => current.filter((assignment) => assignment.id !== id));
     } catch {
@@ -234,7 +203,7 @@ export default function TeacherAssignments() {
     }
 
     try {
-      await api.put(`/assignments/submissions/${selected.submissionId}/grade`, {
+      await assignmentService.gradeSubmission(selected.submissionId, {
         score: Number(gradeForm.score),
         comment: gradeForm.comment,
       });
@@ -254,7 +223,7 @@ export default function TeacherAssignments() {
     }
 
     try {
-      await api.put(`/teacher/quiz-submissions/${quizReviewModal.submission.id}/grade`, {
+      await quizService.gradeTeacherSubmission(quizReviewModal.submission.id, {
         score: Number(quizGradeForm.score),
       });
 
@@ -414,8 +383,8 @@ export default function TeacherAssignments() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedQuizzes.map((quiz) => (
-                    <tr key={quiz.id}>
+                    {paginatedQuizzes.map((quiz) => (
+                      <tr key={quiz.id}>
                       <td>
                         <p className="teacher-assignments__title">{quiz.title}</p>
                         <p className="teacher-assignments__warning-note">Xem bài làm và chấm lại điểm nếu cần</p>
@@ -675,13 +644,13 @@ export default function TeacherAssignments() {
                           <p className="teacher-assignments__muted teacher-assignments__tiny">{getUserEmail(result.userId)}</p>
                         </td>
                         <td>
-                          <span className={`badge ${result.score >= 70 ? "badge-green" : result.score >= 50 ? "badge-yellow" : "badge-red"}`}>
+                          <span className={`badge ${Number(result.score) >= 70 ? "badge-green" : Number(result.score) >= 50 ? "badge-yellow" : "badge-red"}`}>
                             {result.score}/100
                           </span>
                         </td>
                         <td className="teacher-assignments__tiny teacher-assignments__muted">
-                          {selected?.examType === "IELTS" && `Band ${(result.score / 100 * 9).toFixed(1)}`}
-                          {selected?.examType === "TOEIC" && `~${Math.round(result.score / 100 * 990)}/990`}
+                          {selected?.examType === "IELTS" && `Band ${(Number(result.score) / 100 * 9).toFixed(1)}`}
+                          {selected?.examType === "TOEIC" && `~${Math.round(Number(result.score) / 100 * 990)}/990`}
                         </td>
                         <td className="teacher-assignments__tiny teacher-assignments__muted">
                           {result.submittedAt ? new Date(result.submittedAt).toLocaleString("vi-VN") : "—"}
@@ -734,41 +703,64 @@ export default function TeacherAssignments() {
                 <span>{getUserName(quizReviewModal.submission.userId)}</span>
                 <span>{selected?.title}</span>
               </div>
-              {(quizReviewModal.detail?.questions || quizDetail?.questions || []).length === 0 && (
+              {((quizReviewModal.detail?.questions || quizDetail?.questions || []).length === 0) && (
                 <div className="empty-state"><p>Chưa tải được danh sách câu hỏi của bài kiểm tra này</p></div>
               )}
-              {(quizReviewModal.detail?.questions || quizDetail?.questions || []).map((question, index) => {
-                const answer = quizReviewModal.answerMap[String(question.id)] ?? quizReviewModal.answerMap[question.id];
+              {buildQuizSections(
+                quizReviewModal.detail?.groups || quizDetail?.groups,
+                quizReviewModal.detail?.questions || quizDetail?.questions,
+              ).map((section, sectionIndex, allSections) => {
+                const previousQuestionCount = allSections
+                  .slice(0, sectionIndex)
+                  .reduce((total, currentSection) => total + currentSection.questions.length, 0);
+
                 return (
-                  <article key={question.id} className="teacher-assignments__question-review">
-                    <p className="teacher-assignments__title teacher-assignments__title--compact">{index + 1}. {question.content}</p>
-                    {question.questionType === "mcq" ? (
-                      <div className="teacher-assignments__answer-list">
-                        {["A", "B", "C", "D"].map((option) => {
-                          const value = question[`option${option}`];
-                          if (!value) {
-                            return null;
-                          }
-                          return (
-                            <div
-                              key={option}
-                              className={`teacher-assignments__answer-item ${answer === option ? "teacher-assignments__answer-item--chosen" : ""} ${question.correctAnswer === option ? "teacher-assignments__answer-item--correct" : ""}`}
-                            >
-                              <strong>{option}.</strong> {value}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="teacher-assignments__submission-content">
-                        {answer || "Chưa trả lời"}
-                      </div>
-                    )}
-                    {question.correctAnswer && question.questionType !== "writing" && (
-                      <p className="teacher-assignments__tiny teacher-assignments__muted">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
-                    )}
-                  </article>
-                );
+                <section key={section.key} className="teacher-assignments__review-section">
+                  {section.group && (
+                    <div className="teacher-assignments__submission-content">
+                      {section.group.title && <p className="teacher-assignments__title teacher-assignments__title--compact">{section.group.title}</p>}
+                      {section.group.instructions && <p>{section.group.instructions}</p>}
+                      {section.group.passageText && <p>{section.group.passageText}</p>}
+                      {section.group.imageUrl && <img src={section.group.imageUrl} alt="Question group" className="question-image" />}
+                      {section.group.audioUrl && <audio controls src={section.group.audioUrl} />}
+                    </div>
+                  )}
+                  {section.questions.map((question, index) => {
+                    const answer = quizReviewModal.answerMap[String(question.id)] ?? quizReviewModal.answerMap[question.id];
+                    return (
+                      <article key={question.id} className="teacher-assignments__question-review">
+                        <p className="teacher-assignments__title teacher-assignments__title--compact">{previousQuestionCount + index + 1}. {question.content}</p>
+                        {question.imageUrl && <img src={question.imageUrl} alt="Question" className="question-image" />}
+                        {question.questionType === "mcq" ? (
+                          <div className="teacher-assignments__answer-list">
+                            {["A", "B", "C", "D"].map((option) => {
+                              const value = question[`option${option}`];
+                              if (!value) {
+                                return null;
+                              }
+                              return (
+                                <div
+                                  key={option}
+                                  className={`teacher-assignments__answer-item ${answer === option ? "teacher-assignments__answer-item--chosen" : ""} ${question.correctAnswer === option ? "teacher-assignments__answer-item--correct" : ""}`}
+                                >
+                                  <strong>{option}.</strong> {value}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="teacher-assignments__submission-content">
+                            {answer || "Chưa trả lời"}
+                          </div>
+                        )}
+                        {question.correctAnswer && question.questionType !== "writing" && (
+                          <p className="teacher-assignments__tiny teacher-assignments__muted">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
+                        )}
+                      </article>
+                    );
+                  })}
+                </section>
+              );
               })}
 
               <div className="form-group">

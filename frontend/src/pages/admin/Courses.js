@@ -1,35 +1,12 @@
 import React, { useEffect, useState } from "react";
-import api from "../../api/axios";
+import { courseService } from "../../services/courseService";
+import { userService } from "../../services/userService";
+import { CLASS_STATUS_BADGES, CLASS_STATUS_LABELS } from "../../constants/classes";
+import { COURSE_STATUS_LABELS, LEVEL_LABELS, getExamBadgeClass } from "../../constants/courses";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
+import { formatCoursePrice } from "../../utils/format";
 import toast from "react-hot-toast";
-import "./Admin.css";
 import "./Courses.css";
-
-const LEVEL_LABEL = {
-  beginner: "Cơ bản",
-  intermediate: "Trung cấp",
-  advanced: "Nâng cao",
-};
-
-const COURSE_STATUS = {
-  active: "Đang mở",
-  inactive: "Tạm ẩn",
-};
-
-const CLASS_STATUS_BADGE = {
-  pending: "badge-yellow",
-  active: "badge-green",
-  completed: "badge-gray",
-  cancelled: "badge-red",
-};
-
-const CLASS_STATUS_LABEL = {
-  pending: "Chờ khai giảng",
-  active: "Đang học",
-  completed: "Đã kết thúc",
-  cancelled: "Đã hủy",
-};
-
-const PAGE_SIZE = 10;
 const INIT_FORM = {
   title: "",
   description: "",
@@ -58,14 +35,14 @@ export default function AdminCourses() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [courseRes, userRes] = await Promise.all([
-        api.get("/courses"),
-        api.get("/users"),
+      const [courseData, userData] = await Promise.all([
+        courseService.getAll(),
+        userService.getAll(),
       ]);
 
-      setCourses(courseRes.data.data || []);
+      setCourses(courseData || []);
       setTeachers(
-        (userRes.data.data || []).filter(
+        (userData || []).filter(
           (user) => user.roleId === 2 && user.approved
         )
       );
@@ -84,7 +61,7 @@ export default function AdminCourses() {
   useEffect(() => {
     const nextTotalPages = Math.max(
       1,
-      Math.ceil(filteredCourses.length / PAGE_SIZE)
+      Math.ceil(filteredCourses.length / DEFAULT_TABLE_PAGE_SIZE)
     );
     if (page > nextTotalPages) {
       setPage(nextTotalPages);
@@ -105,29 +82,16 @@ export default function AdminCourses() {
     );
   });
 
-  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / DEFAULT_TABLE_PAGE_SIZE));
   const paginatedCourses = filteredCourses.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
+    (page - 1) * DEFAULT_TABLE_PAGE_SIZE,
+    page * DEFAULT_TABLE_PAGE_SIZE
   );
 
   const totalCourses = courses.length;
   const activeCourses = courses.filter((course) => course.status === "active").length;
   const examCourses = courses.filter((course) => course.examType !== "OTHER").length;
   const freeCourses = courses.filter((course) => Number(course.price || 0) === 0).length;
-
-  const formatCurrency = (value) => {
-    const amount = Number(value || 0);
-    return amount > 0
-      ? `${amount.toLocaleString("vi-VN")}đ`
-      : "Miễn phí";
-  };
-
-  const getExamBadgeClass = (examType) => {
-    if (examType === "IELTS") return "badge-blue";
-    if (examType === "TOEIC") return "badge-green";
-    return "badge-gray";
-  };
 
   const getExamThemeClass = (examType) => {
     if (examType === "IELTS") return "courses-theme-ielts";
@@ -144,8 +108,8 @@ export default function AdminCourses() {
     setClassesLoading(true);
 
     try {
-      const response = await api.get(`/courses/${course.id}/classes`);
-      setCourseClasses(response.data.data || []);
+      const response = await courseService.getClasses(course.id);
+      setCourseClasses(response || []);
     } catch {
       setCourseClasses([]);
       toast.error("Không thể tải danh sách lớp của khóa học");
@@ -186,10 +150,10 @@ export default function AdminCourses() {
       };
 
       if (modal === "add") {
-        await api.post("/courses", payload);
+        await courseService.create(payload);
         toast.success("Tạo khóa học thành công");
       } else {
-        await api.put(`/courses/${selected.id}`, payload);
+        await courseService.update(selected.id, payload);
         toast.success("Cập nhật khóa học thành công");
       }
 
@@ -206,7 +170,7 @@ export default function AdminCourses() {
     }
 
     try {
-      await api.delete(`/courses/${courseId}`);
+      await courseService.delete(courseId);
       toast.success("Đã xóa khóa học");
       fetchData();
     } catch {
@@ -368,7 +332,7 @@ export default function AdminCourses() {
                       </td>
                       <td>
                         <span className="courses-level-pill">
-                          {LEVEL_LABEL[course.level] || course.level}
+                          {LEVEL_LABELS[course.level] || course.level}
                         </span>
                       </td>
                       <td>
@@ -379,7 +343,7 @@ export default function AdminCourses() {
                               : "courses-price--free"
                           }`}
                         >
-                          {formatCurrency(course.price)}
+                          {formatCoursePrice(course.price)}
                         </span>
                       </td>
                       <td>
@@ -388,7 +352,7 @@ export default function AdminCourses() {
                             course.status === "active" ? "badge-green" : "badge-red"
                           }`}
                         >
-                          {COURSE_STATUS[course.status] || course.status}
+                          {COURSE_STATUS_LABELS[course.status] || course.status}
                         </span>
                       </td>
                       <td>
@@ -425,8 +389,8 @@ export default function AdminCourses() {
             {totalPages > 1 && (
               <div className="pagination">
                 <span className="pagination-info">
-                  {Math.min((page - 1) * PAGE_SIZE + 1, filteredCourses.length)}–
-                  {Math.min(page * PAGE_SIZE, filteredCourses.length)} /{" "}
+                  {Math.min((page - 1) * DEFAULT_TABLE_PAGE_SIZE + 1, filteredCourses.length)}–
+                  {Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredCourses.length)} /{" "}
                   {filteredCourses.length}
                 </span>
                 <div className="pagination-btns">
@@ -470,7 +434,7 @@ export default function AdminCourses() {
             >
               <div>
                 <p className="courses-modal-header__eyebrow">
-                  {viewModal.examType} · {LEVEL_LABEL[viewModal.level]}
+                  {viewModal.examType} · {LEVEL_LABELS[viewModal.level]}
                 </p>
                 <h3>{viewModal.title}</h3>
               </div>
@@ -483,11 +447,11 @@ export default function AdminCourses() {
               <div className="courses-detail-grid">
                 <div className="courses-detail-card">
                   <span>Học phí</span>
-                  <strong>{formatCurrency(viewModal.price)}</strong>
+                  <strong>{formatCoursePrice(viewModal.price)}</strong>
                 </div>
                 <div className="courses-detail-card">
                   <span>Trạng thái</span>
-                  <strong>{COURSE_STATUS[viewModal.status] || viewModal.status}</strong>
+                  <strong>{COURSE_STATUS_LABELS[viewModal.status] || viewModal.status}</strong>
                 </div>
               </div>
 
@@ -525,10 +489,10 @@ export default function AdminCourses() {
                           </div>
                           <span
                             className={`badge ${
-                              CLASS_STATUS_BADGE[classItem.status] || "badge-gray"
+                              CLASS_STATUS_BADGES[classItem.status] || "badge-gray"
                             }`}
                           >
-                            {CLASS_STATUS_LABEL[classItem.status] || classItem.status}
+                            {CLASS_STATUS_LABELS[classItem.status] || classItem.status}
                           </span>
                         </div>
 

@@ -1,16 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
-import "../admin/Admin.css";
-import "./Student.css";
+import { notificationService } from "../../services/notificationService";
+import { NOTIFICATION_TYPE_ICONS } from "../../constants/notifications";
 import "./Notifications.css";
-
-const TYPE_ICON = {
-  course: "📚",
-  schedule: "📅",
-  assignment: "📋",
-  system: "⚙️",
-  announcement: "📣",
-};
 
 export default function StudentNotifications() {
   // State danh sách thông báo và điều kiện lọc.
@@ -19,8 +10,8 @@ export default function StudentNotifications() {
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    api.get("/notifications/my").catch(() => ({ data: { data: [] } }))
-      .then((response) => setNotifications(response.data.data || []))
+    notificationService.getMine().catch(() => [])
+      .then((response) => setNotifications(response || []))
       .finally(() => setLoading(false));
   }, []);
 
@@ -41,7 +32,7 @@ export default function StudentNotifications() {
 
   const markRead = async (id) => {
     try {
-      await api.put(`/notifications/${id}/read`);
+      await notificationService.markRead(id);
       setNotifications((current) => current.map((item) => (item.id === id ? { ...item, read: true } : item)));
     } catch {
       // no-op
@@ -50,7 +41,7 @@ export default function StudentNotifications() {
 
   const markAllRead = async () => {
     try {
-      await api.put("/notifications/read-all");
+      await notificationService.markAllRead();
       setNotifications((current) => current.map((item) => ({ ...item, read: true })));
     } catch {
       // no-op
@@ -99,7 +90,7 @@ export default function StudentNotifications() {
               className={`notif-item ${!notification.read ? "unread" : ""} ${!notification.read ? "student-notifications__item--clickable" : ""}`}
               onClick={() => !notification.read && markRead(notification.id)}
             >
-              <div className="notif-icon">{TYPE_ICON[notification.type] || "🔔"}</div>
+              <div className="notif-icon">{NOTIFICATION_TYPE_ICONS[notification.type] || "🔔"}</div>
               <div className="student-notifications__content">
                 <div className="student-notifications__head">
                   <p className={`student-notifications__title ${!notification.read ? "student-notifications__title--unread" : ""}`}>

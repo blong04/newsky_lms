@@ -1,66 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
-import "../admin/Admin.css";
-import "./Student.css";
+import { useAuth } from "../../contexts/AuthContext";
+import { classService } from "../../services/classService";
+import { courseService } from "../../services/courseService";
+import { enrollmentService } from "../../services/enrollmentService";
+import { scheduleService } from "../../services/scheduleService";
+import {
+  CLASS_STATUS_BADGES,
+  CLASS_STATUS_LABELS,
+  SCHEDULE_STATUS_BADGES,
+  SCHEDULE_STATUS_LABELS,
+} from "../../constants/classes";
+import { getClassLifecycle, getScheduleLifecycle } from "../../utils/schedule";
 import "./Schedule.css";
-
-const STATUS_BADGE = {
-  pending: "badge-yellow",
-  active: "badge-green",
-  scheduled: "badge-blue",
-  ongoing: "badge-green",
-  completed: "badge-gray",
-  cancelled: "badge-red",
-};
-
-const STATUS_LABEL = {
-  pending: "Chờ khai giảng",
-  active: "Đang học",
-  scheduled: "Sắp diễn ra",
-  ongoing: "Đang diễn ra",
-  completed: "Hoàn thành",
-  cancelled: "Đã hủy",
-};
-
-// Tính trạng thái lớp học từ ngày bắt đầu/kết thúc thay vì phụ thuộc field DB cũ.
-const getClassLifecycle = (startDate, endDate) => {
-  const now = new Date();
-  const start = startDate ? new Date(startDate) : null;
-  const end = endDate ? new Date(endDate) : null;
-
-  if (start && now < start) {
-    return "pending";
-  }
-  if (end && now > end) {
-    return "completed";
-  }
-  return "active";
-};
-
-// Tính trạng thái buổi học từ ngày + giờ hiện tại để FE luôn hiển thị đúng theo thời gian thực.
-const getScheduleLifecycle = (dateValue, startTimeValue, endTimeValue) => {
-  if (!dateValue) {
-    return "scheduled";
-  }
-
-  const baseDate = new Date(dateValue);
-  const start = new Date(baseDate);
-  const end = new Date(baseDate);
-  const [startHour = 0, startMinute = 0] = String(startTimeValue || "00:00").split(":").map(Number);
-  const [endHour = 23, endMinute = 59] = String(endTimeValue || "23:59").split(":").map(Number);
-  start.setHours(startHour, startMinute, 0, 0);
-  end.setHours(endHour, endMinute, 0, 0);
-
-  const now = new Date();
-  if (now < start) {
-    return "scheduled";
-  }
-  if (now > end) {
-    return "completed";
-  }
-  return "ongoing";
-};
 
 export default function StudentSchedule() {
   const { user } = useAuth();
@@ -82,15 +33,15 @@ export default function StudentSchedule() {
       setLoading(true);
 
       try {
-        const [enrollmentResponse, classResponse, courseResponse] = await Promise.all([
-          api.get("/student/enrollments"),
-          api.get("/classes"),
-          api.get("/courses"),
+        const [enrollmentData, classData, courseData] = await Promise.all([
+          enrollmentService.getStudentEnrollments(),
+          classService.getPublicClasses(),
+          courseService.getAll(),
         ]);
 
-        const myEnrollments = (enrollmentResponse.data.data || []).filter((item) => ["approved", "enrolled"].includes(item.status));
-        const allClasses = classResponse.data.data || [];
-        const allCourses = courseResponse.data.data || [];
+        const myEnrollments = (enrollmentData || []).filter((item) => ["approved", "enrolled"].includes(item.status));
+        const allClasses = classData || [];
+        const allCourses = courseData || [];
 
         setEnrollments(myEnrollments);
         setClasses(allClasses);
@@ -99,8 +50,8 @@ export default function StudentSchedule() {
         const myClassIds = [...new Set(myEnrollments.map((item) => item.classId).filter(Boolean))];
         const scheduleResponses = await Promise.all(
           myClassIds.map((classId) =>
-            api.get(`/schedules/class/${classId}`)
-              .then((response) => (response.data.data || []).map((schedule) => ({ ...schedule, classId })))
+            scheduleService.getByClass(classId)
+              .then((response) => (response || []).map((schedule) => ({ ...schedule, classId })))
               .catch(() => [])
           )
         );
@@ -128,7 +79,7 @@ export default function StudentSchedule() {
   const filteredSchedules = useMemo(() => (
     schedules
       .filter((schedule) => {
-        const scheduleDate = new Date(schedule.date || schedule.NgayHoc || schedule.ngayHoc);
+        const scheduleDate = new Date(schedule.date);
         if (filter === "week") {
           return scheduleDate >= startOfWeek && scheduleDate <= endOfWeek;
         }
@@ -137,7 +88,7 @@ export default function StudentSchedule() {
         }
         return true;
       })
-      .sort((left, right) => new Date(left.date || left.NgayHoc) - new Date(right.date || right.NgayHoc))
+      .sort((left, right) => new Date(left.date) - new Date(right.date))
   ), [schedules, filter]);
 
   if (loading) {
@@ -185,8 +136,8 @@ export default function StudentSchedule() {
                         📅 {startDate ? new Date(startDate).toLocaleDateString("vi-VN") : "—"} → {endDate ? new Date(endDate).toLocaleDateString("vi-VN") : "—"}
                       </p>
                     )}
-                    <span className={`badge ${STATUS_BADGE[classStatus] || "badge-gray"}`}>
-                      {STATUS_LABEL[classStatus] || classStatus}
+                    <span className={`badge ${CLASS_STATUS_BADGES[classStatus] || "badge-gray"}`}>
+                      {CLASS_STATUS_LABELS[classStatus] || classStatus}
                     </span>
                   </div>
                 </article>
@@ -213,20 +164,20 @@ export default function StudentSchedule() {
           <div className="empty-state"><p>Không có lịch học nào</p></div>
         ) : (
           filteredSchedules.map((schedule) => {
-            const classroom = getClass(schedule.classId || schedule.ClassID);
-            const course = getCourse(classroom?.courseId || classroom?.CourseID);
+            const classroom = getClass(schedule.classId);
+            const course = getCourse(classroom?.courseId);
 
-            const title = schedule.title || schedule.TieuDe || "";
-            const dateValue = schedule.date || schedule.NgayHoc || null;
-            const startTime = schedule.startTime || schedule.GioBatDau || "";
-            const endTime = schedule.endTime || schedule.GioKetThuc || "";
-            const location = schedule.location || schedule.DiaDiem || "Tại trung tâm";
+            const title = schedule.title || "";
+            const dateValue = schedule.date || null;
+            const startTime = schedule.startTime || "";
+            const endTime = schedule.endTime || "";
+            const location = schedule.location || "Tại trung tâm";
             const status = getScheduleLifecycle(dateValue, startTime, endTime);
             const date = dateValue ? new Date(dateValue) : null;
             const isToday = date?.toDateString() === now.toDateString();
 
             return (
-              <article key={schedule.id || schedule.ScheduleID} className={`student-schedule__schedule-item ${isToday ? "student-schedule__schedule-item--today" : ""}`}>
+              <article key={schedule.id} className={`student-schedule__schedule-item ${isToday ? "student-schedule__schedule-item--today" : ""}`}>
                 <div className="student-schedule__date-box">
                   <span className="student-schedule__date-day">{date ? date.getDate() : "—"}</span>
                   <span className="student-schedule__date-month">{date ? date.toLocaleDateString("vi-VN", { month: "short" }) : ""}</span>
@@ -238,7 +189,7 @@ export default function StudentSchedule() {
                       <p className="student-schedule__schedule-title">{title}</p>
                       <p className="student-schedule__schedule-subtitle">{classroom?.name || schedule.className || ""}{course ? ` · ${course.title}` : ""}</p>
                     </div>
-                    <span className={`badge ${STATUS_BADGE[status] || "badge-gray"}`}>{STATUS_LABEL[status] || status}</span>
+                    <span className={`badge ${SCHEDULE_STATUS_BADGES[status] || "badge-gray"}`}>{SCHEDULE_STATUS_LABELS[status] || status}</span>
                   </div>
                   <div className="student-schedule__schedule-meta">
                     <span>⏰ {startTime?.toString().slice(0, 5)} – {endTime?.toString().slice(0, 5)}</span>

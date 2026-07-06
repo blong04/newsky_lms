@@ -11,8 +11,8 @@ export const useUsers = () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await userService.getAll();
-      setUsers(res.data || []);
+      const users = await userService.getAll();
+      setUsers(users || []);
     } catch (err) {
       const msg = err.response?.data?.message || "Không thể tải danh sách users";
       setError(msg);
@@ -28,10 +28,10 @@ export const useUsers = () => {
 
   const createUser = async (data) => {
     try {
-      const res = await userService.create(data);
+      const createdUser = await userService.create(data);
       toast.success("Thêm user thành công!");
       await fetchUsers();
-      return { success: true, data: res.data };
+      return { success: true, data: createdUser };
     } catch (err) {
       const msg = err.response?.data?.message || "Lỗi khi tạo user";
       toast.error(msg);
@@ -41,10 +41,10 @@ export const useUsers = () => {
 
   const updateUser = async (id, data) => {
     try {
-      const res = await userService.update(id, data);
+      const updatedUser = await userService.update(id, data);
       toast.success("Cập nhật user thành công!");
       await fetchUsers();
-      return { success: true, data: res.data };
+      return { success: true, data: updatedUser };
     } catch (err) {
       const msg = err.response?.data?.message || "Lỗi khi cập nhật user";
       toast.error(msg);

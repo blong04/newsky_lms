@@ -1,12 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
+import { userService } from "../../services/userService";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
+import { ROLE_BADGES, ROLE_NAMES } from "../../constants/roles";
 import toast from "react-hot-toast";
-import "./Admin.css";
 import "./Users.css";
-
-const ROLE_NAMES = { 1: "Admin", 2: "Giáo viên", 3: "Học viên" };
-const ROLE_BADGES = { 1: "badge-purple", 2: "badge-blue", 3: "badge-green" };
-const PAGE_SIZE = 10;
 
 export default function AdminUsers() {
   // State dữ liệu chính cho bảng người dùng và danh sách giáo viên chờ duyệt.
@@ -29,11 +26,11 @@ export default function AdminUsers() {
     setLoading(true);
     try {
       const [userResponse, pendingResponse] = await Promise.all([
-        api.get("/users"),
-        api.get("/admin/pending-teachers"),
+        userService.getAll(),
+        userService.getPendingTeachers(),
       ]);
-      setUsers(userResponse.data.data || []);
-      setPending(pendingResponse.data.data || []);
+      setUsers(userResponse || []);
+      setPending(pendingResponse || []);
     } catch {
       toast.error("Không thể tải dữ liệu người dùng");
     } finally {
@@ -56,8 +53,8 @@ export default function AdminUsers() {
     )
   ), [users, search, roleFilter, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
-  const paginatedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedUsers = filteredUsers.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
 
   // Chuyển đổi trạng thái hiển thị sang badge dễ đọc.
   const getStatusBadge = (user) => {
@@ -78,7 +75,7 @@ export default function AdminUsers() {
 
   const handleApprove = async (id) => {
     try {
-      await api.put(`/admin/users/${id}/approve`);
+      await userService.approveTeacher(id);
       toast.success("Đã phê duyệt tài khoản");
       fetchData();
     } catch {
@@ -92,7 +89,7 @@ export default function AdminUsers() {
     }
 
     try {
-      await api.delete(`/admin/users/${id}/reject`);
+      await userService.rejectTeacher(id);
       toast.success("Đã từ chối tài khoản");
       fetchData();
     } catch {
@@ -108,7 +105,7 @@ export default function AdminUsers() {
     }
 
     try {
-      await api.put(`/users/${user.id}`, { status: nextStatus });
+      await userService.update(user.id, { status: nextStatus });
       toast.success(nextStatus === "suspended" ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản");
       fetchData();
     } catch {
@@ -122,7 +119,7 @@ export default function AdminUsers() {
     }
 
     try {
-      await api.delete(`/users/${id}`);
+      await userService.delete(id);
       toast.success("Đã xóa người dùng");
       fetchData();
     } catch {
@@ -131,8 +128,17 @@ export default function AdminUsers() {
   };
 
   const handleSave = async () => {
+    if (!form.name.trim() || !form.email.trim()) {
+      toast.error("Vui lòng nhập họ tên và email");
+      return;
+    }
+    if (form.password && !/^\d{4}$/.test(form.password)) {
+      toast.error("Mật khẩu phải gồm đúng 4 chữ số");
+      return;
+    }
+
     try {
-      await api.post("/users", { ...form, roleId: Number(form.roleId) });
+      await userService.create({ ...form, roleId: Number(form.roleId) });
       toast.success("Thêm người dùng thành công");
       setModal(null);
       fetchData();
@@ -202,8 +208,20 @@ export default function AdminUsers() {
                   </td>
                   <td>
                     <div className="admin-users__actions">
-                      <button className="btn btn-success btn-sm" onClick={() => handleApprove(user.id)}>✅ Duyệt</button>
-                      <button className="btn btn-danger btn-sm" onClick={() => handleReject(user.id)}>❌ Từ chối</button>
+                      <button
+                        className="btn btn-success btn-sm"
+                        onClick={() => handleApprove(user.id)}
+                        title="Phê duyệt"
+                      >
+                        ✅
+                      </button>
+                      <button
+                        className="btn btn-danger btn-sm"
+                        onClick={() => handleReject(user.id)}
+                        title="Từ chối"
+                      >
+                        ❌
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -315,10 +333,10 @@ export default function AdminUsers() {
               </tbody>
             </table>
 
-            {filteredUsers.length > PAGE_SIZE && (
+            {filteredUsers.length > DEFAULT_TABLE_PAGE_SIZE && (
               <div className="pagination">
                 <span className="pagination-info">
-                  Hiển thị {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, filteredUsers.length)} / {filteredUsers.length}
+                  Hiển thị {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredUsers.length)} / {filteredUsers.length}
                 </span>
                 <div className="pagination-btns">
                   <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>
@@ -359,6 +377,7 @@ export default function AdminUsers() {
               <div className="form-group">
                 <label>Mật khẩu</label>
                 <input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+                <p className="admin-users__tiny admin-users__muted">Để trống để backend dùng mật khẩu mặc định 1234, hoặc nhập đúng 4 chữ số.</p>
               </div>
               <div className="form-group">
                 <label>Vai trò</label>

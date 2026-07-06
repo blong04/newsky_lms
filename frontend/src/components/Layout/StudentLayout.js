@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import ProfileModal from "../shared/ProfileModal";
 import toast from "react-hot-toast";
 import "./Layout.css";

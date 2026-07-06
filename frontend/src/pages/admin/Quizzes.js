@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
+import { classService } from "../../services/classService";
+import { QUESTION_TYPE_LABELS } from "../../constants/quizzes";
+import { quizService } from "../../services/quizService";
+import { buildQuizSections, inferQuizType } from "../../utils/quiz";
 import toast from "react-hot-toast";
-import "./Admin.css";
 import "./Quizzes.css";
 
 const EXAM_STRUCTURE = {
@@ -49,13 +51,6 @@ const INITIAL_QUESTION = {
   explanation: "",
 };
 
-const QUESTION_TYPE_LABEL = {
-  mcq: "Trắc nghiệm",
-  fill_blank: "Điền vào chỗ trống",
-  matching: "Nối cột",
-  writing: "Viết",
-};
-
 export default function AdminQuizzes() {
   // State dữ liệu hiện có để list quiz.
   const [quizzes, setQuizzes] = useState([]);
@@ -77,12 +72,12 @@ export default function AdminQuizzes() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [quizResponse, classResponse] = await Promise.all([
-        api.get("/quizzes"),
-        api.get("/admin/classes").catch(() => ({ data: { data: [] } })),
+      const [quizData, classData] = await Promise.all([
+        quizService.getAll(),
+        classService.getAdminClasses().catch(() => []),
       ]);
-      setQuizzes(quizResponse.data.data || []);
-      setClasses(classResponse.data.data || []);
+      setQuizzes(quizData || []);
+      setClasses(classData || []);
     } catch {
       toast.error("Không thể tải dữ liệu bài kiểm tra");
     } finally {
@@ -176,8 +171,9 @@ export default function AdminQuizzes() {
     }
 
     try {
-      await api.post("/quizzes", {
+      await quizService.create({
         ...quizForm,
+        type: inferQuizType(quizForm.examPart, questions),
         classId: quizForm.classId ? Number(quizForm.classId) : null,
         timeLimit: Number(quizForm.timeLimit),
         questions: questions.map((question, index) => ({ ...question, orderNum: index + 1 })),
@@ -197,7 +193,7 @@ export default function AdminQuizzes() {
     }
 
     try {
-      await api.delete(`/quizzes/${id}`);
+      await quizService.delete(id);
       toast.success("Đã xóa bài kiểm tra");
       fetchData();
     } catch {
@@ -206,8 +202,7 @@ export default function AdminQuizzes() {
   };
 
   const fetchQuizDetail = async (quizId) => {
-    const response = await api.get(`/quizzes/${quizId}/full`);
-    return response.data.data;
+    return quizService.getFullQuiz(quizId);
   };
 
   const openViewModal = async (quiz) => {
@@ -239,12 +234,12 @@ export default function AdminQuizzes() {
 
   const handleUpdateQuiz = async () => {
     try {
-      await api.put(`/quizzes/${editModal.quiz.id}`, {
+      await quizService.update(editModal.quiz.id, {
         classId: editModal.quiz.classId || null,
         title: editModal.quiz.title,
         examType: editModal.quiz.examType,
         examPart: editModal.quiz.examPart,
-        type: editModal.quiz.type,
+        type: editModal.quiz.type || inferQuizType(editModal.quiz.examPart, editModal.questions),
         instructions: editModal.quiz.instructions,
         passageText: editModal.quiz.passageText,
         audioUrl: editModal.quiz.audioUrl,
@@ -453,7 +448,7 @@ export default function AdminQuizzes() {
                       className="filter-select admin-quizzes__type-select"
                     >
                       {getQuestionTypes().map((type) => (
-                        <option key={type} value={type}>{QUESTION_TYPE_LABEL[type] || type}</option>
+                        <option key={type} value={type}>{QUESTION_TYPE_LABELS[type] || type}</option>
                       ))}
                     </select>
                     {questions.length > 1 && (
@@ -510,13 +505,13 @@ export default function AdminQuizzes() {
                   </div>
                 )}
 
-                {question.questionType === "fill_blank" && (
+                {["fill_blank", "matching", "writing"].includes(question.questionType) && (
                   <div className="form-group admin-quizzes__question-space">
                     <label>Đáp án đúng</label>
                     <input
                       value={question.correctAnswer}
                       onChange={(event) => updateQuestion(index, "correctAnswer", event.target.value)}
-                      placeholder="Nhập đáp án chính xác"
+                      placeholder={question.questionType === "matching" ? "VD: 1-A, 2-C, 3-B" : "Nhập đáp án chính xác"}
                     />
                   </div>
                 )}
@@ -679,24 +674,44 @@ export default function AdminQuizzes() {
               <div>
                 <label className="admin-quizzes__label">Câu hỏi</label>
                 <div className="admin-quizzes__question-preview-list">
-                  {(viewModal.questions || []).map((question, index) => (
-                    <article key={question.id || index} className="admin-quizzes__question-preview">
-                      <p className="admin-quizzes__value admin-quizzes__value--strong">{index + 1}. {question.content}</p>
-                      <p className="admin-quizzes__text-block">{QUESTION_TYPE_LABEL[question.questionType] || question.questionType}</p>
-                      {question.questionType === "mcq" && (
-                        <div className="admin-quizzes__option-list">
-                          {["A", "B", "C", "D"].map((option) => question[`option${option}`] ? (
-                            <div key={option} className={`admin-quizzes__option-item ${question.correctAnswer === option ? "admin-quizzes__option-item--correct" : ""}`}>
-                              <strong>{option}.</strong> {question[`option${option}`]}
+                  {buildQuizSections(viewModal.groups, viewModal.questions).map((section, sectionIndex, allSections) => {
+                    const previousQuestionCount = allSections
+                      .slice(0, sectionIndex)
+                      .reduce((total, currentSection) => total + currentSection.questions.length, 0);
+
+                    return (
+                    <section key={section.key}>
+                      {section.group && (
+                        <article className="admin-quizzes__question-preview">
+                          {section.group.title && <p className="admin-quizzes__value admin-quizzes__value--strong">{section.group.title}</p>}
+                          {section.group.instructions && <p className="admin-quizzes__text-block">{section.group.instructions}</p>}
+                          {section.group.passageText && <div className="admin-quizzes__passage-view">{section.group.passageText}</div>}
+                          {section.group.imageUrl && <img src={section.group.imageUrl} alt="Question group" />}
+                          {section.group.audioUrl && <audio controls src={section.group.audioUrl} className="admin-quizzes__audio" />}
+                        </article>
+                      )}
+                      {section.questions.map((question, index) => (
+                        <article key={question.id || index} className="admin-quizzes__question-preview">
+                          <p className="admin-quizzes__value admin-quizzes__value--strong">{previousQuestionCount + index + 1}. {question.content}</p>
+                          <p className="admin-quizzes__text-block">{QUESTION_TYPE_LABELS[question.questionType] || question.questionType}</p>
+                          {question.imageUrl && <img src={question.imageUrl} alt="Question" />}
+                          {question.questionType === "mcq" && (
+                            <div className="admin-quizzes__option-list">
+                              {["A", "B", "C", "D"].map((option) => question[`option${option}`] ? (
+                                <div key={option} className={`admin-quizzes__option-item ${question.correctAnswer === option ? "admin-quizzes__option-item--correct" : ""}`}>
+                                  <strong>{option}.</strong> {question[`option${option}`]}
+                                </div>
+                              ) : null)}
                             </div>
-                          ) : null)}
-                        </div>
-                      )}
-                      {question.questionType !== "mcq" && question.correctAnswer && (
-                        <p className="admin-quizzes__text-block">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
-                      )}
-                    </article>
-                  ))}
+                          )}
+                          {question.questionType !== "mcq" && question.correctAnswer && (
+                            <p className="admin-quizzes__text-block">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
+                          )}
+                        </article>
+                      ))}
+                    </section>
+                  );
+                  })}
                 </div>
               </div>
             </div>
@@ -779,6 +794,17 @@ export default function AdminQuizzes() {
               </div>
               <div className="form-group">
                 <label>Danh sách câu hỏi</label>
+                {(editModal.groups || []).length > 0 && (
+                  <div className="admin-quizzes__question-preview-list">
+                    {editModal.groups.map((group) => (
+                      <article key={group.id} className="admin-quizzes__question-preview">
+                        {group.title && <p className="admin-quizzes__value admin-quizzes__value--strong">{group.title}</p>}
+                        {group.instructions && <p className="admin-quizzes__text-block">{group.instructions}</p>}
+                        {group.passageText && <div className="admin-quizzes__passage-view">{group.passageText}</div>}
+                      </article>
+                    ))}
+                  </div>
+                )}
                 <div className="admin-quizzes__question-edit-list">
                   {(editModal.questions || []).map((question, index) => (
                     <article key={question.id || index} className="admin-quizzes__question-edit">

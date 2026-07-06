@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-import api from "../../api/axios";
+import { useAuth } from "../../contexts/AuthContext";
+import { userService } from "../../services/userService";
+import { ROLE_NAMES } from "../../constants/roles";
 import toast from "react-hot-toast";
 import "./ProfileModal.css";
 
 export default function ProfileModal({ onClose, initialTab = "info" }) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [tab, setTab] = useState(initialTab);
   const [form, setForm] = useState({
     name: user?.name || "",
@@ -39,10 +40,10 @@ export default function ProfileModal({ onClose, initialTab = "info" }) {
         payload.avatarUrl = form.avatarUrl.trim();
       }
 
-      await api.put(`/users/${user.id}`, payload);
+      await userService.update(user.id, payload);
 
       const updated = { ...user, ...payload };
-      localStorage.setItem("user", JSON.stringify(updated));
+      updateUser(updated);
       toast.success("Cập nhật thông tin thành công!");
       onClose();
     } catch (e) {
@@ -62,13 +63,13 @@ export default function ProfileModal({ onClose, initialTab = "info" }) {
       toast.error("Mật khẩu xác nhận không khớp");
       return;
     }
-    if (pwForm.newPassword.length < 6) {
-      toast.error("Mật khẩu mới phải từ 6 ký tự");
+    if (!/^\d{4}$/.test(pwForm.newPassword)) {
+      toast.error("Mật khẩu mới phải gồm đúng 4 chữ số");
       return;
     }
     setLoading(true);
     try {
-      await api.put(`/users/${user.id}/change-password`, {
+      await userService.changePassword(user.id, {
         currentPassword: pwForm.currentPassword,
         newPassword: pwForm.newPassword,
       });
@@ -81,8 +82,6 @@ export default function ProfileModal({ onClose, initialTab = "info" }) {
       setLoading(false);
     }
   };
-
-  const ROLE_NAMES = { 1: "Admin", 2: "Giáo viên", 3: "Học viên" };
 
   return (
     <div className="profile-overlay" onClick={onClose}>
@@ -204,7 +203,7 @@ export default function ProfileModal({ onClose, initialTab = "info" }) {
                 type="password"
                 value={pwForm.newPassword}
                 onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })}
-                placeholder="Tối thiểu 6 ký tự"
+                placeholder="Gồm đúng 4 chữ số"
               />
             </div>
             <div className="pform-group">

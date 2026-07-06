@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import api from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
-import "../admin/Admin.css";
-import "./Student.css";
+import { enrollmentService } from "../../services/enrollmentService";
+import { dashboardService } from "../../services/dashboardService";
+import { useAuth } from "../../contexts/AuthContext";
 import "./Dashboard.css";
 
 export default function StudentDashboard() {
@@ -21,12 +20,12 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     Promise.all([
-      api.get("/student/enrollments").catch(() => ({ data: { data: [] } })),
-      api.get("/student/dashboard").catch(() => ({ data: { data: null } })),
+      enrollmentService.getStudentEnrollments().catch(() => []),
+      dashboardService.getStudentDashboard().catch(() => null),
     ])
       .then(([enrollmentResponse, summaryResponse]) => {
-        setEnrollments(enrollmentResponse.data.data || []);
-        setSummary(summaryResponse.data.data || {
+        setEnrollments(enrollmentResponse || []);
+        setSummary(summaryResponse || {
           activeEnrollmentCount: 0,
           completedEnrollmentCount: 0,
           pendingEnrollmentCount: 0,

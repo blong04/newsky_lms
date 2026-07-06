@@ -1,25 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
+import { classService } from "../../services/classService";
+import { CLASS_STATUS_BADGES, CLASS_STATUS_LABELS } from "../../constants/classes";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import toast from "react-hot-toast";
-import "../admin/Admin.css";
-import "./Teacher.css";
 import "./Classes.css";
-
-const PAGE_SIZE = 10;
-
-const STATUS_BADGE = {
-  pending: "badge-yellow",
-  active: "badge-green",
-  completed: "badge-gray",
-  cancelled: "badge-red",
-};
-
-const STATUS_LABEL = {
-  pending: "Chờ khai giảng",
-  active: "Đang học",
-  completed: "Kết thúc",
-  cancelled: "Đã hủy",
-};
 
 export default function TeacherClasses() {
   // State nguồn dữ liệu cần để ghép bảng lớp với danh sách học viên đã enrich.
@@ -37,14 +21,13 @@ export default function TeacherClasses() {
       setLoading(true);
 
       try {
-        const classResponse = await api.get("/teacher/classes");
-        const myClasses = classResponse.data.data || [];
+        const myClasses = await classService.getTeacherClasses();
         setClasses(myClasses);
 
         const studentResponses = await Promise.all(
           myClasses.map((classroom) =>
-            api.get(`/teacher/classes/${classroom.id}/students`)
-              .then((response) => [classroom.id, response.data.data || []])
+            classService.getTeacherClassStudents(classroom.id)
+              .then((response) => [classroom.id, response || []])
               .catch(() => [])
           )
         );
@@ -74,8 +57,8 @@ export default function TeacherClasses() {
     })
   ), [classes, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredClasses.length / PAGE_SIZE));
-  const paginatedClasses = filteredClasses.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredClasses.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedClasses = filteredClasses.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
   const selectedStudents = selected ? getApprovedEnrollments(selected.id) : [];
 
   return (
@@ -163,8 +146,8 @@ export default function TeacherClasses() {
                             {classroom.endDate ? new Date(classroom.endDate).toLocaleDateString("vi-VN") : "—"}
                           </td>
                           <td>
-                            <span className={`badge ${STATUS_BADGE[classroom.status] || "badge-gray"}`}>
-                              {STATUS_LABEL[classroom.status] || classroom.status}
+                            <span className={`badge ${CLASS_STATUS_BADGES[classroom.status] || "badge-gray"}`}>
+                              {CLASS_STATUS_LABELS[classroom.status] || classroom.status}
                             </span>
                           </td>
                           <td>
@@ -183,10 +166,10 @@ export default function TeacherClasses() {
                 </tbody>
               </table>
 
-              {filteredClasses.length > PAGE_SIZE && (
+              {filteredClasses.length > DEFAULT_TABLE_PAGE_SIZE && (
                 <div className="pagination">
                   <span className="pagination-info">
-                    {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, filteredClasses.length)} / {filteredClasses.length}
+                    {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredClasses.length)} / {filteredClasses.length}
                   </span>
                   <div className="pagination-btns">
                     <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>

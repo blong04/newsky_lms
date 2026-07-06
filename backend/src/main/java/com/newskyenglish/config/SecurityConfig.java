@@ -29,57 +29,66 @@ public class SecurityConfig {
             .sessionManagement(s ->
                 s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-
-                // ── Public ─────────────────────────────────────────
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/classes", "/courses/**").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/teacher/**").hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.GET, "/student/**").hasAnyRole("ADMIN", "STUDENT")
+                .requestMatchers(HttpMethod.POST, "/student/**").hasAnyRole("ADMIN", "STUDENT")
+                .requestMatchers(HttpMethod.PUT, "/student/**").hasAnyRole("ADMIN", "STUDENT")
 
-                // ── Tất cả đã login đều GET được ───────────────────
-                // Student cần GET /admin/classes để xem lớp
-                .requestMatchers(HttpMethod.GET, "/**").authenticated()
+                .requestMatchers(HttpMethod.GET, "/users").hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.POST, "/users").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/users/*").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/users/*/change-password").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/users/*").authenticated()
 
-                // ── Admin only: POST/PUT/DELETE toàn bộ ────────────
-                .requestMatchers(HttpMethod.POST,
-                    "/admin/**", "/users/**",
-                    "/courses/**", "/classes/**",
-                    "/quizzes/**"
-                ).hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/enrollments", "/enrollments/class/*").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/enrollments/*/cancel").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/enrollments/*").hasRole("ADMIN")
 
-                .requestMatchers(HttpMethod.PUT,
-                    "/admin/**", "/users/**",
-                    "/courses/**", "/classes/**",
-                    "/quizzes/**"
-                ).hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/assignments/*/submissions").hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.GET, "/assignments/submit/user/*").authenticated()
+                .requestMatchers(HttpMethod.POST, "/assignments/*/submit").authenticated()
+                .requestMatchers(HttpMethod.POST, "/assignments").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/teacher/assignments").hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.PUT, "/assignments/submissions/*/grade").hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.PUT, "/assignments/*").hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.DELETE, "/assignments/*").hasAnyRole("ADMIN", "TEACHER")
 
-                .requestMatchers(HttpMethod.DELETE,
-                    "/admin/**", "/users/**",
-                    "/courses/**", "/classes/**",
-                    "/quizzes/**"
-                ).hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/quizzes/*/submissions").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/quizzes/submissions/user/*").authenticated()
+                .requestMatchers(HttpMethod.POST, "/quizzes/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/quizzes/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/quizzes/**").hasRole("ADMIN")
 
-                // ── Teacher: tạo/sửa/xóa assignments ──────────────
-                .requestMatchers(HttpMethod.POST,
-                    "/assignments/**", "/teacher/**"
-                ).hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.PUT, "/notifications/*/read", "/notifications/read-all").authenticated()
+                .requestMatchers(HttpMethod.POST, "/notifications/send").hasRole("ADMIN")
 
-                .requestMatchers(HttpMethod.PUT,
-                    "/assignments/**", "/teacher/**"
-                ).hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.POST, "/tests", "/tests/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/tests", "/tests/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/tests", "/tests/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/tests/*/submissions").hasRole("ADMIN")
 
-                .requestMatchers(HttpMethod.DELETE,
-                    "/assignments/**"
-                ).hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.POST, "/schedules", "/schedules/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/schedules", "/schedules/**").hasRole("ADMIN")
 
-                // ── Student: đăng ký, nộp bài, notifications ───────
-                .requestMatchers(HttpMethod.POST,
-                    "/student/**", "/enrollments/**",
-                    "/notifications/**"
+                .requestMatchers(HttpMethod.GET,
+                    "/quizzes",
+                    "/quizzes/class/*",
+                    "/quizzes/type/*",
+                    "/quizzes/*/full",
+                    "/assignments",
+                    "/assignments/*",
+                    "/assignments/class/*",
+                    "/notifications/my",
+                    "/schedules/**",
+                    "/tests",
+                    "/tests/*",
+                    "/tests/class/*"
                 ).authenticated()
-
-                .requestMatchers(HttpMethod.PUT,
-                    "/student/**", "/enrollments/**",
-                    "/notifications/**"
-                ).authenticated()
-
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter,

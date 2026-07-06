@@ -1,24 +1,13 @@
 import React, { useEffect, useState } from "react";
-import api from "../../api/axios";
+import { classService } from "../../services/classService";
+import { courseService } from "../../services/courseService";
+import { enrollmentService } from "../../services/enrollmentService";
+import { userService } from "../../services/userService";
+import { CLASS_STATUS_BADGES, CLASS_STATUS_LABELS } from "../../constants/classes";
+import { getExamBadgeClass } from "../../constants/courses";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import toast from "react-hot-toast";
-import "./Admin.css";
 import "./Classes.css";
-
-const PAGE_SIZE = 10;
-
-const STATUS_BADGE = {
-  pending: "badge-yellow",
-  active: "badge-green",
-  completed: "badge-gray",
-  cancelled: "badge-red",
-};
-
-const STATUS_LABEL = {
-  pending: "Chờ khai giảng",
-  active: "Đang học",
-  completed: "Kết thúc",
-  cancelled: "Đã hủy",
-};
 
 const INIT_FORM = {
   courseId: "",
@@ -49,20 +38,20 @@ export default function AdminClasses() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [classRes, courseRes, userRes, enrollmentRes] = await Promise.all([
-        api.get("/admin/classes"),
-        api.get("/courses"),
-        api.get("/users"),
-        api.get("/admin/enrollments/details").catch(() => ({ data: { data: [] } })),
+      const [classData, courseData, userData, enrollmentData] = await Promise.all([
+        classService.getAdminClasses(),
+        courseService.getAll(),
+        userService.getAll(),
+        enrollmentService.getAdminDetails().catch(() => []),
       ]);
 
-      const allUsers = userRes.data.data || [];
-      setClasses(classRes.data.data || []);
-      setCourses(courseRes.data.data || []);
+      const allUsers = userData || [];
+      setClasses(classData || []);
+      setCourses(courseData || []);
       setTeachers(
         allUsers.filter((user) => user.roleId === 2 && user.approved)
       );
-      setEnrollments(enrollmentRes.data.data || []);
+      setEnrollments(enrollmentData || []);
     } catch {
       toast.error("Không thể tải dữ liệu lớp học");
     } finally {
@@ -78,7 +67,7 @@ export default function AdminClasses() {
   useEffect(() => {
     const nextTotalPages = Math.max(
       1,
-      Math.ceil(filteredClasses.length / PAGE_SIZE)
+      Math.ceil(filteredClasses.length / DEFAULT_TABLE_PAGE_SIZE)
     );
     if (page > nextTotalPages) {
       setPage(nextTotalPages);
@@ -112,10 +101,10 @@ export default function AdminClasses() {
     return matchesSearch && (!statusFilter || classItem.status === statusFilter);
   });
 
-  const totalPages = Math.max(1, Math.ceil(filteredClasses.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredClasses.length / DEFAULT_TABLE_PAGE_SIZE));
   const paginatedClasses = filteredClasses.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
+    (page - 1) * DEFAULT_TABLE_PAGE_SIZE,
+    page * DEFAULT_TABLE_PAGE_SIZE
   );
 
   const totalClasses = classes.length;
@@ -131,12 +120,6 @@ export default function AdminClasses() {
   );
   const occupancyRate =
     totalSeats > 0 ? Math.round((approvedStudents / totalSeats) * 100) : 0;
-
-  const getExamBadgeClass = (examType) => {
-    if (examType === "IELTS") return "badge-blue";
-    if (examType === "TOEIC") return "badge-green";
-    return "badge-gray";
-  };
 
   const openAddModal = () => {
     setSelected(null);
@@ -174,9 +157,9 @@ export default function AdminClasses() {
       };
 
       if (modal === "add") {
-        await api.post("/admin/classes", payload);
+        await classService.createAdminClass(payload);
       } else {
-        await api.put(`/admin/classes/${selected.id}`, payload);
+        await classService.updateAdminClass(selected.id, payload);
       }
 
       toast.success("Lưu lớp học thành công");
@@ -193,7 +176,7 @@ export default function AdminClasses() {
     }
 
     try {
-      await api.delete(`/admin/classes/${classId}`);
+      await classService.deleteAdminClass(classId);
       toast.success("Đã xóa lớp học");
       fetchData();
     } catch {
@@ -373,10 +356,10 @@ export default function AdminClasses() {
                         <td>
                           <span
                             className={`badge ${
-                              STATUS_BADGE[classItem.status] || "badge-gray"
+                              CLASS_STATUS_BADGES[classItem.status] || "badge-gray"
                             }`}
                           >
-                            {STATUS_LABEL[classItem.status] || classItem.status}
+                            {CLASS_STATUS_LABELS[classItem.status] || classItem.status}
                           </span>
                         </td>
                         <td>
@@ -411,8 +394,8 @@ export default function AdminClasses() {
             {totalPages > 1 && (
               <div className="pagination">
                 <span className="pagination-info">
-                  {Math.min((page - 1) * PAGE_SIZE + 1, filteredClasses.length)}–
-                  {Math.min(page * PAGE_SIZE, filteredClasses.length)} /{" "}
+                  {Math.min((page - 1) * DEFAULT_TABLE_PAGE_SIZE + 1, filteredClasses.length)}–
+                  {Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredClasses.length)} /{" "}
                   {filteredClasses.length}
                 </span>
                 <div className="pagination-btns">
@@ -597,7 +580,7 @@ export default function AdminClasses() {
               <div>
                 <p className="classes-hero__eyebrow">
                   {getCourse(detailModal.courseId)?.examType || "OTHER"} ·{" "}
-                  {STATUS_LABEL[detailModal.status] || detailModal.status}
+                  {CLASS_STATUS_LABELS[detailModal.status] || detailModal.status}
                 </p>
                 <h3>{detailModal.name}</h3>
               </div>
@@ -659,10 +642,10 @@ export default function AdminClasses() {
                         <div className="classes-student-card__meta">
                           <span
                             className={`badge ${
-                              STATUS_BADGE[enrollment.status] || "badge-gray"
+                              CLASS_STATUS_BADGES[enrollment.status] || "badge-gray"
                             }`}
                           >
-                            {STATUS_LABEL[enrollment.status] || enrollment.status}
+                            {CLASS_STATUS_LABELS[enrollment.status] || enrollment.status}
                           </span>
                           <strong>{Number(enrollment.progress || 0)}%</strong>
                         </div>

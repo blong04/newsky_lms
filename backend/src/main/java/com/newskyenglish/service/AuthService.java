@@ -3,10 +3,10 @@ package com.newskyenglish.service;
 import com.newskyenglish.dto.auth.AuthResponse;
 import com.newskyenglish.dto.auth.LoginRequest;
 import com.newskyenglish.dto.auth.RegisterRequest;
-import com.newskyenglish.dto.user.UserDTO;
+import com.newskyenglish.dto.users.UsersDTO;
 import com.newskyenglish.exception.BadRequestException;
-import com.newskyenglish.model.User;
-import com.newskyenglish.repository.UserRepository;
+import com.newskyenglish.model.Users;
+import com.newskyenglish.repository.UsersRepository;
 import com.newskyenglish.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,20 +18,20 @@ import org.springframework.transaction.annotation.Transactional;
 // Xử lý luồng đăng nhập và đăng ký tài khoản cho người dùng mới.
 public class AuthService {
 
-    private final UserRepository userRepository;
+    private final UsersRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     // Xác thực tài khoản và trả về JWT kèm thông tin người dùng đăng nhập.
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
+        Users user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BadRequestException("Sai email hoặc mật khẩu"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadRequestException("Sai email hoặc mật khẩu");
         }
-        if (user.getStatus() != User.Status.active) {
+        if (user.getStatus() != Users.Status.active) {
             throw new BadRequestException("Tài khoản đã bị khóa");
         }
         if (user.getRoleId() == 2 && !Boolean.TRUE.equals(user.getApproved())) {
@@ -41,7 +41,7 @@ public class AuthService {
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRoleId());
         return AuthResponse.builder()
                 .token(token)
-                .user(UserDTO.Response.fromEntity(user))
+                .user(UsersDTO.Response.fromEntity(user))
                 .build();
     }
 
@@ -54,13 +54,13 @@ public class AuthService {
         }
 
         Integer selectedRoleId = request.getRoleId() != null ? request.getRoleId() : 3;
-        User user = User.builder()
+        Users user = Users.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .roleId(selectedRoleId)
                 .approved(selectedRoleId != 2)
-                .status(User.Status.active)
+                .status(Users.Status.active)
                 .build();
 
         userRepository.save(user);
@@ -80,3 +80,4 @@ public class AuthService {
         }
     }
 }
+

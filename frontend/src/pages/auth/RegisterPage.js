@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import toast from "react-hot-toast";
 import "./Auth.css";
 import "./RegisterPage.css";
@@ -16,7 +16,7 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirm) { toast.error("Mật khẩu xác nhận không khớp"); return; }
-    if (form.password.length < 6) { toast.error("Mật khẩu phải từ 6 ký tự"); return; }
+    if (!/^\d{4}$/.test(form.password)) { toast.error("Mật khẩu phải gồm đúng 4 chữ số"); return; }
     setLoading(true);
     try {
       const res = await register({ name: form.name, email: form.email, password: form.password, roleId: Number(form.roleId) });
@@ -68,8 +68,9 @@ export default function RegisterPage() {
             </div>
             <div className="form-group">
               <label>Mật khẩu</label>
-              <input type="password" placeholder="Tối thiểu 6 ký tự"
+              <input type="password" placeholder="Gồm đúng 4 chữ số"
                 value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required />
+              <p className="note-text">Mật khẩu phải gồm đúng 4 chữ số.</p>
             </div>
             <div className="form-group">
               <label>Xác nhận mật khẩu</label>

@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import api from "../../api/axios";
+import { quizService } from "../../services/quizService";
+import { buildQuizSections } from "../../utils/quiz";
+import { formatCountdown } from "../../utils/format";
 import toast from "react-hot-toast";
-import "./Student.css";
 import "./TakeQuiz.css";
 
 export default function TakeQuiz() {
@@ -18,12 +19,13 @@ export default function TakeQuiz() {
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const timerRef = useRef(null);
 
   useEffect(() => {
-    api.get(`/student/quiz/${quizId}`)
+    quizService.getStudentQuiz(quizId)
       .then((response) => {
-        const { quiz: quizData, groups: groupData, questions: questionData } = response.data.data;
+        const { quiz: quizData, groups: groupData, questions: questionData } = response;
         setQuiz(quizData);
         setGroups(groupData || []);
         setQuestions(questionData || []);
@@ -31,9 +33,12 @@ export default function TakeQuiz() {
           setTimeLeft(quizData.timeLimit * 60);
         }
       })
-      .catch(() => toast.error("Không thể tải bài kiểm tra"))
+      .catch((error) => {
+        toast.error(error.response?.data?.message || "Không thể tải bài kiểm tra");
+        navigate("/student/exercises");
+      })
       .finally(() => setLoading(false));
-  }, [quizId]);
+  }, [quizId, navigate]);
 
   // Bộ đếm ngược thời gian và tự nộp khi hết giờ.
   useEffect(() => {
@@ -49,26 +54,29 @@ export default function TakeQuiz() {
     return () => clearTimeout(timerRef.current);
   }, [timeLeft, submitted]);
 
-  const formatTime = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
   const handleAnswer = (questionId, answer) => setAnswers((current) => ({ ...current, [questionId]: answer }));
-  const ungroupedQuestions = questions.filter((question) => !question.groupId || !groups.some((group) => group.id === question.groupId));
-  const groupedQuestionCount = groups.reduce((total, group) => (
-    total + questions.filter((question) => question.groupId === group.id).length
-  ), 0);
+  const sections = buildQuizSections(groups, questions);
 
   const handleSubmit = async () => {
+    if (submitting || submitted) {
+      return;
+    }
+
     clearTimeout(timerRef.current);
+    setSubmitting(true);
     try {
       // Gửi câu trả lời lên backend để lưu submission và chấm phần auto-grade nhất quán với results page.
-      const response = await api.post(`/student/quiz/${quizId}/submit`, {
+      const response = await quizService.submitStudentQuiz(quizId, {
         answers,
         timeSpent: quiz?.timeLimit && timeLeft != null ? (quiz.timeLimit * 60) - timeLeft : null,
       });
-      setResult(response.data.data);
+      setResult(response);
       setSubmitted(true);
       toast.success("Đã nộp bài");
-    } catch {
-      toast.error("Không thể nộp bài");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Không thể nộp bài");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -112,7 +120,7 @@ export default function TakeQuiz() {
           <p>{quiz.examPart}</p>
         </div>
         <div className={`quiz-timer ${timeLeft !== null && timeLeft < 300 ? "take-quiz__timer--danger" : ""}`}>
-          {timeLeft !== null && <><span>⏱</span><span className="timer-display">{formatTime(timeLeft)}</span></>}
+          {timeLeft !== null && <><span>⏱</span><span className="timer-display">{formatCountdown(timeLeft)}</span></>}
         </div>
       </div>
 
@@ -134,26 +142,37 @@ export default function TakeQuiz() {
 
       {/* Phần nội dung câu hỏi theo group hoặc danh sách phẳng. */}
       <div className="questions-section">
-        {groups.map((group) => (
-          <div key={group.id} className="question-group-block">
-            {group.passageText && <div className="group-passage"><p>{group.passageText}</p></div>}
-            {group.imageUrl && <img src={group.imageUrl} alt="Question" className="question-image" />}
-            {group.audioUrl && <audio controls src={group.audioUrl} className="take-quiz__group-audio" />}
-            {group.instructions && <p className="group-instructions">{group.instructions}</p>}
-            {questions.filter((question) => question.groupId === group.id).map((question, index) => (
-              <QuestionItem key={question.id} q={question} index={index} answers={answers} onAnswer={handleAnswer} />
-            ))}
-          </div>
-        ))}
+        {sections.map((section, sectionIndex) => {
+          const previousQuestionCount = sections
+            .slice(0, sectionIndex)
+            .reduce((total, currentSection) => total + currentSection.questions.length, 0);
 
-        {ungroupedQuestions.map((question, index) => (
-          <QuestionItem key={question.id} q={question} index={(groups.length > 0 ? groupedQuestionCount : 0) + index} answers={answers} onAnswer={handleAnswer} />
-        ))}
+          return (
+            <div key={section.key} className="question-group-block">
+              {section.group?.title && <h4>{section.group.title}</h4>}
+              {section.group?.passageText && <div className="group-passage"><p>{section.group.passageText}</p></div>}
+              {section.group?.imageUrl && <img src={section.group.imageUrl} alt="Question group" className="question-image" />}
+              {section.group?.audioUrl && <audio controls src={section.group.audioUrl} className="take-quiz__group-audio" />}
+              {section.group?.instructions && <p className="group-instructions">{section.group.instructions}</p>}
+              {section.questions.map((question, index) => (
+                <QuestionItem
+                  key={question.id}
+                  q={question}
+                  index={previousQuestionCount + index}
+                  answers={answers}
+                  onAnswer={handleAnswer}
+                />
+              ))}
+            </div>
+          );
+        })}
       </div>
 
       <div className="quiz-footer">
         <p className="take-quiz__answered-count">Đã trả lời: {Object.keys(answers).length}/{questions.length} câu</p>
-        <button className="btn btn-primary" onClick={handleSubmit}>Nộp bài ✅</button>
+        <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
+          {submitting ? <span className="spinner" /> : "Nộp bài ✅"}
+        </button>
       </div>
     </div>
   );
@@ -187,6 +206,16 @@ function QuestionItem({ q, index, answers, onAnswer }) {
 
       {q.questionType === "fill_blank" && (
         <input className="fill-blank-input" placeholder="Nhập câu trả lời..." value={answers[q.id] || ""} onChange={(event) => onAnswer(q.id, event.target.value)} />
+      )}
+
+      {q.questionType === "matching" && (
+        <textarea
+          className="writing-area"
+          rows={4}
+          placeholder="Nhập kết quả nối cột hoặc đáp án tương ứng..."
+          value={answers[q.id] || ""}
+          onChange={(event) => onAnswer(q.id, event.target.value)}
+        />
       )}
 
       {q.questionType === "writing" && (

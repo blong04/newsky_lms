@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
+import { classService } from "../../services/classService";
+import { notificationService } from "../../services/notificationService";
+import { userService } from "../../services/userService";
+import { NOTIFICATION_TYPE_ICONS, TEACHER_NOTIFICATION_TYPE_OPTIONS } from "../../constants/notifications";
 import toast from "react-hot-toast";
-import "../admin/Admin.css";
-import "./Teacher.css";
 import "./Notifications.css";
 
 const INITIAL_FORM = {
@@ -11,14 +12,6 @@ const INITIAL_FORM = {
   targetClassId: "",
   targetUserId: "",
   type: "course",
-};
-
-const TYPE_ICON = {
-  course: "📚",
-  schedule: "📅",
-  assignment: "📋",
-  system: "⚙️",
-  announcement: "📣",
 };
 
 export default function TeacherNotifications() {
@@ -32,9 +25,9 @@ export default function TeacherNotifications() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    api.get("/teacher/classes").then((response) => setClasses(response.data.data || [])).catch(() => setClasses([]));
-    api.get("/users")
-      .then((response) => setUsers((response.data.data || []).filter((account) => account.roleId === 3)))
+    classService.getTeacherClasses().then((response) => setClasses(response || [])).catch(() => setClasses([]));
+    userService.getAll()
+      .then((response) => setUsers((response || []).filter((account) => account.roleId === 3)))
       .catch(() => setUsers([]));
     fetchInbox();
   }, []);
@@ -43,8 +36,8 @@ export default function TeacherNotifications() {
   const fetchInbox = async () => {
     setLoading(true);
     try {
-      const response = await api.get("/notifications/my").catch(() => ({ data: { data: [] } }));
-      setMyNotifications(response.data.data || []);
+      const response = await notificationService.getMine().catch(() => []);
+      setMyNotifications(response || []);
     } catch {
       setMyNotifications([]);
     } finally {
@@ -70,7 +63,7 @@ export default function TeacherNotifications() {
     setSending(true);
 
     try {
-      await api.post("/teacher/notifications/send", form);
+      await notificationService.sendTeacher(form);
       toast.success("Đã gửi thông báo thành công");
       setForm(INITIAL_FORM);
     } catch {
@@ -123,10 +116,9 @@ export default function TeacherNotifications() {
                   onChange={(event) => setForm({ ...form, type: event.target.value })}
                   className="filter-select teacher-notifications__field"
                 >
-                  <option value="course">📚 Về khóa học</option>
-                  <option value="schedule">📅 Về lịch học</option>
-                  <option value="assignment">📋 Về bài tập</option>
-                  <option value="announcement">📣 Thông báo chung</option>
+                  {TEACHER_NOTIFICATION_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
 
@@ -218,7 +210,7 @@ export default function TeacherNotifications() {
           ) : (
             myNotifications.map((notification) => (
               <article key={notification.id} className={`notif-item ${!notification.read ? "unread" : ""}`}>
-                <div className="notif-icon">{TYPE_ICON[notification.type] || "🔔"}</div>
+                <div className="notif-icon">{NOTIFICATION_TYPE_ICONS[notification.type] || "🔔"}</div>
                 <div className="teacher-notifications__message">
                   <div className="teacher-notifications__message-head">
                     <p className={`teacher-notifications__message-title ${!notification.read ? "teacher-notifications__message-title--unread" : ""}`}>

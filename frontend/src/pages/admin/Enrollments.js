@@ -1,28 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
+import { classService } from "../../services/classService";
+import { courseService } from "../../services/courseService";
+import { enrollmentService } from "../../services/enrollmentService";
+import { userService } from "../../services/userService";
+import { ENROLLMENT_STATUS_BADGES, ENROLLMENT_STATUS_LABELS } from "../../constants/enrollments";
+import { getExamBadgeClass } from "../../constants/courses";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import toast from "react-hot-toast";
-import "./Admin.css";
 import "./Enrollments.css";
-
-const PAGE_SIZE = 10;
-
-const STATUS_BADGE = {
-  pending: "badge-yellow",
-  approved: "badge-green",
-  rejected: "badge-red",
-  enrolled: "badge-blue",
-  completed: "badge-gray",
-  dropped: "badge-red",
-};
-
-const STATUS_LABEL = {
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  rejected: "Từ chối",
-  enrolled: "Đang học",
-  completed: "Hoàn thành",
-  dropped: "Đã hủy",
-};
 
 export default function AdminEnrollments() {
   // State dữ liệu gốc lấy từ backend.
@@ -41,17 +26,17 @@ export default function AdminEnrollments() {
   const loadAll = async () => {
     setLoading(true);
     try {
-      const [enrollmentResponse, userResponse, courseResponse, classResponse] = await Promise.all([
-        api.get("/enrollments"),
-        api.get("/users"),
-        api.get("/courses"),
-        api.get("/admin/classes"),
+      const [enrollmentData, userData, courseData, classData] = await Promise.all([
+        enrollmentService.getAll(),
+        userService.getAll(),
+        courseService.getAll(),
+        classService.getAdminClasses(),
       ]);
 
-      setEnrollments(enrollmentResponse.data.data || []);
-      setUsers(userResponse.data.data || []);
-      setCourses(courseResponse.data.data || []);
-      setClasses(classResponse.data.data || []);
+      setEnrollments(enrollmentData || []);
+      setUsers(userData || []);
+      setCourses(courseData || []);
+      setClasses(classData || []);
     } catch (error) {
       console.error("Enrollment load error:", error);
       toast.error("Không thể tải dữ liệu đăng ký");
@@ -85,15 +70,15 @@ export default function AdminEnrollments() {
     })
   ), [enrollments, users, courses, statusFilter, search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredEnrollments.length / PAGE_SIZE));
-  const paginatedEnrollments = filteredEnrollments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredEnrollments.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedEnrollments = filteredEnrollments.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
 
   const pendingCount = enrollments.filter((enrollment) => enrollment.status === "pending").length;
   const paidCount = enrollments.filter((enrollment) => enrollment.paid).length;
 
   const handleApprove = async (id) => {
     try {
-      await api.put(`/admin/enrollments/${id}/approve`);
+      await enrollmentService.approve(id);
       toast.success("Đã duyệt đăng ký");
       loadAll();
     } catch {
@@ -107,7 +92,7 @@ export default function AdminEnrollments() {
     }
 
     try {
-      await api.put(`/enrollments/${id}`, { status: "rejected" });
+      await enrollmentService.updateStatus(id, { status: "rejected" });
       toast.success("Đã từ chối đăng ký");
       loadAll();
     } catch {
@@ -212,7 +197,7 @@ export default function AdminEnrollments() {
                         <td>
                           <p className="admin-enrollments__name">{course?.title || `ID: ${enrollment.courseId}`}</p>
                           {course && (
-                            <span className={`badge ${course.examType === "IELTS" ? "badge-blue" : course.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                            <span className={`badge ${getExamBadgeClass(course.examType)}`}>
                               {course.examType}
                             </span>
                           )}
@@ -231,8 +216,8 @@ export default function AdminEnrollments() {
                           )}
                         </td>
                         <td>
-                          <span className={`badge ${STATUS_BADGE[enrollment.status] || "badge-gray"}`}>
-                            {STATUS_LABEL[enrollment.status] || enrollment.status}
+                          <span className={`badge ${ENROLLMENT_STATUS_BADGES[enrollment.status] || "badge-gray"}`}>
+                            {ENROLLMENT_STATUS_LABELS[enrollment.status] || enrollment.status}
                           </span>
                         </td>
                         <td>
@@ -252,10 +237,10 @@ export default function AdminEnrollments() {
               </tbody>
             </table>
 
-            {filteredEnrollments.length > PAGE_SIZE && (
+            {filteredEnrollments.length > DEFAULT_TABLE_PAGE_SIZE && (
               <div className="pagination">
                 <span className="pagination-info">
-                  {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, filteredEnrollments.length)} / {filteredEnrollments.length}
+                  {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredEnrollments.length)} / {filteredEnrollments.length}
                 </span>
                 <div className="pagination-btns">
                   <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>

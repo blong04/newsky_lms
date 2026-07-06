@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../../api/axios";
+import { dashboardService } from "../../services/dashboardService";
 import {
   BarChart,
   Bar,
@@ -10,7 +10,6 @@ import {
   CartesianGrid,
   Cell,
 } from "recharts";
-import "./Admin.css";
 import "./Dashboard.css";
 
 const FALLBACK_STATS = {
@@ -53,8 +52,8 @@ export default function AdminDashboard() {
 
   // Load số liệu hệ thống khi vào dashboard.
   useEffect(() => {
-    api.get("/admin/stats")
-      .then((response) => setStats(response.data.data || FALLBACK_STATS))
+    dashboardService.getAdminStats()
+      .then((response) => setStats(response || FALLBACK_STATS))
       .catch(() => setStats(FALLBACK_STATS))
       .finally(() => setLoading(false));
   }, []);

@@ -1,23 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
+import { classService } from "../../services/classService";
+import { ENROLLMENT_STATUS_BADGES, ENROLLMENT_STATUS_LABELS } from "../../constants/enrollments";
+import { getExamBadgeClass } from "../../constants/courses";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import toast from "react-hot-toast";
-import "../admin/Admin.css";
-import "./Teacher.css";
 import "./Students.css";
-
-const PAGE_SIZE = 10;
-
-const STATUS_LABEL = {
-  approved: "Đã duyệt",
-  enrolled: "Đang học",
-  completed: "Hoàn thành",
-};
-
-const STATUS_BADGE = {
-  approved: "badge-blue",
-  enrolled: "badge-green",
-  completed: "badge-gray",
-};
 
 export default function TeacherStudents() {
   // State dữ liệu cho bộ lọc học viên theo khóa và lớp.
@@ -36,14 +23,13 @@ export default function TeacherStudents() {
       setLoading(true);
 
       try {
-        const classResponse = await api.get("/teacher/classes");
-        const myClasses = classResponse.data.data || [];
+        const myClasses = await classService.getTeacherClasses();
         setClasses(myClasses);
 
         const enrollmentResponses = await Promise.all(
           myClasses.map((classroom) =>
-            api.get(`/teacher/classes/${classroom.id}/students`)
-              .then((response) => response.data.data || [])
+            classService.getTeacherClassStudents(classroom.id)
+              .then((response) => response || [])
               .catch(() => [])
           )
         );
@@ -91,8 +77,8 @@ export default function TeacherStudents() {
     })
   ), [enrollments, search, selectedCourse, selectedClass]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredEnrollments.length / PAGE_SIZE));
-  const paginatedEnrollments = filteredEnrollments.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filteredEnrollments.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedEnrollments = filteredEnrollments.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
 
   return (
     <div className="admin-page fade-in teacher-students">
@@ -190,7 +176,7 @@ export default function TeacherStudents() {
                         <td>
                           {enrollment.courseName ? (
                             <div className="teacher-students__course">
-                              <span className={`badge ${enrollment.examType === "IELTS" ? "badge-blue" : enrollment.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                              <span className={`badge ${getExamBadgeClass(enrollment.examType)}`}>
                                 {enrollment.examType}
                               </span>
                               <span className="teacher-students__course-title">{enrollment.courseName}</span>
@@ -200,8 +186,8 @@ export default function TeacherStudents() {
                           )}
                         </td>
                         <td>
-                          <span className={`badge ${STATUS_BADGE[enrollment.status] || "badge-gray"}`}>
-                            {STATUS_LABEL[enrollment.status] || enrollment.status}
+                          <span className={`badge ${ENROLLMENT_STATUS_BADGES[enrollment.status] || "badge-gray"}`}>
+                            {ENROLLMENT_STATUS_LABELS[enrollment.status] || enrollment.status}
                           </span>
                         </td>
                       </tr>
@@ -211,10 +197,10 @@ export default function TeacherStudents() {
               </tbody>
             </table>
 
-            {filteredEnrollments.length > PAGE_SIZE && (
+            {filteredEnrollments.length > DEFAULT_TABLE_PAGE_SIZE && (
               <div className="pagination">
                 <span className="pagination-info">
-                  {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, filteredEnrollments.length)} / {filteredEnrollments.length}
+                  {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredEnrollments.length)} / {filteredEnrollments.length}
                 </span>
                 <div className="pagination-btns">
                   <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>

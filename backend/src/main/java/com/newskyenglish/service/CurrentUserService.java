@@ -17,6 +17,11 @@ public class CurrentUserService {
         return jwtUtil.extractUserId(extractToken(authorizationHeader));
     }
 
+    // Dùng khi service cần biết role hiện tại để phân quyền chi tiết theo resource.
+    public Integer extractRoleId(String authorizationHeader) {
+        return jwtUtil.extractRoleId(extractToken(authorizationHeader));
+    }
+
     // Chuẩn hóa cách bóc token Bearer từ header trước khi decode JWT.
     private String extractToken(String authorizationHeader) {
         if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {

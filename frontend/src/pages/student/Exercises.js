@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import api from "../../api/axios";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
+import { assignmentService } from "../../services/assignmentService";
+import { enrollmentService } from "../../services/enrollmentService";
+import { quizService } from "../../services/quizService";
+import { ACTIVE_ENROLLMENT_STATUSES } from "../../constants/enrollments";
+import { buildMapByNumericField } from "../../utils/collection";
+import { isDeadlineExpired, isDeadlineNear } from "../../utils/schedule";
 import toast from "react-hot-toast";
-import "../admin/Admin.css";
-import "./Student.css";
 import "./Exercises.css";
 
 export default function StudentExercises() {
@@ -28,34 +31,36 @@ export default function StudentExercises() {
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [enrollmentResponse, assignmentResponse, quizResponse, quizSubmitResponse, assignmentSubmitResponse] = await Promise.all([
-          api.get("/student/enrollments").catch(() => ({ data: { data: [] } })),
-          api.get("/assignments").catch(() => ({ data: { data: [] } })),
-          api.get("/quizzes").catch(() => ({ data: { data: [] } })),
-          api.get(`/quizzes/submissions/user/${user.id}`).catch(() => ({ data: { data: [] } })),
-          api.get(`/assignments/submit/user/${user.id}`).catch(() => ({ data: { data: [] } })),
+        const [enrollmentData, assignmentData, quizData, quizSubmitData, assignmentSubmitData] = await Promise.all([
+          enrollmentService.getStudentEnrollments().catch(() => []),
+          assignmentService.getAll().catch(() => []),
+          quizService.getAll().catch(() => []),
+          quizService.getUserSubmissions(user.id).catch(() => []),
+          assignmentService.getUserSubmissions(user.id).catch(() => []),
         ]);
 
-        const activeEnrollments = (enrollmentResponse.data.data || []).filter((item) =>
-          ["approved", "enrolled", "completed"].includes(item.status)
+        const activeEnrollments = (enrollmentData || []).filter((item) =>
+          ACTIVE_ENROLLMENT_STATUSES.includes(item.status)
         );
         const classIds = new Set(activeEnrollments.map((item) => Number(item.classId)).filter(Boolean));
-        const allAssignments = (assignmentResponse.data.data || []).filter((assignment) => classIds.has(Number(assignment.classId)));
-        const allQuizzes = (quizResponse.data.data || []).filter((quiz) => classIds.has(Number(quiz.classId)));
-        const myQuizSubmissions = quizSubmitResponse.data.data || [];
-        const myAssignmentSubmissions = assignmentSubmitResponse.data.data || [];
+        const allAssignments = (assignmentData || []).filter((assignment) => classIds.has(Number(assignment.classId)));
+        const allQuizzes = (quizData || []).filter((quiz) => classIds.has(Number(quiz.classId)));
+        const myQuizSubmissions = quizSubmitData || [];
+        const myAssignmentSubmissions = assignmentSubmitData || [];
+        const quizSubmissionMap = buildMapByNumericField(myQuizSubmissions, "quizId");
+        const assignmentSubmissionMap = buildMapByNumericField(myAssignmentSubmissions, "assignId");
 
         setQuizzes(allQuizzes.map((quiz) => ({
           ...quiz,
-          completed: myQuizSubmissions.some((submission) => Number(submission.quizId || submission.QuizID) === Number(quiz.id)),
-          score: myQuizSubmissions.find((submission) => Number(submission.quizId || submission.QuizID) === Number(quiz.id))?.score ?? null,
+          completed: Boolean(quizSubmissionMap[Number(quiz.id)]),
+          score: quizSubmissionMap[Number(quiz.id)]?.score ?? null,
         })));
 
         setAssignments(allAssignments.map((assignment) => ({
           ...assignment,
-          submitted: myAssignmentSubmissions.some((submission) => Number(submission.assignId || submission.AssignID) === Number(assignment.id)),
-          score: myAssignmentSubmissions.find((submission) => Number(submission.assignId || submission.AssignID) === Number(assignment.id))?.score ?? null,
-          comment: myAssignmentSubmissions.find((submission) => Number(submission.assignId || submission.AssignID) === Number(assignment.id))?.comment ?? null,
+          submitted: Boolean(assignmentSubmissionMap[Number(assignment.id)]),
+          score: assignmentSubmissionMap[Number(assignment.id)]?.score ?? null,
+          comment: assignmentSubmissionMap[Number(assignment.id)]?.comment ?? null,
         })));
       } catch (error) {
         console.error(error);
@@ -67,15 +72,6 @@ export default function StudentExercises() {
     fetchAll();
   }, [user]);
 
-  const isExpired = (deadline) => deadline && new Date(deadline) < new Date();
-  const isNearDeadline = (deadline) => {
-    if (!deadline) {
-      return false;
-    }
-    const diff = new Date(deadline) - new Date();
-    return diff > 0 && diff < 48 * 60 * 60 * 1000;
-  };
-
   const handleSubmit = async () => {
     if (!submitContent.trim()) {
       toast.error("Nhập nội dung bài làm");
@@ -84,18 +80,18 @@ export default function StudentExercises() {
 
     setSubmitting(true);
     try {
-      await api.post(`/assignments/${submitModal.id}/submit`, { content: submitContent });
+      await assignmentService.submit(submitModal.id, { content: submitContent });
       toast.success("Nộp bài thành công");
       setSubmitModal(null);
       setSubmitContent("");
 
-      const response = await api.get(`/assignments/submit/user/${user.id}`).catch(() => ({ data: { data: [] } }));
-      const mySubmissions = response.data.data || [];
+      const mySubmissions = await assignmentService.getUserSubmissions(user.id).catch(() => []);
+      const assignmentSubmissionMap = buildMapByNumericField(mySubmissions, "assignId");
       setAssignments((current) => current.map((assignment) => ({
         ...assignment,
-        submitted: mySubmissions.some((submission) => Number(submission.AssignId || submission.assignId) === Number(assignment.id)),
-        score: mySubmissions.find((submission) => Number(submission.AssignId || submission.assignId) === Number(assignment.id))?.score ?? null,
-        comment: mySubmissions.find((submission) => Number(submission.AssignId || submission.assignId) === Number(assignment.id))?.comment ?? null,
+        submitted: Boolean(assignmentSubmissionMap[Number(assignment.id)]),
+        score: assignmentSubmissionMap[Number(assignment.id)]?.score ?? null,
+        comment: assignmentSubmissionMap[Number(assignment.id)]?.comment ?? null,
       })));
     } catch {
       toast.error("Không thể nộp bài");
@@ -126,9 +122,9 @@ export default function StudentExercises() {
             <div className="empty-state"><p>Chưa có bài tập nào</p></div>
           ) : (
             assignments.map((assignment) => {
-              const expired = isExpired(assignment.deadline || assignment.HanNop);
-              const nearDeadline = isNearDeadline(assignment.deadline || assignment.HanNop);
-              const deadline = assignment.deadline || assignment.HanNop;
+              const expired = isDeadlineExpired(assignment.deadline);
+              const nearDeadline = isDeadlineNear(assignment.deadline);
+              const deadline = assignment.deadline;
 
               return (
                 <article
@@ -137,29 +133,29 @@ export default function StudentExercises() {
                 >
                   <div className="student-exercises__main">
                     <div className="student-exercises__badge-row">
-                      <span className={`badge ${(assignment.examType || assignment.ExamType) === "IELTS" ? "badge-blue" : (assignment.examType || assignment.ExamType) === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                        {assignment.examType || assignment.ExamType}
+                      <span className={`badge ${assignment.examType === "IELTS" ? "badge-blue" : assignment.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                        {assignment.examType || "Khác"}
                       </span>
-                      <span className="badge badge-orange">{assignment.examPart || assignment.ExamPart || assignment.type || assignment.Loai}</span>
+                      <span className="badge badge-orange">{assignment.examPart || assignment.type || "Bài tập"}</span>
                       {nearDeadline && !expired && <span className="badge badge-yellow">⚠️ Sắp hết hạn</span>}
                       {expired && <span className="badge badge-red">❌ Hết hạn</span>}
                       {assignment.submitted && <span className="badge badge-green">✅ Đã nộp</span>}
                     </div>
 
-                    <h4 className="student-exercises__title">{assignment.title || assignment.TieuDe}</h4>
+                    <h4 className="student-exercises__title">{assignment.title}</h4>
                     <p className="student-exercises__description">
-                      {(assignment.description || assignment.MoTa || "")?.slice(0, 120)}
-                      {(assignment.description || assignment.MoTa || "")?.length > 120 ? "..." : ""}
+                      {(assignment.description || "")?.slice(0, 120)}
+                      {(assignment.description || "")?.length > 120 ? "..." : ""}
                     </p>
 
                     <div className="student-exercises__meta">
-                      <span>🏆 Điểm tối đa: {assignment.maxScore || assignment.DiemToiDa}</span>
+                      <span>🏆 Điểm tối đa: {assignment.maxScore}</span>
                       {deadline && (
                         <span className={expired ? "student-exercises__meta-alert--danger" : nearDeadline ? "student-exercises__meta-alert--warning" : ""}>
                           ⏰ Hạn: {new Date(deadline).toLocaleString("vi-VN")}
                         </span>
                       )}
-                      {assignment.score != null && <span className="student-exercises__score">Điểm: {assignment.score}/{assignment.maxScore || assignment.DiemToiDa}</span>}
+                      {assignment.score != null && <span className="student-exercises__score">Điểm: {assignment.score}/{assignment.maxScore}</span>}
                     </div>
 
                     {assignment.comment && <div className="student-exercises__comment">💬 Nhận xét: {assignment.comment}</div>}
@@ -187,20 +183,20 @@ export default function StudentExercises() {
               <article key={quiz.id} className="student-exercises__card student-exercises__card--normal">
                 <div className="student-exercises__main">
                   <div className="student-exercises__badge-row">
-                    <span className={`badge ${(quiz.examType || quiz.exam_type) === "IELTS" ? "badge-blue" : (quiz.examType || quiz.exam_type) === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                      {quiz.examType || quiz.exam_type}
+                    <span className={`badge ${quiz.examType === "IELTS" ? "badge-blue" : quiz.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                      {quiz.examType || "Khác"}
                     </span>
-                    <span className="badge badge-purple">{quiz.examPart || quiz.exam_part}</span>
+                    <span className="badge badge-purple">{quiz.examPart || "Quiz"}</span>
                     {quiz.timeLimit && <span className="badge badge-yellow">⏱ {quiz.timeLimit} phút</span>}
                     {quiz.completed && <span className="badge badge-green">✅ Đã làm</span>}
                   </div>
 
-                  <h4 className="student-exercises__title">{quiz.title || quiz.TieuDe}</h4>
+                  <h4 className="student-exercises__title">{quiz.title}</h4>
                   {quiz.score != null && (
                     <p className="student-exercises__quiz-score">
                       Điểm: {quiz.score}/100
-                      {(quiz.examType || quiz.exam_type) === "IELTS" && ` (Band ~${(quiz.score / 100 * 9).toFixed(1)})`}
-                      {(quiz.examType || quiz.exam_type) === "TOEIC" && ` (~${Math.round(quiz.score / 100 * 990)}/990)`}
+                      {quiz.examType === "IELTS" && ` (Band ~${(quiz.score / 100 * 9).toFixed(1)})`}
+                      {quiz.examType === "TOEIC" && ` (~${Math.round(quiz.score / 100 * 990)}/990)`}
                     </p>
                   )}
                 </div>
@@ -223,23 +219,23 @@ export default function StudentExercises() {
         <div className="modal-overlay" onClick={() => setSubmitModal(null)}>
           <div className="modal student-exercises__submit-modal" onClick={(event) => event.stopPropagation()}>
             <div className="modal-header">
-              <h3>📤 Nộp bài — {submitModal.title || submitModal.TieuDe}</h3>
+              <h3>📤 Nộp bài — {submitModal.title}</h3>
               <button className="modal-close" onClick={() => setSubmitModal(null)}>✕</button>
             </div>
             <div className="modal-body">
-              <div className="student-exercises__prompt-box">{submitModal.description || submitModal.MoTa}</div>
+              <div className="student-exercises__prompt-box">{submitModal.description}</div>
               <div className="form-group">
                 <label>Bài làm của bạn</label>
                 <textarea
                   rows={8}
                   value={submitContent}
                   onChange={(event) => setSubmitContent(event.target.value)}
-                  placeholder={(submitModal.type || submitModal.Loai) === "speaking" ? "Mô tả bài nói hoặc dán link recording..." : "Viết bài của bạn tại đây..."}
+                  placeholder={submitModal.type === "speaking" ? "Mô tả bài nói hoặc dán link recording..." : "Viết bài của bạn tại đây..."}
                   className="student-exercises__textarea"
                 />
               </div>
               <p className="student-exercises__deadline">
-                Hạn nộp: {submitModal.deadline || submitModal.HanNop ? new Date(submitModal.deadline || submitModal.HanNop).toLocaleString("vi-VN") : "Không giới hạn"}
+                Hạn nộp: {submitModal.deadline ? new Date(submitModal.deadline).toLocaleString("vi-VN") : "Không giới hạn"}
               </p>
             </div>
             <div className="modal-footer">

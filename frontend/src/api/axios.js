@@ -19,10 +19,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   (err) => {
-    if (err.response?.status === 401) {
+    const hadToken = Boolean(localStorage.getItem("token"));
+    if (err.response?.status === 401 && hadToken) {
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+      window.location.href = "/";
     }
     return Promise.reject(err);
   }

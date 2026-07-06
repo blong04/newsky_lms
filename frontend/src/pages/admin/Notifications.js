@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import api from "../../api/axios";
+import { notificationService } from "../../services/notificationService";
+import { userService } from "../../services/userService";
+import { ADMIN_NOTIFICATION_TYPE_OPTIONS } from "../../constants/notifications";
 import toast from "react-hot-toast";
-import "./Admin.css";
 import "./Notifications.css";
 
 const INITIAL_FORM = {
@@ -11,13 +12,6 @@ const INITIAL_FORM = {
   targetUserId: "",
   type: "announcement",
 };
-
-const TYPE_OPTIONS = [
-  { value: "announcement", label: "📣 Thông báo chung" },
-  { value: "system", label: "⚙️ Hệ thống" },
-  { value: "course", label: "📚 Khóa học" },
-  { value: "schedule", label: "📅 Lịch học" },
-];
 
 export default function AdminNotifications() {
   // State dữ liệu người dùng để chọn đối tượng nhận.
@@ -31,8 +25,8 @@ export default function AdminNotifications() {
   const [history] = useState([]);
 
   useEffect(() => {
-    api.get("/users")
-      .then((response) => setUsers(response.data.data || []))
+    userService.getAll()
+      .then((response) => setUsers(response || []))
       .catch(() => setUsers([]));
   }, []);
 
@@ -66,7 +60,7 @@ export default function AdminNotifications() {
     setSending(true);
 
     try {
-      await api.post("/admin/notifications/send", {
+      await notificationService.sendAdmin({
         title: form.title,
         content: form.content,
         type: form.type,
@@ -113,7 +107,7 @@ export default function AdminNotifications() {
               <p className="admin-notifications__section-kicker">Compose</p>
               <h3 className="section-title">Soạn thông báo</h3>
             </div>
-            <span className="badge badge-blue">{TYPE_OPTIONS.find((item) => item.value === form.type)?.label}</span>
+            <span className="badge badge-blue">{ADMIN_NOTIFICATION_TYPE_OPTIONS.find((item) => item.value === form.type)?.label}</span>
           </div>
 
           <div className="admin-notifications__form-grid">
@@ -124,7 +118,7 @@ export default function AdminNotifications() {
                 onChange={(event) => setForm({ ...form, type: event.target.value })}
                 className="filter-select admin-notifications__field"
               >
-                {TYPE_OPTIONS.map((option) => (
+                {ADMIN_NOTIFICATION_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
