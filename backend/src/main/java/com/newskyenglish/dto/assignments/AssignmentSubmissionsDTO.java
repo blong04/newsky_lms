@@ -19,6 +19,7 @@ public class AssignmentSubmissionsDTO {
     @Builder
     public static class SubmitRequest {
         private String content;
+        private String answersJson;
     }
 
     @Data
@@ -41,6 +42,7 @@ public class AssignmentSubmissionsDTO {
         private Long assignId;
         private Long userId;
         private String content;
+        private String answersJson;
         private BigDecimal score;
         private String comment;
         private AssignmentSubmissions.Status status;
@@ -54,6 +56,7 @@ public class AssignmentSubmissionsDTO {
                     .assignId(submission.getAssignId())
                     .userId(submission.getUserId())
                     .content(submission.getContent())
+                    .answersJson(submission.getAnswersJson())
                     .score(submission.getScore())
                     .comment(submission.getComment())
                     .status(submission.getStatus())

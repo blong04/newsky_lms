@@ -43,7 +43,7 @@ export default function AdminCourses() {
       setCourses(courseData || []);
       setTeachers(
         (userData || []).filter(
-          (user) => user.roleId === 2 && user.approved
+          (user) => user.roleId === 2
         )
       );
     } catch {

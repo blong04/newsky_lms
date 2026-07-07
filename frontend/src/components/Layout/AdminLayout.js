@@ -10,8 +10,9 @@ const navItems = [
   { to: "/admin/users", icon: "👥", label: "Người dùng" },
   { to: "/admin/courses", icon: "📚", label: "Khóa học" },
   { to: "/admin/classes", icon: "🏫", label: "Lớp học" },
-  { to: "/admin/quizzes", icon: "📝", label: "Bài kiểm tra" },
   { to: "/admin/enrollments", icon: "✅", label: "Đăng ký học" },
+  { to: "/admin/quizzes", icon: "📝", label: "Bài kiểm tra" },
+  { to: "/admin/tests", icon: "🧪", label: "Bài thi thử" },
   { to: "/admin/notifications", icon: "🔔", label: "Thông báo" },
 ];
 

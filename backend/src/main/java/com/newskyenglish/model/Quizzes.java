@@ -6,7 +6,7 @@ import lombok.*;
 @Entity
 @Table(name = "quizzes")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-// Entity biểu diễn bài quiz chính trước khi tách thành group và question.
+// Entity biểu diễn bài quiz chính; liên kết lớp học được quản lý qua bảng quiz_classes.
 public class Quizzes {
 
     @Id
@@ -46,8 +46,6 @@ public class Quizzes {
     @Column(name = "time_limit")
     private Integer timeLimit;
 
-    @Column(name = "class_id")
-    private Long classId;
     public enum QuizType { mcq, writing, speaking }
     public enum ExamType { IELTS, TOEIC, OTHER }
 }

@@ -43,6 +43,65 @@ public class TestsController {
         return ResponseEntity.ok(ApiResponse.success(testsService.getSubmissions(id)));
     }
 
+    // Lấy toàn bộ dữ liệu test để admin/teacher xem hoặc học viên xem lại sau khi nộp.
+    @GetMapping("/{id}/full")
+    public ResponseEntity<ApiResponse<TestsDTO.FullResponse>> getFullTest(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.getFullTest(id, authorizationHeader)
+        ));
+    }
+
+    // Lấy dữ liệu test cho học viên làm bài.
+    @GetMapping("/student/{id}")
+    public ResponseEntity<ApiResponse<TestsDTO.StudentTestResponse>> getStudentTest(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.getStudentTest(id, authorizationHeader)
+        ));
+    }
+
+    // Lấy danh sách test thuộc lớp mà giáo viên đang phụ trách.
+    @GetMapping("/teacher")
+    public ResponseEntity<ApiResponse<List<TestsDTO.Response>>> getTeacherTests(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.getTeacherTests(authorizationHeader)
+        ));
+    }
+
+    // Lấy lịch sử làm test của một học viên.
+    @GetMapping("/submissions/user/{userId}")
+    public ResponseEntity<ApiResponse<List<TestsDTO.SubmissionResponse>>> getUserSubmissions(
+            @PathVariable Long userId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.getUserSubmissions(userId, authorizationHeader)
+        ));
+    }
+
+    // Giáo viên xem lịch sử làm test của một học viên thuộc lớp mình.
+    @GetMapping("/teacher/students/{userId}/submissions")
+    public ResponseEntity<ApiResponse<List<TestsDTO.SubmissionResponse>>> getTeacherStudentSubmissions(
+            @PathVariable Long userId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.getTeacherStudentSubmissions(userId, authorizationHeader)
+        ));
+    }
+
+    // Lấy danh sách bài làm test cho giáo viên phụ trách lớp.
+    @GetMapping("/teacher/{id}/submissions")
+    public ResponseEntity<ApiResponse<List<TestsDTO.SubmissionResponse>>> getTeacherTestSubmissions(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.getTeacherTestSubmissions(id, authorizationHeader)
+        ));
+    }
+
     // Tạo mới một bài test full form.
     @PostMapping
     public ResponseEntity<ApiResponse<TestsDTO.Response>> create(@RequestBody @Valid TestsDTO.CreateRequest request) {
@@ -63,5 +122,29 @@ public class TestsController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         testsService.delete(id);
         return ResponseEntity.ok(ApiResponse.<Void>success(null, "Xóa test thành công"));
+    }
+
+    // Nhận đáp án của học viên, chấm tự động và lưu bài làm test.
+    @PostMapping("/student/{id}/submit")
+    public ResponseEntity<ApiResponse<TestsDTO.SubmitResultResponse>> submitStudentTest(
+            @PathVariable Long id,
+            @RequestBody @Valid TestsDTO.SubmitRequest request,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.submitStudentTest(id, request, authorizationHeader),
+                "Nộp bài thi thử thành công"
+        ));
+    }
+
+    // Giáo viên sửa điểm bài làm test khi cần chấm lại.
+    @PutMapping("/teacher/submissions/{submissionId}/grade")
+    public ResponseEntity<ApiResponse<TestsDTO.SubmissionResponse>> gradeTeacherSubmission(
+            @PathVariable Long submissionId,
+            @RequestBody @Valid TestsDTO.GradeSubmissionRequest request,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.gradeTeacherSubmission(submissionId, request, authorizationHeader),
+                "Cập nhật điểm bài làm thành công"
+        ));
     }
 }

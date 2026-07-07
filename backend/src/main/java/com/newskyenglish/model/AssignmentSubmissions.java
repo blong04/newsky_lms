@@ -25,6 +25,9 @@ public class AssignmentSubmissions {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "answers_json", columnDefinition = "LONGTEXT")
+    private String answersJson;
+
     @Column(name = "score", precision = 5, scale = 2)
     private BigDecimal score;
 

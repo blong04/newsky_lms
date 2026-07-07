@@ -107,6 +107,16 @@ public class AssignmentsController {
         ));
     }
 
+    // Giáo viên xem các bài tập đã nộp của một học viên thuộc lớp mình.
+    @GetMapping("/teacher/students/{userId}/assignments/submissions")
+    public ResponseEntity<ApiResponse<List<AssignmentSubmissionsDTO.Response>>> getTeacherStudentSubmissions(
+            @PathVariable Long userId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                assignmentService.getTeacherStudentSubmissions(userId, authorizationHeader)
+        ));
+    }
+
     // Nhận file hoặc nội dung bài làm của học viên và lưu thành submission.
     @PostMapping("/assignments/{id}/submit")
     public ResponseEntity<ApiResponse<AssignmentSubmissionsDTO.Response>> submit(

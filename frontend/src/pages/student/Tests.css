@@ -1,0 +1,128 @@
+.student-tests {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.student-tests__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(250px, 0.8fr);
+  gap: 18px;
+  padding: 24px 26px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(249, 115, 115, 0.18), transparent 30%),
+    linear-gradient(135deg, #fff7ed 0%, #ffffff 52%, #fef2f2 100%);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.student-tests__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ea580c;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.student-tests__subtitle {
+  margin-top: 8px;
+  color: var(--gray-600);
+  line-height: 1.7;
+}
+
+.student-tests__hero-card {
+  padding: 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.student-tests__hero-card span {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  text-transform: uppercase;
+}
+
+.student-tests__hero-card strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.5rem;
+  color: var(--gray-900);
+}
+
+.student-tests__list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.student-tests__card {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  border-left: 3px solid #f97373;
+}
+
+.student-tests__main {
+  flex: 1;
+}
+
+.student-tests__badge-row,
+.student-tests__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.student-tests__badge-row {
+  margin-bottom: 6px;
+}
+
+.student-tests__title {
+  color: var(--gray-900);
+  font-weight: 700;
+}
+
+.student-tests__description {
+  margin-top: 4px;
+  color: var(--gray-500);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.student-tests__meta {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--gray-500);
+}
+
+.student-tests__score {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.student-tests__actions {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .student-tests__hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .student-tests__card {
+    flex-direction: column;
+  }
+
+  .student-tests__actions .btn {
+    width: 100%;
+  }
+}

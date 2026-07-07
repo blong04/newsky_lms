@@ -21,8 +21,8 @@ public class QuizSubmissions {
     @Column(name = "user_id")
     private Long userId;
 
-    @Column(name = "answers", columnDefinition = "TEXT")
-    private String answers;
+    @Column(name = "answers_json", columnDefinition = "LONGTEXT")
+    private String answersJson;
 
     @Column(name = "score")
     private Float score;

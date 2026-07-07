@@ -131,6 +131,50 @@
   color: var(--gray-500);
 }
 
+.teacher-students__detail-modal {
+  width: min(920px, calc(100vw - 32px));
+}
+
+.teacher-students__detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.teacher-students__detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.teacher-students__detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.teacher-students__detail-head h4 {
+  margin: 0;
+  color: var(--gray-900);
+}
+
+.teacher-students__detail-list {
+  display: grid;
+  gap: 10px;
+}
+
+.teacher-students__detail-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95));
+}
+
 @media (max-width: 960px) {
   .teacher-students__hero {
     grid-template-columns: 1fr;
@@ -140,5 +184,10 @@
 @media (max-width: 640px) {
   .teacher-students__hero {
     padding: 20px 18px;
+  }
+
+  .teacher-students__detail-card {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

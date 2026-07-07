@@ -7,8 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-// Repository truy vấn bài test full form theo lớp hoặc loại chứng chỉ.
+// Repository truy vấn bài thi thử theo loại chứng chỉ.
 public interface TestsRepository extends JpaRepository<Tests, Long> {
-    List<Tests> findByClassId(Long classId);
     List<Tests> findByExamType(String examType);
 }

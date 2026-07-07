@@ -158,6 +158,11 @@
   background: #eff6ff;
 }
 
+.student-results__answer-item--wrong {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
 .student-results__answer-item--correct {
   border-color: var(--success);
   background: var(--success-light);

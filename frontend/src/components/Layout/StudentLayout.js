@@ -10,6 +10,7 @@ const navItems = [
   { to: "/student/courses",      icon: "📚", label: "Khóa học"          },
   { to: "/student/schedule",     icon: "📅", label: "Lớp & Lịch học"    },
   { to: "/student/exercises",    icon: "📝", label: "Bài tập & Kiểm tra"},
+  { to: "/student/tests",        icon: "🧪", label: "Bài thi thử"       },
   { to: "/student/results",      icon: "🏆", label: "Kết quả"           },  
   { to: "/student/notifications",icon: "🔔", label: "Thông báo"         },
 ];

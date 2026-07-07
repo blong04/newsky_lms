@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { assignmentService } from "../../services/assignmentService";
 import { enrollmentService } from "../../services/enrollmentService";
 import { quizService } from "../../services/quizService";
+import { hasAnyLinkedClass } from "../../utils/assessment";
 import { ACTIVE_ENROLLMENT_STATUSES } from "../../constants/enrollments";
 import { buildMapByNumericField } from "../../utils/collection";
 import { isDeadlineExpired, isDeadlineNear } from "../../utils/schedule";
@@ -44,7 +45,7 @@ export default function StudentExercises() {
         );
         const classIds = new Set(activeEnrollments.map((item) => Number(item.classId)).filter(Boolean));
         const allAssignments = (assignmentData || []).filter((assignment) => classIds.has(Number(assignment.classId)));
-        const allQuizzes = (quizData || []).filter((quiz) => classIds.has(Number(quiz.classId)));
+        const allQuizzes = (quizData || []).filter((quiz) => hasAnyLinkedClass(quiz, classIds));
         const myQuizSubmissions = quizSubmitData || [];
         const myAssignmentSubmissions = assignmentSubmitData || [];
         const quizSubmissionMap = buildMapByNumericField(myQuizSubmissions, "quizId");

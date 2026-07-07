@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -32,15 +33,17 @@ public class QuizzesDTO {
         private String instructions;
         private Integer timeLimit;
         private Long classId;
+        private List<Long> classIds;
         private Long questionCount;
 
         // Dùng cho danh sách quiz và các màn tổng quan khi chưa cần đếm câu hỏi.
         public static Response fromEntity(Quizzes quiz) {
-            return fromEntity(quiz, null);
+            return fromEntity(quiz, List.of(), null);
         }
 
         // Dùng cho danh sách quiz có bổ sung metadata như số lượng câu hỏi.
-        public static Response fromEntity(Quizzes quiz, Long questionCount) {
+        public static Response fromEntity(Quizzes quiz, List<Long> classIds, Long questionCount) {
+            List<Long> normalizedClassIds = classIds != null ? classIds : Collections.emptyList();
             return Response.builder()
                     .id(quiz.getId())
                     .title(quiz.getTitle())
@@ -51,7 +54,8 @@ public class QuizzesDTO {
                     .audioUrl(quiz.getAudioUrl())
                     .instructions(quiz.getInstructions())
                     .timeLimit(quiz.getTimeLimit())
-                    .classId(quiz.getClassId())
+                    .classId(normalizedClassIds.isEmpty() ? null : normalizedClassIds.get(0))
+                    .classIds(normalizedClassIds)
                     .questionCount(questionCount)
                     .build();
         }
@@ -92,7 +96,6 @@ public class QuizzesDTO {
     @Builder
     public static class QuestionResponse {
         private Long id;
-        private Long quizId;
         private Long groupId;
         private String questionType;
         private String content;
@@ -108,7 +111,6 @@ public class QuizzesDTO {
         public static QuestionResponse fromEntity(Questions question) {
             return QuestionResponse.builder()
                     .id(question.getId())
-                    .quizId(question.getQuizId())
                     .groupId(question.getGroupId())
                     .questionType(question.getQuestionType())
                     .content(question.getContent())
@@ -129,7 +131,6 @@ public class QuizzesDTO {
     @Builder
     public static class QuestionDetailResponse {
         private Long id;
-        private Long quizId;
         private Long groupId;
         private String questionType;
         private String content;
@@ -147,7 +148,6 @@ public class QuizzesDTO {
         public static QuestionDetailResponse fromEntity(Questions question) {
             return QuestionDetailResponse.builder()
                     .id(question.getId())
-                    .quizId(question.getQuizId())
                     .groupId(question.getGroupId())
                     .questionType(question.getQuestionType())
                     .content(question.getContent())
@@ -198,7 +198,7 @@ public class QuizzesDTO {
         private Long id;
         private Long quizId;
         private Long userId;
-        private String answers;
+        private String answersJson;
         private Float score;
         private Integer timeSpent;
         private LocalDateTime submittedAt;
@@ -209,7 +209,7 @@ public class QuizzesDTO {
                     .id(submission.getId())
                     .quizId(submission.getQuizId())
                     .userId(submission.getUserId())
-                    .answers(submission.getAnswers())
+                    .answersJson(submission.getAnswersJson())
                     .score(submission.getScore())
                     .timeSpent(submission.getTimeSpent())
                     .submittedAt(submission.getSubmittedAt())

@@ -222,6 +222,11 @@
   background: #eff6ff;
 }
 
+.teacher-assignments__answer-item--wrong {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
 .teacher-assignments__answer-item--correct {
   border-color: var(--success);
   background: var(--success-light);

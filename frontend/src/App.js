@@ -11,17 +11,18 @@ import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
 
 // Admin
-import AdminLayout from "./components/Layout/AdminLayout";
+import AdminLayout from "./components/layout/AdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
 import AdminCourses from "./pages/admin/Courses";
 import AdminClasses from "./pages/admin/Classes";
 import AdminQuizzes from "./pages/admin/Quizzes";
+import AdminTests from "./pages/admin/Tests";
 import AdminEnrollments from "./pages/admin/Enrollments";
 import AdminNotifications from "./pages/admin/Notifications";
 
 // Teacher
-import TeacherLayout from "./components/Layout/TeacherLayout";
+import TeacherLayout from "./components/layout/TeacherLayout";
 import TeacherDashboard from "./pages/teacher/Dashboard";
 import TeacherClasses from "./pages/teacher/Classes";
 import TeacherAssignments from "./pages/teacher/Assignments";
@@ -29,10 +30,12 @@ import TeacherStudents from "./pages/teacher/Students";
 import TeacherNotifications from "./pages/teacher/Notifications";
 
 // Student
-import StudentLayout from "./components/Layout/StudentLayout";
+import StudentLayout from "./components/layout/StudentLayout";
 import StudentDashboard from "./pages/student/Dashboard";
 import StudentCourses from "./pages/student/Courses";
 import StudentQuiz from "./pages/student/TakeQuiz";
+import StudentTest from "./pages/student/TakeTest";
+import StudentTests from "./pages/student/Tests";
 import StudentSchedule from "./pages/student/Schedule";
 import StudentExercises from "./pages/student/Exercises";
 import StudentNotifications from "./pages/student/Notifications";
@@ -73,6 +76,7 @@ export default function App() {
           <Route path="courses" element={<AdminCourses />} />
           <Route path="classes" element={<AdminClasses />} />
           <Route path="quizzes" element={<AdminQuizzes />} />
+          <Route path="tests" element={<AdminTests />} />
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="enrollments" element={<AdminEnrollments />} />
         </Route>
@@ -91,6 +95,8 @@ export default function App() {
           <Route index element={<StudentDashboard />} />
           <Route path="courses" element={<StudentCourses />} />
           <Route path="quiz/:quizId" element={<StudentQuiz />} />
+          <Route path="tests" element={<StudentTests />} />
+          <Route path="test/:testId" element={<StudentTest />} />
           <Route path="schedule" element={<StudentSchedule />} />
           <Route path="exercises" element={<StudentExercises />} />
           <Route path="notifications" element={<StudentNotifications />} />

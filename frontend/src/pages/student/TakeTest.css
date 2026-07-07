@@ -1,0 +1,13 @@
+.take-test__timer--danger {
+  color: var(--danger);
+}
+
+.take-test__group-audio {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.take-test__answered-count {
+  font-size: 0.875rem;
+  color: var(--gray-500);
+}

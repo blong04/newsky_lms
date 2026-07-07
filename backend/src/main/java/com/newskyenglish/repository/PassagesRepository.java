@@ -11,5 +11,5 @@ import java.util.List;
 public interface PassagesRepository extends JpaRepository<Passages, Long> {
     List<Passages> findByQuizIdOrderByOrderNumAsc(Long quizId);
     List<Passages> findByAssignIdOrderByOrderNumAsc(Long assignId);
-    List<Passages> findByTestIdOrderByOrderNumAsc(Long testId);
+    List<Passages> findByMockTestIdOrderByOrderNumAsc(Long mockTestId);
 }

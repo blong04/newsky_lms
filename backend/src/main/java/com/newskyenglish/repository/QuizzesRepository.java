@@ -6,10 +6,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-// Repository truy vấn quiz theo lesson hoặc theo loại chứng chỉ.
+// Repository truy vấn quiz theo loại chứng chỉ hoặc danh sách id đã gắn qua bảng trung gian.
 public interface QuizzesRepository extends JpaRepository<Quizzes, Long> {
     List<Quizzes> findByExamType(Quizzes.ExamType examType);
-    List<Quizzes> findByClassId(Long classId);
-    List<Quizzes> findByClassIdIn(List<Long> classIds);
 }
 

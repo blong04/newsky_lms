@@ -3,9 +3,12 @@ import { useAuth } from "../../contexts/AuthContext";
 import { assignmentService } from "../../services/assignmentService";
 import { classService } from "../../services/classService";
 import { quizService } from "../../services/quizService";
+import { testService } from "../../services/testService";
 import { userService } from "../../services/userService";
+import { buildQuizSectionsForDisplay, buildTestSectionsForDisplay } from "../../utils/assessmentSections";
 import { TEACHER_ASSIGNMENT_PAGE_SIZE } from "../../constants/pagination";
-import { buildQuizSections, parseAnswerMap } from "../../utils/quiz";
+import { parseAnswerMap } from "../../utils/quiz";
+import { getAnswerReviewClass } from "../../utils/review";
 import toast from "react-hot-toast";
 import "./Assignments.css";
 
@@ -58,10 +61,13 @@ export default function TeacherAssignments() {
   const [classes, setClasses] = useState([]);
   const [assignments, setAssignments] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
+  const [tests, setTests] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [quizResults, setQuizResults] = useState([]);
+  const [testResults, setTestResults] = useState([]);
   const [users, setUsers] = useState([]);
   const [quizDetail, setQuizDetail] = useState(null);
+  const [testDetail, setTestDetail] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // State điều khiển modal, form và phân trang.
@@ -70,9 +76,12 @@ export default function TeacherAssignments() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [gradeForm, setGradeForm] = useState({ score: "", comment: "" });
   const [quizGradeForm, setQuizGradeForm] = useState({ score: "" });
+  const [testGradeForm, setTestGradeForm] = useState({ totalScore: "" });
   const [quizReviewModal, setQuizReviewModal] = useState(null);
+  const [testReviewModal, setTestReviewModal] = useState(null);
   const [assignPage, setAssignPage] = useState(1);
   const [quizPage, setQuizPage] = useState(1);
+  const [testPage, setTestPage] = useState(1);
 
   // Load dữ liệu khởi tạo cho teacher workspace.
   const fetchData = async () => {
@@ -83,16 +92,18 @@ export default function TeacherAssignments() {
     setLoading(true);
 
     try {
-      const [assignmentData, classData, userData, quizData] = await Promise.all([
+      const [assignmentData, classData, userData, quizData, testData] = await Promise.all([
         assignmentService.getTeacherAssignments(),
         classService.getTeacherClasses().catch(() => []),
         userService.getAll(),
         quizService.getTeacherQuizzes().catch(() => []),
+        testService.getTeacherTests().catch(() => []),
       ]);
 
       setClasses(classData || []);
       setAssignments(assignmentData || []);
       setQuizzes(dedupeById(quizData || []));
+      setTests(dedupeById(testData || []));
       setUsers(userData || []);
     } catch (error) {
       console.error(error);
@@ -110,6 +121,8 @@ export default function TeacherAssignments() {
   const paginatedAssignments = assignments.slice((assignPage - 1) * TEACHER_ASSIGNMENT_PAGE_SIZE, assignPage * TEACHER_ASSIGNMENT_PAGE_SIZE);
   const totalQuizPages = Math.max(1, Math.ceil(quizzes.length / TEACHER_ASSIGNMENT_PAGE_SIZE));
   const paginatedQuizzes = quizzes.slice((quizPage - 1) * TEACHER_ASSIGNMENT_PAGE_SIZE, quizPage * TEACHER_ASSIGNMENT_PAGE_SIZE);
+  const totalTestPages = Math.max(1, Math.ceil(tests.length / TEACHER_ASSIGNMENT_PAGE_SIZE));
+  const paginatedTests = tests.slice((testPage - 1) * TEACHER_ASSIGNMENT_PAGE_SIZE, testPage * TEACHER_ASSIGNMENT_PAGE_SIZE);
 
   const getUserName = (id) => users.find((account) => account.id === id || account.id === Number(id))?.name || `ID: ${id}`;
   const getUserEmail = (id) => users.find((account) => account.id === id || account.id === Number(id))?.email || "";
@@ -119,8 +132,9 @@ export default function TeacherAssignments() {
   const summary = useMemo(() => ({
     assignments: assignments.length,
     quizzes: quizzes.length,
+    tests: tests.length,
     pendingReview: submissions.filter((submission) => submission.score == null).length,
-  }), [assignments.length, quizzes.length, submissions]);
+  }), [assignments.length, quizzes.length, tests.length, submissions]);
 
   const loadSubmissions = async (assignmentId) => {
     try {
@@ -140,6 +154,15 @@ export default function TeacherAssignments() {
     }
   };
 
+  const loadTestResults = async (testId) => {
+    try {
+      const resultData = await testService.getTeacherTestSubmissions(testId).catch(() => []);
+      setTestResults(resultData || []);
+    } catch {
+      setTestResults([]);
+    }
+  };
+
   const loadQuizDetail = async (quizId) => {
     try {
       const detail = await quizService.getFullQuiz(quizId).catch(() => null);
@@ -147,6 +170,17 @@ export default function TeacherAssignments() {
       return detail;
     } catch {
       setQuizDetail(null);
+      return null;
+    }
+  };
+
+  const loadTestDetail = async (testId) => {
+    try {
+      const detail = await testService.getFullTest(testId).catch(() => null);
+      setTestDetail(detail);
+      return detail;
+    } catch {
+      setTestDetail(null);
       return null;
     }
   };
@@ -235,6 +269,25 @@ export default function TeacherAssignments() {
     }
   };
 
+  const handleTestGrade = async () => {
+    if (testReviewModal == null || testGradeForm.totalScore === "") {
+      toast.error("Nhập điểm bài làm");
+      return;
+    }
+
+    try {
+      await testService.gradeTeacherSubmission(testReviewModal.submission.id, {
+        totalScore: Number(testGradeForm.totalScore),
+      });
+
+      toast.success("Đã cập nhật điểm bài thi thử");
+      await loadTestResults(testReviewModal.test.id);
+      setTestReviewModal(null);
+    } catch {
+      toast.error("Không thể lưu điểm bài thi thử");
+    }
+  };
+
   const openEditModal = (assignment) => {
     setForm({
       classId: assignment.classId || "",
@@ -269,6 +322,10 @@ export default function TeacherAssignments() {
             <span>Quiz khả dụng</span>
             <strong>{summary.quizzes}</strong>
           </article>
+          <article className="teacher-assignments__stat">
+            <span>Bài thi thử</span>
+            <strong>{summary.tests}</strong>
+          </article>
         </div>
       </section>
         <div className="toolbar">
@@ -289,6 +346,9 @@ export default function TeacherAssignments() {
           </button>
           <button className={`ttab ${tab === "quizzes" ? "active" : ""}`} onClick={() => setTab("quizzes")}>
             📝 Bài kiểm tra ({quizzes.length})
+          </button>
+          <button className={`ttab ${tab === "tests" ? "active" : ""}`} onClick={() => setTab("tests")}>
+            🧪 Bài thi thử ({tests.length})
           </button>
         </div>  
       {tab === "assignments" && (
@@ -416,6 +476,63 @@ export default function TeacherAssignments() {
                 </tbody>
               </table>
               <Pagination page={quizPage} total={totalQuizPages} onChange={setQuizPage} />
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === "tests" && (
+        <>
+          {loading ? (
+            <div className="page-loading"><div className="spinner" /></div>
+          ) : tests.length === 0 ? (
+            <div className="empty-state"><p>Chưa có bài thi thử nào</p></div>
+          ) : (
+            <div className="table-wrapper">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Tiêu đề</th>
+                    <th>Chứng chỉ</th>
+                    <th>Kỹ năng</th>
+                    <th>Thời gian</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedTests.map((test) => (
+                    <tr key={test.id}>
+                      <td>
+                        <p className="teacher-assignments__title">{test.title}</p>
+                        <p className="teacher-assignments__warning-note">Xem lượt làm và điều chỉnh điểm nếu cần</p>
+                      </td>
+                      <td>
+                        <span className={`badge ${test.examType === "IELTS" ? "badge-blue" : test.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                          {test.examType}
+                        </span>
+                      </td>
+                      <td><span className="badge badge-purple">{test.skillType || test.testType || "Full test"}</span></td>
+                      <td className="teacher-assignments__tiny">{test.durationMinutes ? `${test.durationMinutes} phút` : "—"}</td>
+                      <td>
+                        <div className="teacher-assignments__row-actions">
+                          <button
+                            className="btn btn-info btn-sm"
+                            title="Xem bài làm"
+                            onClick={async () => {
+                              setSelected(test);
+                              await Promise.all([loadTestResults(test.id), loadTestDetail(test.id)]);
+                              setModal("test-results");
+                            }}
+                          >
+                            👁️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Pagination page={testPage} total={totalTestPages} onChange={setTestPage} />
             </div>
           )}
         </>
@@ -669,7 +786,7 @@ export default function TeacherAssignments() {
                                 setQuizReviewModal({
                                   quiz: selected,
                                   submission: result,
-                                  answerMap: parseAnswerMap(result.answers),
+                                  answerMap: parseAnswerMap(result.answersJson),
                                   detail,
                                 });
                               }}
@@ -706,7 +823,8 @@ export default function TeacherAssignments() {
               {((quizReviewModal.detail?.questions || quizDetail?.questions || []).length === 0) && (
                 <div className="empty-state"><p>Chưa tải được danh sách câu hỏi của bài kiểm tra này</p></div>
               )}
-              {buildQuizSections(
+              {buildQuizSectionsForDisplay(
+                quizReviewModal.quiz,
                 quizReviewModal.detail?.groups || quizDetail?.groups,
                 quizReviewModal.detail?.questions || quizDetail?.questions,
               ).map((section, sectionIndex, allSections) => {
@@ -738,10 +856,20 @@ export default function TeacherAssignments() {
                               if (!value) {
                                 return null;
                               }
+                              const isChosen = answer === option;
+                              const isCorrect = question.correctAnswer === option;
                               return (
                                 <div
                                   key={option}
-                                  className={`teacher-assignments__answer-item ${answer === option ? "teacher-assignments__answer-item--chosen" : ""} ${question.correctAnswer === option ? "teacher-assignments__answer-item--correct" : ""}`}
+                                  className={getAnswerReviewClass({
+                                    baseClassName: "teacher-assignments__answer-item",
+                                    chosenClassName: "teacher-assignments__answer-item--chosen",
+                                    correctClassName: "teacher-assignments__answer-item--correct",
+                                    wrongClassName: "teacher-assignments__answer-item--wrong",
+                                    isChosen,
+                                    isCorrect,
+                                    isWrongChosen: isChosen && !isCorrect,
+                                  })}
                                 >
                                   <strong>{option}.</strong> {value}
                                 </div>
@@ -777,6 +905,177 @@ export default function TeacherAssignments() {
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setQuizReviewModal(null)}>Đóng</button>
               <button className="btn btn-primary" onClick={handleQuizGrade}>Lưu điểm</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal === "test-results" && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal teacher-assignments__modal-result" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🧪 Bài làm — {selected?.title}</h3>
+              <button className="modal-close" onClick={() => setModal(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              {testResults.length === 0 ? (
+                <div className="empty-state"><p>Chưa có học viên nào làm bài thi thử</p></div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Học viên</th>
+                      <th>Điểm</th>
+                      <th>Kết quả đúng</th>
+                      <th>Thời gian nộp</th>
+                      <th>Xem</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {testResults.map((result) => (
+                      <tr key={result.id}>
+                        <td>
+                          <p className="teacher-assignments__title teacher-assignments__title--compact">{getUserName(result.userId)}</p>
+                          <p className="teacher-assignments__muted teacher-assignments__tiny">{getUserEmail(result.userId)}</p>
+                        </td>
+                        <td>
+                          <span className={`badge ${Number(result.totalScore) >= 70 ? "badge-green" : Number(result.totalScore) >= 50 ? "badge-yellow" : "badge-red"}`}>
+                            {result.totalScore}/{selected?.totalScore || 100}
+                          </span>
+                        </td>
+                        <td className="teacher-assignments__tiny teacher-assignments__muted">
+                          {result.correctAnswers ?? 0}/{result.totalQuestions ?? 0}
+                        </td>
+                        <td className="teacher-assignments__tiny teacher-assignments__muted">
+                          {result.submittedAt ? new Date(result.submittedAt).toLocaleString("vi-VN") : "—"}
+                        </td>
+                        <td>
+                          <div className="teacher-assignments__row-actions">
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              title="Xem và chấm bài"
+                              onClick={async () => {
+                                const detail = testDetail?.test?.id === selected?.id
+                                  ? testDetail
+                                  : await loadTestDetail(selected.id);
+
+                                setTestGradeForm({ totalScore: result.totalScore ?? "" });
+                                setTestReviewModal({
+                                  test: selected,
+                                  submission: result,
+                                  answerMap: parseAnswerMap(result.answersJson),
+                                  detail,
+                                });
+                              }}
+                            >
+                              👁️
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setModal(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {testReviewModal && (
+        <div className="modal-overlay" onClick={() => setTestReviewModal(null)}>
+          <div className="modal teacher-assignments__modal-review" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Xem và chấm bài thi thử</h3>
+              <button className="modal-close" onClick={() => setTestReviewModal(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              <div className="teacher-assignments__review-summary">
+                <span>{getUserName(testReviewModal.submission.userId)}</span>
+                <span>{selected?.title}</span>
+              </div>
+              {buildTestSectionsForDisplay(
+                testReviewModal.test,
+                testReviewModal.detail?.groups || testDetail?.groups,
+                testReviewModal.detail?.questions || testDetail?.questions,
+              ).map((section, sectionIndex, allSections) => {
+                const previousQuestionCount = allSections
+                  .slice(0, sectionIndex)
+                  .reduce((total, currentSection) => total + currentSection.questions.length, 0);
+
+                return (
+                  <section key={section.key} className="teacher-assignments__review-section">
+                    {section.group && (
+                      <div className="teacher-assignments__submission-content">
+                        {section.group.title && <p className="teacher-assignments__title teacher-assignments__title--compact">{section.group.title}</p>}
+                        {section.group.instructions && <p>{section.group.instructions}</p>}
+                        {section.group.passageText && <p>{section.group.passageText}</p>}
+                      </div>
+                    )}
+                    {section.questions.map((question, index) => {
+                      const answer = testReviewModal.answerMap[String(question.id)] ?? testReviewModal.answerMap[question.id];
+                      return (
+                        <article key={question.id} className="teacher-assignments__question-review">
+                          <p className="teacher-assignments__title teacher-assignments__title--compact">{previousQuestionCount + index + 1}. {question.content}</p>
+                          {question.questionType === "mcq" ? (
+                            <div className="teacher-assignments__answer-list">
+                              {["A", "B", "C", "D"].map((option) => {
+                                const value = question[`option${option}`];
+                                if (!value) {
+                                  return null;
+                                }
+                                const isChosen = answer === option;
+                                const isCorrect = question.correctAnswer === option;
+                                return (
+                                  <div
+                                    key={option}
+                                    className={getAnswerReviewClass({
+                                      baseClassName: "teacher-assignments__answer-item",
+                                      chosenClassName: "teacher-assignments__answer-item--chosen",
+                                      correctClassName: "teacher-assignments__answer-item--correct",
+                                      wrongClassName: "teacher-assignments__answer-item--wrong",
+                                      isChosen,
+                                      isCorrect,
+                                      isWrongChosen: isChosen && !isCorrect,
+                                    })}
+                                  >
+                                    <strong>{option}.</strong> {value}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <div className="teacher-assignments__submission-content">
+                              Câu trả lời của học viên: {answer || "Chưa trả lời"}
+                            </div>
+                          )}
+                          {question.correctAnswer && (
+                            <p className="teacher-assignments__tiny teacher-assignments__muted">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
+                          )}
+                        </article>
+                      );
+                    })}
+                  </section>
+                );
+              })}
+
+              <div className="form-group">
+                <label>Điểm bài làm</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={selected?.totalScore || 100}
+                  value={testGradeForm.totalScore}
+                  onChange={(event) => setTestGradeForm({ totalScore: event.target.value })}
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-ghost" onClick={() => setTestReviewModal(null)}>Đóng</button>
+              <button className="btn btn-primary" onClick={handleTestGrade}>Lưu điểm</button>
             </div>
           </div>
         </div>

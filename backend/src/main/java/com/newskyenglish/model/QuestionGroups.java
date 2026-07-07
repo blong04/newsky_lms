@@ -17,6 +17,9 @@ public class QuestionGroups {
     @Column(name = "quiz_id")
     private Long quizId;
 
+    @Column(name = "assign_id")
+    private Long assignId;
+
     @Column(name = "title", length = 255)
     private String title;
 
@@ -36,7 +39,7 @@ public class QuestionGroups {
     @Builder.Default
     private Integer orderNum = 1;
 
-    @Column(name = "test_id")
-    private Long testId;
+    @Column(name = "mock_test_id")
+    private Long mockTestId;
 }
 

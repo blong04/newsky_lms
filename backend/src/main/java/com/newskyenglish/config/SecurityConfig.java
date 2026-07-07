@@ -67,6 +67,10 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/notifications/*/read", "/notifications/read-all").authenticated()
                 .requestMatchers(HttpMethod.POST, "/notifications/send").hasRole("ADMIN")
 
+                .requestMatchers(HttpMethod.GET, "/tests/student/*", "/tests/*/full").authenticated()
+                .requestMatchers(HttpMethod.POST, "/tests/student/*/submit").hasAnyRole("ADMIN", "STUDENT")
+                .requestMatchers(HttpMethod.GET, "/tests/teacher", "/tests/teacher/*/submissions").hasAnyRole("ADMIN", "TEACHER")
+                .requestMatchers(HttpMethod.PUT, "/tests/teacher/submissions/*/grade").hasAnyRole("ADMIN", "TEACHER")
                 .requestMatchers(HttpMethod.POST, "/tests", "/tests/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/tests", "/tests/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/tests", "/tests/**").hasRole("ADMIN")
@@ -87,7 +91,9 @@ public class SecurityConfig {
                     "/schedules/**",
                     "/tests",
                     "/tests/*",
-                    "/tests/class/*"
+                    "/tests/class/*",
+                    "/tests/*/full",
+                    "/tests/submissions/user/*"
                 ).authenticated()
                 .anyRequest().authenticated()
             )

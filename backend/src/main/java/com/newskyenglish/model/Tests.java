@@ -2,23 +2,22 @@ package com.newskyenglish.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "tests")
+@Table(name = "mock_tests")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-// Entity đại diện cho bài test full form như TOEIC/IELTS mock test hoàn chỉnh.
+// Entity đại diện cho bài thi thử full form; liên kết lớp học đi qua bảng test_classes.
 public class Tests {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "test_id")
     private Long id;
-
-    @Column(name = "class_id")
-    private Long classId;
 
     @Column(name = "title", length = 150, nullable = false)
     private String title;
@@ -57,9 +56,29 @@ public class Tests {
     @Column(name = "status", length = 50, nullable = false)
     private String status;
 
+    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    // Giữ timestamp nhất quán ngay cả khi Hibernate chưa flush xuống DB.
+    @PrePersist
+    private void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = now;
+        }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+    }
+
+    // Cập nhật mốc sửa cuối ở tầng entity để response luôn phản ánh đúng.
+    @PreUpdate
+    private void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

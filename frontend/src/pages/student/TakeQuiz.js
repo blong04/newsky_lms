@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { quizService } from "../../services/quizService";
-import { buildQuizSections } from "../../utils/quiz";
+import { buildQuizSectionsForDisplay } from "../../utils/assessmentSections";
 import { formatCountdown } from "../../utils/format";
 import toast from "react-hot-toast";
 import "./TakeQuiz.css";
@@ -55,7 +55,7 @@ export default function TakeQuiz() {
   }, [timeLeft, submitted]);
 
   const handleAnswer = (questionId, answer) => setAnswers((current) => ({ ...current, [questionId]: answer }));
-  const sections = buildQuizSections(groups, questions);
+  const sections = buildQuizSectionsForDisplay(quiz, groups, questions);
 
   const handleSubmit = async () => {
     if (submitting || submitted) {
@@ -142,6 +142,11 @@ export default function TakeQuiz() {
 
       {/* Phần nội dung câu hỏi theo group hoặc danh sách phẳng. */}
       <div className="questions-section">
+        {questions.length === 0 && (
+          <div className="empty-state">
+            <p>Đề này hiện chưa có câu hỏi hiển thị. Bạn hãy quay lại và báo admin kiểm tra lại dữ liệu quiz.</p>
+          </div>
+        )}
         {sections.map((section, sectionIndex) => {
           const previousQuestionCount = sections
             .slice(0, sectionIndex)
@@ -179,6 +184,8 @@ export default function TakeQuiz() {
 }
 
 function QuestionItem({ q, index, answers, onAnswer }) {
+  const questionType = normalizeQuestionType(q.questionType);
+
   return (
     <div className="question-item">
       <p className="question-content">
@@ -186,7 +193,7 @@ function QuestionItem({ q, index, answers, onAnswer }) {
       </p>
       {q.imageUrl && <img src={q.imageUrl} alt="Question" className="question-image" />}
 
-      {q.questionType === "mcq" && (
+      {questionType === "mcq" && (
         <div className="options-list">
           {["A", "B", "C", "D"].map((option) => {
             const value = q[`option${option}`];
@@ -204,11 +211,11 @@ function QuestionItem({ q, index, answers, onAnswer }) {
         </div>
       )}
 
-      {q.questionType === "fill_blank" && (
+      {questionType === "fill_blank" && (
         <input className="fill-blank-input" placeholder="Nhập câu trả lời..." value={answers[q.id] || ""} onChange={(event) => onAnswer(q.id, event.target.value)} />
       )}
 
-      {q.questionType === "matching" && (
+      {questionType === "matching" && (
         <textarea
           className="writing-area"
           rows={4}
@@ -218,9 +225,29 @@ function QuestionItem({ q, index, answers, onAnswer }) {
         />
       )}
 
-      {q.questionType === "writing" && (
+      {questionType === "writing" && (
         <textarea className="writing-area" rows={8} placeholder="Viết bài của bạn tại đây..." value={answers[q.id] || ""} onChange={(event) => onAnswer(q.id, event.target.value)} />
       )}
     </div>
   );
+}
+
+// Gom các biến thể tên kiểu câu hỏi về nhóm render chuẩn để frontend không bị trắng vì lệch dữ liệu.
+function normalizeQuestionType(rawType) {
+  const normalizedType = String(rawType || "").trim().toLowerCase();
+
+  if (["mcq", "multiple_choice"].includes(normalizedType)) {
+    return "mcq";
+  }
+  if (["fill_blank", "fill-in-blank", "short_answer", "text"].includes(normalizedType)) {
+    return "fill_blank";
+  }
+  if (["matching", "ordering"].includes(normalizedType)) {
+    return "matching";
+  }
+  if (["writing", "essay"].includes(normalizedType)) {
+    return "writing";
+  }
+
+  return "writing";
 }

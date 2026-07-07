@@ -6,6 +6,7 @@ export const assignmentService = {
   getTeacherAssignments: () => api.get("/teacher/assignments").then(unwrapData),
   getSubmissions: (assignmentId) => api.get(`/assignments/${assignmentId}/submissions`).then(unwrapData),
   getUserSubmissions: (userId) => api.get(`/assignments/submit/user/${userId}`).then(unwrapData),
+  getTeacherStudentSubmissions: (userId) => api.get(`/teacher/students/${userId}/assignments/submissions`).then(unwrapData),
   submit: (assignmentId, payload) => api.post(`/assignments/${assignmentId}/submit`, payload).then(unwrapData),
   createTeacherAssignment: (payload) => api.post("/teacher/assignments", payload).then(unwrapData),
   update: (id, payload) => api.put(`/assignments/${id}`, payload).then(unwrapData),

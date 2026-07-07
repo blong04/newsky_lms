@@ -17,7 +17,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -150,6 +152,25 @@ public class AssignmentsService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    // Giáo viên xem bài nộp của một học viên nhưng chỉ trong phạm vi các lớp mình phụ trách.
+    public List<AssignmentSubmissionsDTO.Response> getTeacherStudentSubmissions(Long userId, String authorizationHeader) {
+        Set<Long> teacherClassIds = getTeacherManagedClassIds(authorizationHeader);
+        if (teacherClassIds.isEmpty()) {
+            return List.of();
+        }
+
+        Set<Long> teacherAssignmentIds = teacherClassIds.stream()
+                .flatMap(classId -> assignmentRepository.findByClassId(classId).stream())
+                .map(Assignments::getId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        return assignmentSubmitRepository.findByUserId(userId).stream()
+                .filter(submission -> teacherAssignmentIds.contains(submission.getAssignId()))
+                .map(AssignmentSubmissionsDTO.Response::fromEntity)
+                .toList();
+    }
+
     @Transactional
     // Tạo mới hoặc cập nhật lượt nộp bài của user hiện tại cho assignment.
     public AssignmentSubmissionsDTO.Response submit(Long assignmentId,
@@ -167,6 +188,7 @@ public class AssignmentsService {
         submission.setAssignId(assignmentId);
         submission.setUserId(userId);
         submission.setContent(request.getContent() != null ? request.getContent() : "");
+        submission.setAnswersJson(request.getAnswersJson());
         submission.setStatus(AssignmentSubmissions.Status.submitted);
         submission.setSubmittedAt(LocalDateTime.now());
 
@@ -214,6 +236,19 @@ public class AssignmentsService {
         }
 
         throw new ForbiddenException("Bạn không có quyền xem bài nộp của người dùng này");
+    }
+
+    // Lấy tập lớp mà giáo viên hiện tại đang phụ trách để tái sử dụng cho các màn teacher drill-down.
+    private Set<Long> getTeacherManagedClassIds(String authorizationHeader) {
+        Integer currentRoleId = currentUserService.extractRoleId(authorizationHeader);
+        if (!Integer.valueOf(2).equals(currentRoleId)) {
+            throw new ForbiddenException("Bạn không có quyền xem danh sách bài nộp này");
+        }
+
+        Long teacherId = currentUserService.extractUserId(authorizationHeader);
+        return classesRepository.findByTeacherId(teacherId).stream()
+                .map(Classes::getId)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     // Giáo viên chỉ được sửa/xóa/chấm/xem submission của bài tập thuộc lớp mình phụ trách.

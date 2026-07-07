@@ -2,12 +2,13 @@ package com.newskyenglish.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "test_submissions")
+@Table(name = "mock_test_submissions")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
 // Entity lưu một lượt làm full test của học viên.
 public class TestSubmissions {
@@ -17,11 +18,14 @@ public class TestSubmissions {
     @Column(name = "test_submission_id")
     private Long id;
 
-    @Column(name = "test_id", nullable = false)
-    private Long testId;
+    @Column(name = "mock_test_id", nullable = false)
+    private Long mockTestId;
 
     @Column(name = "user_id", nullable = false)
     private Long userId;
+
+    @Column(name = "answers_json", columnDefinition = "LONGTEXT")
+    private String answersJson;
 
     @Column(name = "started_at")
     private LocalDateTime startedAt;
@@ -48,6 +52,15 @@ public class TestSubmissions {
     @Column(name = "status", length = 50, nullable = false)
     private String status;
 
+    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    // Gán mốc tạo trước khi persist để dữ liệu trả về không bị thiếu createdAt.
+    @PrePersist
+    private void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
 }

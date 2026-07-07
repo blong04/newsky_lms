@@ -6,9 +6,8 @@ import toast from "react-hot-toast";
 import "./Users.css";
 
 export default function AdminUsers() {
-  // State dữ liệu chính cho bảng người dùng và danh sách giáo viên chờ duyệt.
+  // State dữ liệu chính cho bảng người dùng.
   const [users, setUsers] = useState([]);
-  const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // State điều khiển bộ lọc và điều hướng danh sách.
@@ -21,16 +20,12 @@ export default function AdminUsers() {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", password: "", roleId: 3 });
 
-  // Load users và teacher pending song song để dashboard admin phản hồi nhanh.
+  // Load danh sách người dùng cho màn quản trị tài khoản.
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [userResponse, pendingResponse] = await Promise.all([
-        userService.getAll(),
-        userService.getPendingTeachers(),
-      ]);
+      const userResponse = await userService.getAll();
       setUsers(userResponse || []);
-      setPending(pendingResponse || []);
     } catch {
       toast.error("Không thể tải dữ liệu người dùng");
     } finally {
@@ -58,10 +53,6 @@ export default function AdminUsers() {
 
   // Chuyển đổi trạng thái hiển thị sang badge dễ đọc.
   const getStatusBadge = (user) => {
-    if (user.roleId === 2 && !user.approved) {
-      return <span className="badge badge-yellow">Chờ duyệt</span>;
-    }
-
     if (user.status === "active") {
       return <span className="badge badge-green">Hoạt động</span>;
     }
@@ -71,30 +62,6 @@ export default function AdminUsers() {
     }
 
     return <span className="badge badge-gray">Không HĐ</span>;
-  };
-
-  const handleApprove = async (id) => {
-    try {
-      await userService.approveTeacher(id);
-      toast.success("Đã phê duyệt tài khoản");
-      fetchData();
-    } catch {
-      toast.error("Phê duyệt thất bại");
-    }
-  };
-
-  const handleReject = async (id) => {
-    if (!window.confirm("Từ chối và xóa tài khoản giáo viên này?")) {
-      return;
-    }
-
-    try {
-      await userService.rejectTeacher(id);
-      toast.success("Đã từ chối tài khoản");
-      fetchData();
-    } catch {
-      toast.error("Từ chối thất bại");
-    }
   };
 
   const handleToggleLock = async (user) => {
@@ -159,7 +126,7 @@ export default function AdminUsers() {
           <p className="admin-users__eyebrow">User management</p>
           <h1>Quản lý người dùng</h1>
           <p className="admin-users__subtitle">
-            Theo dõi tài khoản đang hoạt động, xử lý giáo viên chờ duyệt và kiểm soát phân quyền tập trung.
+            Theo dõi tài khoản đang hoạt động, khóa hoặc mở khóa khi cần và kiểm soát phân quyền tập trung.
           </p>
         </div>
         <div className="admin-users__metrics">
@@ -168,68 +135,11 @@ export default function AdminUsers() {
             <strong>{users.length}</strong>
           </article>
           <article className="admin-users__metric-card admin-users__metric-card--pending">
-            <span>Chờ phê duyệt</span>
-            <strong>{pending.length}</strong>
+            <span>Đang hoạt động</span>
+            <strong>{users.filter((user) => user.status === "active").length}</strong>
           </article>
         </div>
       </section>
-
-      {/* Khối ưu tiên cho giáo viên đang chờ admin xét duyệt. */}
-      {pending.length > 0 && (
-        <section className="section-card admin-users__pending-card">
-          <div className="admin-users__section-head">
-            <div>
-              <p className="admin-users__section-kicker">Ưu tiên xử lý</p>
-              <h3 className="section-title">Giáo viên chờ phê duyệt</h3>
-            </div>
-            <span className="badge badge-yellow">{pending.length} hồ sơ</span>
-          </div>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Họ tên</th>
-                <th>Email</th>
-                <th>Ngày đăng ký</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pending.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div className="admin-users__identity">
-                      <div className="avatar">{user.name?.charAt(0)?.toUpperCase()}</div>
-                      <span>{user.name}</span>
-                    </div>
-                  </td>
-                  <td className="admin-users__muted">{user.email}</td>
-                  <td className="admin-users__muted admin-users__tiny">
-                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString("vi-VN") : "—"}
-                  </td>
-                  <td>
-                    <div className="admin-users__actions">
-                      <button
-                        className="btn btn-success btn-sm"
-                        onClick={() => handleApprove(user.id)}
-                        title="Phê duyệt"
-                      >
-                        ✅
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleReject(user.id)}
-                        title="Từ chối"
-                      >
-                        ❌
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
 
       {/* Thanh lọc giúp admin thu hẹp dữ liệu trước khi thao tác. */}
       <div className="toolbar admin-users__toolbar">

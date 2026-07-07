@@ -2,6 +2,8 @@ package com.newskyenglish.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,9 +38,11 @@ public class Users {
     @Column(name = "avata_url", length = 255)
     private String avatarUrl;
 
+    @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
@@ -58,5 +62,23 @@ public class Users {
     private String education;
 
     public enum Status { active, inactive, suspended }
+
+    // Chủ động gán thời gian mặc định để response sau khi tạo mới luôn có mốc tạo/cập nhật.
+    @PrePersist
+    private void onCreate() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = now;
+        }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+    }
+
+    // Đồng bộ lại thời gian cập nhật trước mỗi lần save.
+    @PreUpdate
+    private void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
 

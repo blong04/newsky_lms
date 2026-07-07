@@ -8,6 +8,7 @@ export const quizService = {
   getTeacherQuizzes: () => api.get("/teacher/quizzes").then(unwrapData),
   getTeacherQuizSubmissions: (quizId) => api.get(`/teacher/quizzes/${quizId}/submissions`).then(unwrapData),
   getUserSubmissions: (userId) => api.get(`/quizzes/submissions/user/${userId}`).then(unwrapData),
+  getTeacherStudentSubmissions: (userId) => api.get(`/teacher/students/${userId}/quizzes/submissions`).then(unwrapData),
   getStudentQuiz: (quizId) => api.get(`/student/quiz/${quizId}`).then(unwrapData),
   submitStudentQuiz: (quizId, payload) => api.post(`/student/quiz/${quizId}/submit`, payload).then(unwrapData),
   create: (payload) => api.post("/quizzes", payload).then(unwrapData),

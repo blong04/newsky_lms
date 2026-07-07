@@ -2,7 +2,17 @@ import React, { useEffect, useMemo, useState } from "react";
 import { classService } from "../../services/classService";
 import { QUESTION_TYPE_LABELS } from "../../constants/quizzes";
 import { quizService } from "../../services/quizService";
-import { buildQuizSections, inferQuizType } from "../../utils/quiz";
+import { buildQuizSectionsForDisplay } from "../../utils/assessmentSections";
+import { getLinkedClassIds, normalizeClassIdsPayload } from "../../utils/assessment";
+import { inferQuizType } from "../../utils/quiz";
+import {
+  QUIZ_BLUEPRINTS,
+  applyQuizBlueprintDefaults,
+  countFilledQuizQuestions,
+  createQuizSections,
+  hydrateQuizSections,
+  serializeQuizSections,
+} from "../../utils/quizBuilder";
 import toast from "react-hot-toast";
 import "./Quizzes.css";
 
@@ -30,6 +40,7 @@ const EXAM_STRUCTURE = {
 
 const INITIAL_QUIZ = {
   classId: "",
+  classIds: [],
   title: "",
   examType: "IELTS",
   examPart: "",
@@ -39,34 +50,24 @@ const INITIAL_QUIZ = {
   audioUrl: "",
 };
 
-const INITIAL_QUESTION = {
-  content: "",
-  questionType: "mcq",
-  optionA: "",
-  optionB: "",
-  optionC: "",
-  optionD: "",
-  correctAnswer: "",
-  imageUrl: "",
-  explanation: "",
-};
-
 export default function AdminQuizzes() {
   // State dữ liệu hiện có để list quiz.
   const [quizzes, setQuizzes] = useState([]);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // State điều khiển wizard tạo quiz.
-  const [creating, setCreating] = useState(false);
+  // State điều khiển editor create/edit dạng wizard theo part.
+  const [editorMode, setEditorMode] = useState(null);
+  const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [step, setStep] = useState(1);
   const [quizForm, setQuizForm] = useState(INITIAL_QUIZ);
-  const [questions, setQuestions] = useState([{ ...INITIAL_QUESTION }]);
+  const [sections, setSections] = useState([]);
+  const [expandedSectionKey, setExpandedSectionKey] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   // State bộ lọc và modal thao tác.
   const [filterType, setFilterType] = useState("");
   const [viewModal, setViewModal] = useState(null);
-  const [editModal, setEditModal] = useState(null);
 
   // Load danh sách quiz cho màn quản trị.
   const fetchData = async () => {
@@ -94,96 +95,160 @@ export default function AdminQuizzes() {
   ), [quizzes, filterType]);
 
   const selectedPart = EXAM_STRUCTURE[quizForm.examType]?.parts.find((part) => part.key === quizForm.examPart);
-  const getClassName = (classId) => classes.find((classroom) => Number(classroom.id) === Number(classId))?.name || "Chưa gắn lớp";
-
-  // Quy ước loại câu hỏi theo phần thi để giảm nhập sai.
-  const getQuestionTypes = () => {
-    const { examType, examPart } = quizForm;
-
-    if (examType === "IELTS") {
-      if (examPart === "Listening" || examPart === "Reading") {
-        return ["mcq", "fill_blank", "matching"];
-      }
-
-      if (examPart?.startsWith("Writing")) {
-        return ["writing"];
-      }
-    }
-
-    if (examType === "TOEIC") {
-      if (["Part1", "Part2", "Part3", "Part4", "Part7"].includes(examPart)) {
-        return ["mcq"];
-      }
-
-      if (["Part5", "Part6"].includes(examPart)) {
-        return ["mcq", "fill_blank"];
-      }
-    }
-
-    return ["mcq", "fill_blank"];
-  };
-
-  const needsPassage = () => (
-    (quizForm.examType === "IELTS" && (quizForm.examPart === "Reading" || quizForm.examPart?.startsWith("Writing")))
-    || (quizForm.examType === "TOEIC" && ["Part6", "Part7"].includes(quizForm.examPart))
+  const selectedBlueprint = QUIZ_BLUEPRINTS[quizForm.examType]?.[quizForm.examPart];
+  const totalQuestionCount = useMemo(() => (
+    sections.reduce((total, section) => total + (section.questions?.length || 0), 0)
+  ), [sections]);
+  const filledQuestionCount = useMemo(() => countFilledQuizQuestions(sections), [sections]);
+  const getClassName = (classId) => classes.find((classroom) => Number(classroom.id) === Number(classId))?.name || `Lớp #${classId}`;
+  const getClassNames = (classIds = []) => (
+    classIds.length > 0
+      ? classIds.map(getClassName).join(", ")
+      : "Chưa gắn lớp"
   );
 
-  const needsAudio = () => (
-    (quizForm.examType === "IELTS" && quizForm.examPart === "Listening")
-    || (quizForm.examType === "TOEIC" && ["Part1", "Part2", "Part3", "Part4"].includes(quizForm.examPart))
-  );
-
-  const resetCreationFlow = () => {
-    setCreating(false);
+  // Đóng editor và trả state về mặc định.
+  const resetEditor = () => {
+    setEditorMode(null);
+    setSelectedQuizId(null);
     setStep(1);
     setQuizForm(INITIAL_QUIZ);
-    setQuestions([{ ...INITIAL_QUESTION }]);
+    setSections([]);
+    setExpandedSectionKey(null);
   };
 
-  const addQuestion = () => {
-    setQuestions((current) => [...current, { ...INITIAL_QUESTION, questionType: getQuestionTypes()[0] }]);
+  // Bắt đầu flow tạo quiz mới.
+  const startCreateFlow = () => {
+    setEditorMode("create");
+    setSelectedQuizId(null);
+    setStep(1);
+    setQuizForm(INITIAL_QUIZ);
+    setSections([]);
+    setExpandedSectionKey(null);
   };
 
-  const removeQuestion = (index) => {
-    setQuestions((current) => current.filter((_, questionIndex) => questionIndex !== index));
+  // Chọn loại chứng chỉ ở step 1.
+  const selectExamType = (examType) => {
+    setQuizForm((current) => ({
+      ...current,
+      examType,
+      examPart: "",
+      instructions: "",
+      timeLimit: examType === "TOEIC" ? 45 : 60,
+    }));
+    setSections([]);
+    setExpandedSectionKey(null);
   };
 
-  const updateQuestion = (index, field, value) => {
-    setQuestions((current) => current.map((question, questionIndex) => (
-      questionIndex === index ? { ...question, [field]: value } : question
+  // Chọn part và dựng sẵn toàn bộ form câu hỏi phù hợp với part đó.
+  const selectExamPart = (examPart) => {
+    const nextForm = applyQuizBlueprintDefaults(quizForm, quizForm.examType, examPart);
+    const nextSections = createQuizSections(quizForm.examType, examPart);
+
+    setQuizForm({
+      ...nextForm,
+      title: editorMode === "edit" ? quizForm.title : `${quizForm.examType} ${EXAM_STRUCTURE[quizForm.examType].parts.find((part) => part.key === examPart)?.label || examPart}`,
+    });
+    setSections(nextSections);
+    setExpandedSectionKey(nextSections[0]?.clientKey || null);
+  };
+
+  // Load quiz hiện có vào editor theo đúng section blueprint.
+  const startEditFlow = async (quiz) => {
+    try {
+      const fullQuiz = await quizService.getFullQuiz(quiz.id);
+      const nextSections = hydrateQuizSections(
+        fullQuiz.quiz.examType || "IELTS",
+        fullQuiz.quiz.examPart,
+        fullQuiz.groups || [],
+        fullQuiz.questions || [],
+      );
+
+      setEditorMode("edit");
+      setSelectedQuizId(quiz.id);
+      setStep(2);
+      setQuizForm({
+        classId: fullQuiz.quiz.classId || "",
+        classIds: getLinkedClassIds(fullQuiz.quiz),
+        title: fullQuiz.quiz.title || "",
+        examType: fullQuiz.quiz.examType || "IELTS",
+        examPart: fullQuiz.quiz.examPart || "",
+        instructions: fullQuiz.quiz.instructions || "",
+        timeLimit: fullQuiz.quiz.timeLimit || 60,
+        passageText: fullQuiz.quiz.passageText || "",
+        audioUrl: fullQuiz.quiz.audioUrl || "",
+      });
+      setSections(nextSections);
+      setExpandedSectionKey(nextSections[0]?.clientKey || null);
+    } catch {
+      toast.error("Không thể tải dữ liệu để chỉnh sửa");
+    }
+  };
+
+  // Cập nhật metadata của một group/section như passage, audio hoặc instructions riêng.
+  const updateSectionField = (sectionKey, field, value) => {
+    setSections((current) => current.map((section) => (
+      section.clientKey === sectionKey ? { ...section, [field]: value } : section
     )));
   };
 
-  const handleCreateQuiz = async () => {
-    if (!quizForm.title) {
+  // Cập nhật nội dung câu hỏi trong section tương ứng.
+  const updateQuestion = (sectionKey, questionIndex, field, value) => {
+    setSections((current) => current.map((section) => (
+      section.clientKey !== sectionKey
+        ? section
+        : {
+            ...section,
+            questions: section.questions.map((question, currentIndex) => (
+              currentIndex === questionIndex ? { ...question, [field]: value } : question
+            )),
+          }
+    )));
+  };
+
+  const handleSaveQuiz = async () => {
+    if (!quizForm.title.trim()) {
       toast.error("Nhập tiêu đề bài kiểm tra");
       return;
     }
-
     if (!quizForm.examPart) {
       toast.error("Chọn phần thi");
       return;
     }
-
-    if (questions.some((question) => !question.content)) {
-      toast.error("Nhập nội dung cho tất cả câu hỏi");
+    if (sections.some((section) => section.questions.some((question) => !question.content.trim()))) {
+      toast.error("Bạn cần nhập nội dung cho toàn bộ câu hỏi của part này");
       return;
     }
 
+    setSaving(true);
     try {
-      await quizService.create({
+      const serializedSections = serializeQuizSections(sections);
+      const allQuestions = serializedSections.questions;
+      const classIds = normalizeClassIdsPayload(quizForm.classIds, quizForm.classId);
+      const payload = {
         ...quizForm,
-        type: inferQuizType(quizForm.examPart, questions),
-        classId: quizForm.classId ? Number(quizForm.classId) : null,
+        classId: classIds[0] || null,
+        classIds,
         timeLimit: Number(quizForm.timeLimit),
-        questions: questions.map((question, index) => ({ ...question, orderNum: index + 1 })),
-      });
+        type: inferQuizType(quizForm.examPart, allQuestions),
+        groups: serializedSections.groups,
+        questions: allQuestions,
+      };
 
-      toast.success("Tạo bài kiểm tra thành công");
-      resetCreationFlow();
+      if (editorMode === "edit" && selectedQuizId) {
+        await quizService.update(selectedQuizId, payload);
+        toast.success("Cập nhật thành công");
+      } else {
+        await quizService.create(payload);
+        toast.success("Tạo bài kiểm tra thành công");
+      }
+
+      resetEditor();
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.message || "Tạo bài kiểm tra thất bại");
+      toast.error(error.response?.data?.message || "Lưu bài kiểm tra thất bại");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -201,8 +266,21 @@ export default function AdminQuizzes() {
     }
   };
 
-  const fetchQuizDetail = async (quizId) => {
-    return quizService.getFullQuiz(quizId);
+  const fetchQuizDetail = async (quizId) => quizService.getFullQuiz(quizId);
+
+  const toggleClassSelection = (classId) => {
+    const normalizedClassId = Number(classId);
+    setQuizForm((current) => {
+      const exists = current.classIds.includes(normalizedClassId);
+      const nextClassIds = exists
+        ? current.classIds.filter((item) => item !== normalizedClassId)
+        : [...current.classIds, normalizedClassId];
+      return {
+        ...current,
+        classId: nextClassIds[0] || "",
+        classIds: nextClassIds,
+      };
+    });
   };
 
   const openViewModal = async (quiz) => {
@@ -214,65 +292,22 @@ export default function AdminQuizzes() {
     }
   };
 
-  const openEditQuiz = async (quiz) => {
-    try {
-      const fullQuiz = await fetchQuizDetail(quiz.id);
-      setEditModal(fullQuiz);
-    } catch {
-      toast.error("Không thể tải dữ liệu để chỉnh sửa");
-    }
-  };
-
-  const updateEditQuestion = (index, field, value) => {
-    setEditModal((current) => ({
-      ...current,
-      questions: current.questions.map((question, questionIndex) => (
-        questionIndex === index ? { ...question, [field]: value } : question
-      )),
-    }));
-  };
-
-  const handleUpdateQuiz = async () => {
-    try {
-      await quizService.update(editModal.quiz.id, {
-        classId: editModal.quiz.classId || null,
-        title: editModal.quiz.title,
-        examType: editModal.quiz.examType,
-        examPart: editModal.quiz.examPart,
-        type: editModal.quiz.type || inferQuizType(editModal.quiz.examPart, editModal.questions),
-        instructions: editModal.quiz.instructions,
-        passageText: editModal.quiz.passageText,
-        audioUrl: editModal.quiz.audioUrl,
-        timeLimit: Number(editModal.quiz.timeLimit || 0),
-        questions: (editModal.questions || []).map((question, index) => ({
-          ...question,
-          orderNum: question.orderNum || index + 1,
-        })),
-      });
-      toast.success("Cập nhật thành công");
-      setEditModal(null);
-      fetchData();
-    } catch {
-      toast.error("Cập nhật thất bại");
-    }
-  };
-
-  if (creating) {
+  if (editorMode) {
     return (
       <div className="admin-page fade-in admin-quizzes">
         <div className="page-header admin-quizzes__create-header">
-          <button className="btn btn-ghost btn-sm" onClick={resetCreationFlow}>← Quay lại</button>
+          <button className="btn btn-ghost btn-sm" onClick={resetEditor}>← Quay lại</button>
           <div>
-            <h1>Tạo bài kiểm tra mới</h1>
+            <h1>{editorMode === "edit" ? "Chỉnh sửa bài kiểm tra" : "Tạo bài kiểm tra mới"}</h1>
             <p>
-              Bước {step}/3 — {step === 1 ? "Chọn loại bài thi" : step === 2 ? "Cấu hình bài thi" : "Nhập câu hỏi"}
+              Bước {step}/3 — {step === 1 ? "Chọn loại bài thi" : step === 2 ? "Cấu hình bài thi" : "Điền form câu hỏi theo part"}
             </p>
           </div>
         </div>
 
-        {/* Wizard cho flow tạo quiz nhiều bước. */}
+        {/* Wizard cho flow tạo/sửa quiz nhiều bước. */}
         <div className="step-indicator">
-          {["Loại bài thi", "Cấu hình", "Câu hỏi"].map((label, index) => (
+          {["Loại bài thi", "Cấu hình", "Form câu hỏi"].map((label, index) => (
             <div
               key={label}
               className={`step-item ${step > index + 1 ? "done" : step === index + 1 ? "active" : ""}`}
@@ -283,7 +318,6 @@ export default function AdminQuizzes() {
           ))}
         </div>
 
-        {/* Step 1 chọn exam type và part. */}
         {step === 1 && (
           <section className="section-card">
             <h3 className="section-title">Chọn loại bài kiểm tra</h3>
@@ -293,7 +327,8 @@ export default function AdminQuizzes() {
                   key={type}
                   type="button"
                   className={`exam-type-card ${quizForm.examType === type ? "selected" : ""}`}
-                  onClick={() => setQuizForm({ ...quizForm, examType: type, examPart: "" })}
+                  onClick={() => selectExamType(type)}
+                  disabled={editorMode === "edit"}
                 >
                   <div className="exam-type-icon">{type === "IELTS" ? "🎓" : "💼"}</div>
                   <h4>{type}</h4>
@@ -311,6 +346,12 @@ export default function AdminQuizzes() {
               ))}
             </div>
 
+            {editorMode === "edit" && (
+              <p className="admin-quizzes__note">
+                Khi sửa, loại chứng chỉ đang được khóa để tránh làm lệch blueprint của part hiện tại.
+              </p>
+            )}
+
             <h3 className="section-title admin-quizzes__section-space">Chọn phần thi</h3>
             <div className="parts-grid">
               {EXAM_STRUCTURE[quizForm.examType].parts.map((part) => (
@@ -318,7 +359,7 @@ export default function AdminQuizzes() {
                   key={part.key}
                   type="button"
                   className={`part-card ${quizForm.examPart === part.key ? "selected" : ""}`}
-                  onClick={() => setQuizForm({ ...quizForm, examPart: part.key })}
+                  onClick={() => selectExamPart(part.key)}
                 >
                   <h5>{part.label}</h5>
                   <p>{part.desc}</p>
@@ -334,7 +375,6 @@ export default function AdminQuizzes() {
           </section>
         )}
 
-        {/* Step 2 cấu hình metadata của bài kiểm tra. */}
         {step === 2 && (
           <section className="section-card">
             <div className="selected-part-banner">
@@ -345,17 +385,25 @@ export default function AdminQuizzes() {
             <div className="admin-quizzes__form-stack">
               <div className="form-group">
                 <label>Lớp học áp dụng</label>
-                <select
-                  value={quizForm.classId}
-                  onChange={(event) => setQuizForm({ ...quizForm, classId: event.target.value })}
-                >
-                  <option value="">— Chưa gắn lớp cụ thể —</option>
-                  {classes.map((classroom) => (
-                    <option key={classroom.id} value={classroom.id}>
-                      {classroom.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="admin-quizzes__class-picker">
+                  {classes.map((classroom) => {
+                    const selected = quizForm.classIds.includes(Number(classroom.id));
+                    return (
+                      <button
+                        key={classroom.id}
+                        type="button"
+                        className={`admin-quizzes__class-option ${selected ? "active" : ""}`}
+                        onClick={() => toggleClassSelection(classroom.id)}
+                      >
+                        <span>{classroom.name}</span>
+                        <small>{selected ? "Đã chọn" : "Bấm để gắn"}</small>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="admin-quizzes__note">
+                  Có thể gắn bài kiểm tra cho một hoặc nhiều lớp cùng lúc.
+                </p>
               </div>
 
               <div className="form-group">
@@ -383,43 +431,17 @@ export default function AdminQuizzes() {
                   rows={3}
                   value={quizForm.instructions}
                   onChange={(event) => setQuizForm({ ...quizForm, instructions: event.target.value })}
-                  placeholder="Hướng dẫn cho học viên trước khi làm bài"
+                  placeholder="Hướng dẫn chung cho học viên trước khi làm bài"
                 />
               </div>
-
-              {needsPassage() && (
-                <div className="form-group">
-                  <label>Đoạn văn / Passage</label>
-                  <textarea
-                    rows={8}
-                    className="admin-quizzes__passage-input"
-                    value={quizForm.passageText}
-                    onChange={(event) => setQuizForm({ ...quizForm, passageText: event.target.value })}
-                    placeholder="Nhập đoạn văn đọc hiểu..."
-                  />
-                </div>
-              )}
-
-              {needsAudio() && (
-                <div className="form-group">
-                  <label>URL file audio</label>
-                  <input
-                    value={quizForm.audioUrl}
-                    onChange={(event) => setQuizForm({ ...quizForm, audioUrl: event.target.value })}
-                    placeholder="https://... (mp3, wav)"
-                  />
-                </div>
-              )}
             </div>
 
             <div className="admin-quizzes__footer-actions">
               <button className="btn btn-ghost" onClick={() => setStep(1)}>← Quay lại</button>
               <button
                 className="btn btn-primary"
-                onClick={() => {
-                  setQuestions([{ ...INITIAL_QUESTION, questionType: getQuestionTypes()[0] }]);
-                  setStep(3);
-                }}
+                disabled={!selectedBlueprint}
+                onClick={() => setStep(3)}
               >
                 Tiếp theo →
               </button>
@@ -427,111 +449,203 @@ export default function AdminQuizzes() {
           </section>
         )}
 
-        {/* Step 3 nhập danh sách câu hỏi cho quiz. */}
         {step === 3 && (
-          <section>
+          <section className="admin-quizzes__builder">
             <div className="section-card admin-quizzes__summary-card">
               <div className="selected-part-banner">
                 <strong>{quizForm.examType} — {selectedPart?.label}: {quizForm.title}</strong>
-                <span>{questions.length} câu hỏi</span>
+                <span>{filledQuestionCount}/{totalQuestionCount} câu đã nhập nội dung</span>
+              </div>
+
+              <div className="admin-quizzes__section-pills">
+                {sections.map((section) => (
+                  <button
+                    key={section.clientKey}
+                    className={`admin-quizzes__section-pill ${expandedSectionKey === section.clientKey ? "active" : ""}`}
+                    onClick={() => setExpandedSectionKey(section.clientKey)}
+                  >
+                    {section.title} ({section.questions.length})
+                  </button>
+                ))}
               </div>
             </div>
 
-            {questions.map((question, index) => (
-              <div key={`${question.questionType}-${index}`} className="question-card">
-                <div className="question-header">
-                  <span className="question-num">Câu {index + 1}</span>
-                  <div className="admin-quizzes__question-tools">
-                    <select
-                      value={question.questionType}
-                      onChange={(event) => updateQuestion(index, "questionType", event.target.value)}
-                      className="filter-select admin-quizzes__type-select"
-                    >
-                      {getQuestionTypes().map((type) => (
-                        <option key={type} value={type}>{QUESTION_TYPE_LABELS[type] || type}</option>
-                      ))}
-                    </select>
-                    {questions.length > 1 && (
-                      <button className="btn btn-danger btn-sm" onClick={() => removeQuestion(index)}>✕</button>
-                    )}
-                  </div>
-                </div>
+            {sections.map((section) => {
+              const isExpanded = expandedSectionKey === section.clientKey;
 
-                <div className="form-group admin-quizzes__question-space">
-                  <label>Nội dung câu hỏi</label>
-                  <textarea
-                    rows={2}
-                    value={question.content}
-                    onChange={(event) => updateQuestion(index, "content", event.target.value)}
-                    placeholder={question.questionType === "fill_blank" ? "VD: The company ___ (establish) in 1990." : "Nhập câu hỏi..."}
-                  />
-                </div>
-
-                {quizForm.examPart === "Part1" && (
-                  <div className="form-group admin-quizzes__question-space">
-                    <label>URL ảnh</label>
-                    <input
-                      value={question.imageUrl || ""}
-                      onChange={(event) => updateQuestion(index, "imageUrl", event.target.value)}
-                      placeholder="https://..."
-                    />
-                  </div>
-                )}
-
-                {question.questionType === "mcq" && (
-                  <div className="options-grid">
-                    {["A", "B", "C", "D"].map((option) => (
-                      <div key={option} className="form-group">
-                        <label>Đáp án {option}</label>
-                        <input
-                          value={question[`option${option}`] || ""}
-                          onChange={(event) => updateQuestion(index, `option${option}`, event.target.value)}
-                          placeholder={`Lựa chọn ${option}`}
-                        />
-                      </div>
-                    ))}
-                    <div className="form-group">
-                      <label>Đáp án đúng</label>
-                      <select
-                        value={question.correctAnswer}
-                        onChange={(event) => updateQuestion(index, "correctAnswer", event.target.value)}
-                      >
-                        <option value="">Chọn</option>
-                        {["A", "B", "C", "D"].map((option) => (
-                          <option key={option} value={option}>{option}</option>
-                        ))}
-                      </select>
+              return (
+                <article key={section.clientKey} className={`admin-quizzes__section-card ${isExpanded ? "active" : ""}`}>
+                  <button
+                    className="admin-quizzes__section-header"
+                    onClick={() => setExpandedSectionKey(isExpanded ? null : section.clientKey)}
+                  >
+                    <div>
+                      <h3>{section.title}</h3>
+                      <p>{section.description}</p>
                     </div>
-                  </div>
-                )}
+                    <span>{section.questions.length} câu</span>
+                  </button>
 
-                {["fill_blank", "matching", "writing"].includes(question.questionType) && (
-                  <div className="form-group admin-quizzes__question-space">
-                    <label>Đáp án đúng</label>
-                    <input
-                      value={question.correctAnswer}
-                      onChange={(event) => updateQuestion(index, "correctAnswer", event.target.value)}
-                      placeholder={question.questionType === "matching" ? "VD: 1-A, 2-C, 3-B" : "Nhập đáp án chính xác"}
-                    />
-                  </div>
-                )}
+                  {isExpanded && (
+                    <div className="admin-quizzes__section-body">
+                      {(section.hasPassage || section.hasAudio || section.hasImage) && (
+                        <div className="admin-quizzes__group-config">
+                          <div className="form-group">
+                            <label>Tên block hiển thị</label>
+                            <input
+                              value={section.title}
+                              onChange={(event) => updateSectionField(section.clientKey, "title", event.target.value)}
+                            />
+                          </div>
 
-                <div className="form-group">
-                  <label>Giải thích đáp án</label>
-                  <input
-                    value={question.explanation || ""}
-                    onChange={(event) => updateQuestion(index, "explanation", event.target.value)}
-                    placeholder="Giải thích tại sao đây là đáp án đúng"
-                  />
-                </div>
-              </div>
-            ))}
+                          {section.hasPassage && (
+                            <div className="form-group">
+                              <label>Passage / đoạn văn</label>
+                              <textarea
+                                rows={6}
+                                className="admin-quizzes__passage-input"
+                                value={section.passageText || ""}
+                                onChange={(event) => updateSectionField(section.clientKey, "passageText", event.target.value)}
+                                placeholder={`Nhập passage cho ${section.title}`}
+                              />
+                            </div>
+                          )}
 
-            <button className="btn btn-ghost admin-quizzes__add-question" onClick={addQuestion}>+ Thêm câu hỏi</button>
+                          {section.hasAudio && (
+                            <div className="form-group">
+                              <label>Audio URL của block</label>
+                              <input
+                                value={section.audioUrl || ""}
+                                onChange={(event) => updateSectionField(section.clientKey, "audioUrl", event.target.value)}
+                                placeholder="https://... (mp3, wav)"
+                              />
+                            </div>
+                          )}
+
+                          <div className="form-group">
+                            <label>Hướng dẫn riêng cho block</label>
+                            <textarea
+                              rows={2}
+                              value={section.instructions || ""}
+                              onChange={(event) => updateSectionField(section.clientKey, "instructions", event.target.value)}
+                              placeholder="Hướng dẫn riêng cho nhóm câu hỏi này"
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {section.questions.map((question, index) => (
+                        <div key={`${section.clientKey}-${index + 1}`} className="question-card">
+                          <div className="question-header">
+                            <span className="question-num">Câu {index + 1}</span>
+                            <div className="admin-quizzes__question-tools">
+                              {section.allowedQuestionTypes.length > 1 ? (
+                                <select
+                                  value={question.questionType}
+                                  onChange={(event) => updateQuestion(section.clientKey, index, "questionType", event.target.value)}
+                                  className="filter-select admin-quizzes__type-select"
+                                >
+                                  {section.allowedQuestionTypes.map((type) => (
+                                    <option key={type} value={type}>{QUESTION_TYPE_LABELS[type] || type}</option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="badge badge-gray">{QUESTION_TYPE_LABELS[question.questionType] || question.questionType}</span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="form-group admin-quizzes__question-space">
+                            <label>Nội dung câu hỏi</label>
+                            <textarea
+                              rows={question.questionType === "writing" ? 4 : 2}
+                              value={question.content}
+                              onChange={(event) => updateQuestion(section.clientKey, index, "content", event.target.value)}
+                              placeholder={`Nhập nội dung cho ${section.title} - câu ${index + 1}`}
+                            />
+                          </div>
+
+                          {section.questionHasImage && (
+                            <div className="form-group admin-quizzes__question-space">
+                              <label>URL ảnh</label>
+                              <input
+                                value={question.imageUrl || ""}
+                                onChange={(event) => updateQuestion(section.clientKey, index, "imageUrl", event.target.value)}
+                                placeholder="https://..."
+                              />
+                            </div>
+                          )}
+
+                          {section.questionHasAudio && (
+                            <div className="form-group admin-quizzes__question-space">
+                              <label>Audio URL riêng cho câu</label>
+                              <input
+                                value={question.audioUrl || ""}
+                                onChange={(event) => updateQuestion(section.clientKey, index, "audioUrl", event.target.value)}
+                                placeholder="https://..."
+                              />
+                            </div>
+                          )}
+
+                          {question.questionType === "mcq" && (
+                            <div className="options-grid">
+                              {["A", "B", "C", "D"].map((option) => (
+                                <div key={option} className="form-group">
+                                  <label>Đáp án {option}</label>
+                                  <input
+                                    value={question[`option${option}`] || ""}
+                                    onChange={(event) => updateQuestion(section.clientKey, index, `option${option}`, event.target.value)}
+                                    placeholder={`Lựa chọn ${option}`}
+                                  />
+                                </div>
+                              ))}
+                              <div className="form-group">
+                                <label>Đáp án đúng</label>
+                                <select
+                                  value={question.correctAnswer}
+                                  onChange={(event) => updateQuestion(section.clientKey, index, "correctAnswer", event.target.value)}
+                                >
+                                  <option value="">Chọn</option>
+                                  {["A", "B", "C", "D"].map((option) => (
+                                    <option key={option} value={option}>{option}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          )}
+
+                          {["fill_blank", "matching", "writing"].includes(question.questionType) && (
+                            <div className="form-group admin-quizzes__question-space">
+                              <label>Đáp án đúng</label>
+                              <input
+                                value={question.correctAnswer}
+                                onChange={(event) => updateQuestion(section.clientKey, index, "correctAnswer", event.target.value)}
+                                placeholder={question.questionType === "matching" ? "VD: 1-A, 2-C, 3-B" : "Nhập đáp án chính xác"}
+                              />
+                            </div>
+                          )}
+
+                          <div className="form-group">
+                            <label>Giải thích đáp án</label>
+                            <input
+                              value={question.explanation || ""}
+                              onChange={(event) => updateQuestion(section.clientKey, index, "explanation", event.target.value)}
+                              placeholder="Giải thích tại sao đây là đáp án đúng"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
 
             <div className="admin-quizzes__footer-actions">
               <button className="btn btn-ghost" onClick={() => setStep(2)}>← Quay lại</button>
-              <button className="btn btn-primary" onClick={handleCreateQuiz}>✅ Tạo bài kiểm tra ({questions.length} câu)</button>
+              <button className="btn btn-primary" onClick={handleSaveQuiz} disabled={saving}>
+                {saving ? "Đang lưu..." : editorMode === "edit" ? "Lưu thay đổi" : `Tạo bài kiểm tra (${totalQuestionCount} câu)`}
+              </button>
             </div>
           </section>
         )}
@@ -546,7 +660,7 @@ export default function AdminQuizzes() {
           <p className="admin-quizzes__eyebrow">Assessment builder</p>
           <h1>Bài kiểm tra</h1>
           <p className="admin-quizzes__subtitle">
-            Tạo và quản lý các bộ đề IELTS, TOEIC với cấu trúc rõ ràng theo từng phần thi.
+            Tạo và quản lý các bộ đề IELTS, TOEIC với form nhập bám sát theo từng part thực tế.
           </p>
         </div>
         <div className="admin-quizzes__hero-metrics">
@@ -569,7 +683,7 @@ export default function AdminQuizzes() {
             <option value="TOEIC">TOEIC</option>
           </select>
         </div>
-        <button className="btn btn-primary" onClick={() => setCreating(true)}>+ Tạo bài kiểm tra</button>
+        <button className="btn btn-primary" onClick={startCreateFlow}>+ Tạo bài kiểm tra</button>
       </div>
 
       <div className="table-wrapper">
@@ -596,7 +710,7 @@ export default function AdminQuizzes() {
                 filteredQuizzes.map((quiz) => (
                   <tr key={quiz.id}>
                     <td className="admin-quizzes__title-cell">{quiz.title}</td>
-                    <td>{getClassName(quiz.classId)}</td>
+                    <td>{getClassNames(getLinkedClassIds(quiz))}</td>
                     <td>
                       <span className={`badge ${quiz.examType === "IELTS" ? "badge-blue" : "badge-green"}`}>{quiz.examType}</span>
                     </td>
@@ -605,7 +719,7 @@ export default function AdminQuizzes() {
                     <td>
                       <div className="admin-quizzes__row-actions">
                         <button className="btn btn-info btn-sm" title="Xem chi tiết" onClick={() => openViewModal(quiz)}>👁️</button>
-                        <button className="btn btn-warning btn-sm" title="Sửa" onClick={() => openEditQuiz(quiz)}>✏️</button>
+                        <button className="btn btn-warning btn-sm" title="Sửa" onClick={() => startEditFlow(quiz)}>✏️</button>
                         <button className="btn btn-danger btn-sm" title="Xóa" onClick={() => handleDelete(quiz.id)}>🗑️</button>
                       </div>
                     </td>
@@ -629,7 +743,7 @@ export default function AdminQuizzes() {
               <div className="form-row">
                 <div>
                   <label className="admin-quizzes__label">Lớp áp dụng</label>
-                  <p className="admin-quizzes__value admin-quizzes__value--strong">{getClassName(viewModal.quiz.classId)}</p>
+                  <p className="admin-quizzes__value admin-quizzes__value--strong">{getClassNames(getLinkedClassIds(viewModal.quiz))}</p>
                 </div>
                 <div>
                   <label className="admin-quizzes__label">Loại</label>
@@ -657,60 +771,46 @@ export default function AdminQuizzes() {
                 </div>
               )}
 
-              {viewModal.quiz.passageText && (
-                <div>
-                  <label className="admin-quizzes__label">Đoạn văn</label>
-                  <div className="admin-quizzes__passage-view">{viewModal.quiz.passageText}</div>
-                </div>
-              )}
-
-              {viewModal.quiz.audioUrl && (
-                <div>
-                  <label className="admin-quizzes__label">File audio</label>
-                  <audio controls src={viewModal.quiz.audioUrl} className="admin-quizzes__audio" />
-                </div>
-              )}
-
               <div>
                 <label className="admin-quizzes__label">Câu hỏi</label>
                 <div className="admin-quizzes__question-preview-list">
-                  {buildQuizSections(viewModal.groups, viewModal.questions).map((section, sectionIndex, allSections) => {
+                  {buildQuizSectionsForDisplay(viewModal.quiz, viewModal.groups, viewModal.questions).map((section, sectionIndex, allSections) => {
                     const previousQuestionCount = allSections
                       .slice(0, sectionIndex)
                       .reduce((total, currentSection) => total + currentSection.questions.length, 0);
 
                     return (
-                    <section key={section.key}>
-                      {section.group && (
-                        <article className="admin-quizzes__question-preview">
-                          {section.group.title && <p className="admin-quizzes__value admin-quizzes__value--strong">{section.group.title}</p>}
-                          {section.group.instructions && <p className="admin-quizzes__text-block">{section.group.instructions}</p>}
-                          {section.group.passageText && <div className="admin-quizzes__passage-view">{section.group.passageText}</div>}
-                          {section.group.imageUrl && <img src={section.group.imageUrl} alt="Question group" />}
-                          {section.group.audioUrl && <audio controls src={section.group.audioUrl} className="admin-quizzes__audio" />}
-                        </article>
-                      )}
-                      {section.questions.map((question, index) => (
-                        <article key={question.id || index} className="admin-quizzes__question-preview">
-                          <p className="admin-quizzes__value admin-quizzes__value--strong">{previousQuestionCount + index + 1}. {question.content}</p>
-                          <p className="admin-quizzes__text-block">{QUESTION_TYPE_LABELS[question.questionType] || question.questionType}</p>
-                          {question.imageUrl && <img src={question.imageUrl} alt="Question" />}
-                          {question.questionType === "mcq" && (
-                            <div className="admin-quizzes__option-list">
-                              {["A", "B", "C", "D"].map((option) => question[`option${option}`] ? (
-                                <div key={option} className={`admin-quizzes__option-item ${question.correctAnswer === option ? "admin-quizzes__option-item--correct" : ""}`}>
-                                  <strong>{option}.</strong> {question[`option${option}`]}
-                                </div>
-                              ) : null)}
-                            </div>
-                          )}
-                          {question.questionType !== "mcq" && question.correctAnswer && (
-                            <p className="admin-quizzes__text-block">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
-                          )}
-                        </article>
-                      ))}
-                    </section>
-                  );
+                      <section key={section.key}>
+                        {section.group && (
+                          <article className="admin-quizzes__question-preview">
+                            {section.group.title && <p className="admin-quizzes__value admin-quizzes__value--strong">{section.group.title}</p>}
+                            {section.group.instructions && <p className="admin-quizzes__text-block">{section.group.instructions}</p>}
+                            {section.group.passageText && <div className="admin-quizzes__passage-view">{section.group.passageText}</div>}
+                            {section.group.imageUrl && <img src={section.group.imageUrl} alt="Question group" />}
+                            {section.group.audioUrl && <audio controls src={section.group.audioUrl} className="admin-quizzes__audio" />}
+                          </article>
+                        )}
+                        {section.questions.map((question, index) => (
+                          <article key={question.id || index} className="admin-quizzes__question-preview">
+                            <p className="admin-quizzes__value admin-quizzes__value--strong">{previousQuestionCount + index + 1}. {question.content}</p>
+                            <p className="admin-quizzes__text-block">{QUESTION_TYPE_LABELS[question.questionType] || question.questionType}</p>
+                            {question.imageUrl && <img src={question.imageUrl} alt="Question" />}
+                            {question.questionType === "mcq" && (
+                              <div className="admin-quizzes__option-list">
+                                {["A", "B", "C", "D"].map((option) => question[`option${option}`] ? (
+                                  <div key={option} className={`admin-quizzes__option-item ${question.correctAnswer === option ? "admin-quizzes__option-item--correct" : ""}`}>
+                                    <strong>{option}.</strong> {question[`option${option}`]}
+                                  </div>
+                                ) : null)}
+                              </div>
+                            )}
+                            {question.questionType !== "mcq" && question.correctAnswer && (
+                              <p className="admin-quizzes__text-block">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
+                            )}
+                          </article>
+                        ))}
+                      </section>
+                    );
                   })}
                 </div>
               </div>
@@ -721,138 +821,12 @@ export default function AdminQuizzes() {
                 className="btn btn-warning btn-sm"
                 title="Sửa bài kiểm tra"
                 onClick={() => {
-                  openEditQuiz(viewModal.quiz);
+                  startEditFlow(viewModal.quiz);
                   setViewModal(null);
                 }}
               >
                 ✏️
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal sửa metadata cơ bản của quiz. */}
-      {editModal && (
-        <div className="modal-overlay" onClick={() => setEditModal(null)}>
-          <div className="modal admin-quizzes__modal-medium" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Sửa bài kiểm tra</h3>
-              <button className="modal-close" onClick={() => setEditModal(null)}>✕</button>
-            </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label>Lớp học áp dụng</label>
-                <select
-                  value={editModal.quiz.classId || ""}
-                  onChange={(event) => setEditModal({
-                    ...editModal,
-                    quiz: { ...editModal.quiz, classId: event.target.value ? Number(event.target.value) : null },
-                  })}
-                >
-                  <option value="">— Chưa gắn lớp cụ thể —</option>
-                  {classes.map((classroom) => (
-                    <option key={classroom.id} value={classroom.id}>
-                      {classroom.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Tiêu đề</label>
-                <input value={editModal.quiz.title || ""} onChange={(event) => setEditModal({ ...editModal, quiz: { ...editModal.quiz, title: event.target.value } })} />
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Loại chứng chỉ</label>
-                  <select
-                    value={editModal.quiz.examType || "IELTS"}
-                    onChange={(event) => setEditModal({ ...editModal, quiz: { ...editModal.quiz, examType: event.target.value } })}
-                  >
-                    <option value="IELTS">IELTS</option>
-                    <option value="TOEIC">TOEIC</option>
-                    <option value="OTHER">Khác</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Thời gian (phút)</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={editModal.quiz.timeLimit || ""}
-                    onChange={(event) => setEditModal({ ...editModal, quiz: { ...editModal.quiz, timeLimit: Number(event.target.value) } })}
-                  />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Hướng dẫn làm bài</label>
-                <textarea
-                  rows={3}
-                  value={editModal.quiz.instructions || ""}
-                  onChange={(event) => setEditModal({ ...editModal, quiz: { ...editModal.quiz, instructions: event.target.value } })}
-                />
-              </div>
-              <div className="form-group">
-                <label>Danh sách câu hỏi</label>
-                {(editModal.groups || []).length > 0 && (
-                  <div className="admin-quizzes__question-preview-list">
-                    {editModal.groups.map((group) => (
-                      <article key={group.id} className="admin-quizzes__question-preview">
-                        {group.title && <p className="admin-quizzes__value admin-quizzes__value--strong">{group.title}</p>}
-                        {group.instructions && <p className="admin-quizzes__text-block">{group.instructions}</p>}
-                        {group.passageText && <div className="admin-quizzes__passage-view">{group.passageText}</div>}
-                      </article>
-                    ))}
-                  </div>
-                )}
-                <div className="admin-quizzes__question-edit-list">
-                  {(editModal.questions || []).map((question, index) => (
-                    <article key={question.id || index} className="admin-quizzes__question-edit">
-                      <div className="form-group">
-                        <label>Câu {index + 1}</label>
-                        <textarea
-                          rows={2}
-                          value={question.content || ""}
-                          onChange={(event) => updateEditQuestion(index, "content", event.target.value)}
-                        />
-                      </div>
-                      {question.questionType === "mcq" && (
-                        <div className="options-grid">
-                          {["A", "B", "C", "D"].map((option) => (
-                            <div key={option} className="form-group">
-                              <label>Đáp án {option}</label>
-                              <input
-                                value={question[`option${option}`] || ""}
-                                onChange={(event) => updateEditQuestion(index, `option${option}`, event.target.value)}
-                              />
-                            </div>
-                          ))}
-                          <div className="form-group">
-                            <label>Đáp án đúng</label>
-                            <select value={question.correctAnswer || ""} onChange={(event) => updateEditQuestion(index, "correctAnswer", event.target.value)}>
-                              <option value="">Chọn</option>
-                              {["A", "B", "C", "D"].map((option) => <option key={option} value={option}>{option}</option>)}
-                            </select>
-                          </div>
-                        </div>
-                      )}
-                      {question.questionType !== "mcq" && (
-                        <div className="form-group">
-                          <label>Đáp án đúng</label>
-                          <input
-                            value={question.correctAnswer || ""}
-                            onChange={(event) => updateEditQuestion(index, "correctAnswer", event.target.value)}
-                          />
-                        </div>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="modal-footer">
-              <button className="btn btn-ghost" onClick={() => setEditModal(null)}>Hủy</button>
-              <button className="btn btn-primary" onClick={handleUpdateQuiz}>Lưu thay đổi</button>
             </div>
           </div>
         </div>

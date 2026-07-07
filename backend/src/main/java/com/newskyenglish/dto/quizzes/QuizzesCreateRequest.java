@@ -8,8 +8,10 @@ import java.util.List;
 @Data
 // Payload tạo hoặc cập nhật quiz cùng nhóm câu hỏi và câu hỏi con.
 public class QuizzesCreateRequest {
-    // classId xác định bài kiểm tra này thuộc lớp nào trong schema hiện tại.
+    // classId giữ lại để tương thích payload cũ khi chỉ gắn một lớp.
     private Long classId;
+    // classIds là danh sách lớp học được gắn với quiz trong schema mới.
+    private List<Long> classIds;
     // title là tên hiển thị của bài kiểm tra trên admin và student.
     private String title;
     // type xác định kiểu quiz tổng quát như trắc nghiệm hay viết.
@@ -33,6 +35,8 @@ public class QuizzesCreateRequest {
 
     @Data
     public static class GroupRequest {
+        // clientKey là khóa tạm từ frontend để gắn câu hỏi vào group mới tạo trong cùng request.
+        private String clientKey;
         // title là tiêu đề của block câu hỏi hoặc đoạn đọc/nghe.
         private String title;
         // passageText là nội dung đoạn văn riêng của group.
@@ -51,6 +55,8 @@ public class QuizzesCreateRequest {
     public static class QuestionRequest {
         // groupId liên kết câu hỏi với group tương ứng nếu có.
         private Long groupId;
+        // groupKey cho phép câu hỏi tham chiếu tới group mới tạo trong cùng payload.
+        private String groupKey;
         // questionType quyết định frontend render kiểu input nào.
         private String questionType;
         // content là nội dung chính của câu hỏi.

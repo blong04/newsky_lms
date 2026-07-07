@@ -115,6 +115,16 @@ public class QuizzesController {
         ));
     }
 
+    // Giáo viên xem lịch sử làm quiz của một học viên thuộc lớp mình.
+    @GetMapping("/teacher/students/{userId}/quizzes/submissions")
+    public ResponseEntity<ApiResponse<List<QuizzesDTO.SubmissionResponse>>> getTeacherStudentSubmissions(
+            @PathVariable Long userId,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                quizService.getTeacherStudentSubmissions(userId, authorizationHeader)
+        ));
+    }
+
     // Nhận đáp án từ frontend, chấm tự động phần trắc nghiệm và lưu submission.
     @PostMapping("/student/quiz/{quizId}/submit")
     public ResponseEntity<ApiResponse<QuizzesDTO.SubmitResultResponse>> submitStudentQuiz(

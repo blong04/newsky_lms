@@ -6,16 +6,13 @@ import lombok.*;
 @Entity
 @Table(name = "questions")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-// Entity biểu diễn một câu hỏi đơn lẻ trong quiz.
+// Entity biểu diễn một câu hỏi đơn lẻ, luôn thuộc về một question group.
 public class Questions {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "question_id")
     private Long id;
-
-    @Column(name = "quiz_id")
-    private Long quizId;
 
     @Column(name = "group_id")
     private Long groupId;
@@ -54,8 +51,5 @@ public class Questions {
     @Builder.Default
     private Integer orderNum = 1;
 
-    // Câu hỏi có thể thuộc quiz nhỏ hoặc full test, nên giữ thêm testId để mở rộng sau.
-    @Column(name = "test_id")
-    private Long testId;
 }
 

@@ -49,7 +49,7 @@ export default function AdminClasses() {
       setClasses(classData || []);
       setCourses(courseData || []);
       setTeachers(
-        allUsers.filter((user) => user.roleId === 2 && user.approved)
+        allUsers.filter((user) => user.roleId === 2)
       );
       setEnrollments(enrollmentData || []);
     } catch {

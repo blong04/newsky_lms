@@ -8,7 +8,4 @@ export const userService = {
   update: (id, data) => api.put(`/users/${id}`, data).then(unwrapData),
   changePassword: (id, data) => api.put(`/users/${id}/change-password`, data).then(unwrapData),
   delete: (id) => api.delete(`/users/${id}`).then(unwrapData),
-  getPendingTeachers: () => api.get("/admin/pending-teachers").then(unwrapData),
-  approveTeacher: (id) => api.put(`/admin/users/${id}/approve`).then(unwrapData),
-  rejectTeacher: (id) => api.delete(`/admin/users/${id}/reject`).then(unwrapData),
 };

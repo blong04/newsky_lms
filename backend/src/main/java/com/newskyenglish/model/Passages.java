@@ -20,8 +20,8 @@ public class Passages {
     @Column(name = "assign_id")
     private Long assignId;
 
-    @Column(name = "test_id")
-    private Long testId;
+    @Column(name = "mock_test_id")
+    private Long mockTestId;
 
     @Column(name = "title", length = 255)
     private String title;
