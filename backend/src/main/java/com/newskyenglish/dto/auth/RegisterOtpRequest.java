@@ -7,8 +7,8 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
-// Payload nhận từ form đăng ký tài khoản mới.
-public class RegisterRequest {
+// Payload bước 1: người dùng nhập thông tin để hệ thống gửi OTP xác minh email.
+public class RegisterOtpRequest {
     @NotBlank
     @Size(min = 2, max = 100)
     private String name;
@@ -21,6 +21,4 @@ public class RegisterRequest {
     @Size(min = 4, max = 4, message = "Mật khẩu phải đúng 4 ký tự")
     @Pattern(regexp = "\\d{4}", message = "Mật khẩu phải gồm đúng 4 chữ số")
     private String password;
-
-    private Integer roleId;
 }

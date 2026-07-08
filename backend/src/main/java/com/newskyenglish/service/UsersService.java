@@ -62,7 +62,7 @@ public class UsersService {
                 .address(request.getAddress())
                 .avatarUrl(request.getAvatarUrl())
                 .roleId(selectedRoleId)
-                .approved(selectedRoleId != 2)
+                .approved(true)
                 .status(Users.Status.active)
                 .experience(request.getExperience())
                 .education(request.getEducation())

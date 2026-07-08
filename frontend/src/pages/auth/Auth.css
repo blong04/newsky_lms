@@ -109,6 +109,9 @@
 .role-btn:hover:not(.active) { border-color: var(--gray-300); background: var(--gray-50); }
 
 .note-text { font-size: 0.78rem; color: var(--warning); margin-top: 6px; }
+.note-text--success { color: var(--success); }
+.note-text--error { color: var(--danger); }
+.note-text--muted { color: var(--gray-500); }
 
 .btn-primary-full {
   width: 100%;

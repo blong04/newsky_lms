@@ -1,8 +1,10 @@
 package com.newskyenglish.service;
 
 import com.newskyenglish.dto.auth.AuthResponse;
+import com.newskyenglish.dto.auth.EmailAvailabilityResponse;
 import com.newskyenglish.dto.auth.LoginRequest;
-import com.newskyenglish.dto.auth.RegisterRequest;
+import com.newskyenglish.dto.auth.RegisterOtpRequest;
+import com.newskyenglish.dto.auth.VerifyRegisterOtpRequest;
 import com.newskyenglish.dto.users.UsersDTO;
 import com.newskyenglish.exception.BadRequestException;
 import com.newskyenglish.model.Users;
@@ -21,6 +23,8 @@ public class AuthService {
     private final UsersRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final RegistrationEmailService registrationEmailService;
+    private final RegistrationOtpService registrationOtpService;
 
     @Transactional(readOnly = true)
     // Xác thực tài khoản và trả về JWT kèm thông tin người dùng đăng nhập.
@@ -45,32 +49,69 @@ public class AuthService {
                 .build();
     }
 
+    // Kiểm tra email đã được dùng trong hệ thống hay chưa để frontend báo sớm trên form.
+    public EmailAvailabilityResponse checkEmailAvailability(String rawEmail) {
+        String normalizedEmail = normalizeEmail(rawEmail);
+        boolean available = !normalizedEmail.isBlank() && !userRepository.existsByEmail(normalizedEmail);
+
+        return EmailAvailabilityResponse.builder()
+                .available(available)
+                .message(available ? "Email có thể sử dụng" : "Email đã tồn tại trong hệ thống")
+                .build();
+    }
+
     @Transactional
-    // Tạo tài khoản mới theo role được gửi từ form đăng ký.
-    public void register(RegisterRequest request) {
+    // Bước 1: nhận thông tin đăng ký và gửi OTP tới email người dùng.
+    public String requestRegistrationOtp(RegisterOtpRequest request) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
         validateNumericPassword(request.getPassword());
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (normalizedEmail.isBlank()) {
+            throw new BadRequestException("Email không được để trống");
+        }
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw new BadRequestException("Email đã tồn tại");
         }
 
-        Integer selectedRoleId = request.getRoleId() != null ? request.getRoleId() : 3;
+        RegistrationOtpService.PendingRegistration pendingRegistration = registrationOtpService.issueOtp(
+                normalizedEmail,
+                request.getName(),
+                passwordEncoder.encode(request.getPassword())
+        );
+        registrationEmailService.sendRegistrationOtpEmail(
+                normalizedEmail,
+                request.getName(),
+                pendingRegistration.getOtp()
+        );
+
+        return "OTP đã được gửi tới email của bạn. Vui lòng nhập mã để hoàn tất đăng ký.";
+    }
+
+    @Transactional
+    // Bước 2: kiểm tra OTP rồi mới tạo tài khoản học viên thật trong database.
+    public String verifyRegistrationOtp(VerifyRegisterOtpRequest request) {
+        String normalizedEmail = normalizeEmail(request.getEmail());
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            registrationOtpService.clear(normalizedEmail);
+            throw new BadRequestException("Email đã tồn tại");
+        }
+
+        RegistrationOtpService.PendingRegistration pendingRegistration = registrationOtpService
+                .consumeVerifiedRegistration(normalizedEmail, request.getOtp());
+
         Users user = Users.builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .roleId(selectedRoleId)
-                .approved(selectedRoleId != 2)
+                .name(pendingRegistration.getName())
+                .email(normalizedEmail)
+                .password(pendingRegistration.getEncodedPassword())
+                .roleId(3)
+                .approved(true)
                 .status(Users.Status.active)
                 .build();
 
-        userRepository.save(user);
-    }
-
-    // Trả thông điệp đăng ký phù hợp với từng role, nhất là giáo viên cần duyệt.
-    public String getRegisterSuccessMessage(Integer roleId) {
-        return roleId != null && roleId == 2
-                ? "Đăng ký thành công! Vui lòng chờ admin phê duyệt."
-                : "Đăng ký thành công!";
+        Users savedUser = userRepository.save(user);
+        boolean mailSent = registrationEmailService.sendRegistrationSuccessEmail(savedUser);
+        return mailSent
+                ? "Đăng ký thành công! Hệ thống đã gửi email thông báo."
+                : "Đăng ký thành công! Tài khoản đã được tạo nhưng hệ thống chưa gửi được email thông báo.";
     }
 
     // Đảm bảo mật khẩu đăng ký chỉ gồm đúng 4 chữ số.
@@ -78,6 +119,11 @@ public class AuthService {
         if (password == null || !password.matches("\\d{4}")) {
             throw new BadRequestException("Mật khẩu phải gồm đúng 4 chữ số");
         }
+    }
+
+    // Đồng bộ email về lowercase + trim để tránh trùng khác hoa thường.
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase();
     }
 }
 

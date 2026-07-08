@@ -7,3 +7,8 @@
 .register-page .auth-card {
   border: 1px solid rgba(226, 232, 240, 0.8);
 }
+
+.register-page__secondary-btn {
+  margin-top: 0;
+  background: linear-gradient(135deg, #475569, #64748b);
+}
