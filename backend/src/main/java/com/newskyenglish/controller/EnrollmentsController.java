@@ -43,8 +43,7 @@ public class EnrollmentsController {
     public ResponseEntity<ApiResponse<Void>> createStudentEnrollment(
             @RequestBody @Valid EnrollmentsDTO.StudentEnrollRequest request,
             @RequestHeader("Authorization") String authorizationHeader) {
-        enrollmentsService.createStudentEnrollment(request, authorizationHeader);
-        boolean paid = Boolean.TRUE.equals(request.getPaid());
+        boolean paid = enrollmentsService.createStudentEnrollment(request, authorizationHeader);
         return ResponseEntity.ok(ApiResponse.<Void>success(
                 null,
                 enrollmentsService.getEnrollmentSuccessMessage(paid)

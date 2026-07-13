@@ -569,7 +569,6 @@ public class TestsService {
         boolean hasAccess = enrollmentsRepository.findByUserId(userId).stream()
                 .anyMatch(enrollment -> testClassIds.contains(enrollment.getClassId())
                         && (enrollment.getStatus() == Enrollments.Status.approved
-                        || enrollment.getStatus() == Enrollments.Status.enrolled
                         || enrollment.getStatus() == Enrollments.Status.completed));
         if (!hasAccess) {
             throw new ForbiddenException("Bạn chưa được ghi danh vào lớp của bài thi thử này");

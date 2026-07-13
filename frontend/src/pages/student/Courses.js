@@ -2,9 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { classService } from "../../services/classService";
 import { courseService } from "../../services/courseService";
 import { enrollmentService } from "../../services/enrollmentService";
+import { paymentService } from "../../services/paymentService";
 import { CLASS_STATUS_BADGES, CLASS_STATUS_LABELS } from "../../constants/classes";
 import { LEVEL_LABELS } from "../../constants/courses";
 import { ENROLLMENT_STATUS_META } from "../../constants/enrollments";
+import { INSTANT_PAYMENT_METHODS, PAYMENT_METHOD_LABELS, PAYMENT_METHOD_OPTIONS } from "../../constants/payments";
 import { STUDENT_COURSE_PAGE_SIZE } from "../../constants/pagination";
 import toast from "react-hot-toast";
 import "./Courses.css";
@@ -28,6 +30,9 @@ export default function StudentCourses() {
   const [enrollModal, setEnrollModal] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [showPaymentView, setShowPaymentView] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
+  const [paymentPreview, setPaymentPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
 
   // Load toàn bộ dữ liệu cần cho màn catalog khóa học.
@@ -54,10 +59,10 @@ export default function StudentCourses() {
     fetchAll();
   }, []);
 
-  // Chỉ xem enrollment còn hiệu lực là đã đăng ký; trạng thái dropped/rejected được xem như có thể đăng ký lại.
+  // Chỉ xem enrollment còn hiệu lực là đã đăng ký; trạng thái cancelled/rejected được xem như có thể đăng ký lại.
   const getEnrollment = (courseId) => enrollments.find((item) =>
     (item.courseId === courseId || item.courseId === Number(courseId))
-    && !["dropped", "rejected"].includes(item.status)
+    && !["cancelled", "rejected"].includes(item.status)
   );
 
   const getAvailableClasses = (courseId) => (
@@ -100,6 +105,16 @@ export default function StudentCourses() {
     setEnrollModal(course);
     setSelectedClass(null);
     setShowPaymentView(false);
+    setSelectedPaymentMethod("");
+    setPaymentPreview(null);
+  };
+
+  const resetEnrollmentFlow = () => {
+    setEnrollModal(null);
+    setSelectedClass(null);
+    setShowPaymentView(false);
+    setSelectedPaymentMethod("");
+    setPaymentPreview(null);
   };
 
   const handleCancelEnroll = async (enrollment) => {
@@ -119,27 +134,61 @@ export default function StudentCourses() {
     }
   };
 
-  const submitEnrollment = async (paid) => {
+  const loadPaymentPreview = async (paymentMethod) => {
+    if (!selectedClass || !enrollModal) {
+      return;
+    }
+
+    setPreviewLoading(true);
+    try {
+      const preview = await paymentService.previewStudentPayment({
+        courseId: enrollModal.id,
+        classId: selectedClass.id,
+        paymentMethod,
+      });
+      setPaymentPreview(preview);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Không thể tạo QR thanh toán");
+      setPaymentPreview(null);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleSelectPaymentMethod = async (paymentMethod) => {
+    setSelectedPaymentMethod(paymentMethod);
+    setPaymentPreview(null);
+    await loadPaymentPreview(paymentMethod);
+  };
+
+  const submitEnrollment = async () => {
     if (!selectedClass) {
       toast.error("Chọn lớp học");
+      return;
+    }
+    if (!selectedPaymentMethod) {
+      toast.error("Chọn phương thức thanh toán");
       return;
     }
 
     setEnrolling(true);
     try {
+      const isFreeCourse = Number(enrollModal.price || 0) <= 0;
+      const isPaid = isFreeCourse || INSTANT_PAYMENT_METHODS.includes(selectedPaymentMethod);
       await enrollmentService.createStudentEnrollment({
         courseId: enrollModal.id,
         classId: selectedClass.id,
-        paid,
+        paymentMethod: selectedPaymentMethod,
+        paid: isPaid,
       });
       toast.success(
-        paid
+        isPaid
           ? "Đã ghi nhận đăng ký và đánh dấu thanh toán."
-          : "Đã gửi yêu cầu đăng ký. Vui lòng chờ admin phê duyệt."
+          : selectedPaymentMethod === "BANK_TRANSFER"
+            ? "Đã ghi nhận yêu cầu chuyển khoản. Admin sẽ kiểm tra và phê duyệt."
+            : "Đã gửi yêu cầu đăng ký. Vui lòng chờ admin phê duyệt."
       );
-      setEnrollModal(null);
-      setSelectedClass(null);
-      setShowPaymentView(false);
+      resetEnrollmentFlow();
       await refreshEnrollments();
     } catch (error) {
       toast.error(error.response?.data?.message || "Thất bại");
@@ -333,8 +382,17 @@ export default function StudentCourses() {
               {getEnrollment(detailModal.id) && (
                 <div className="student-courses__payment-box">
                   <p className="student-courses__payment-title">💳 Trạng thái thanh toán</p>
+                  {getEnrollment(detailModal.id)?.paymentMethod && (
+                    <p className="student-courses__payment-method-tag">
+                      Phương thức: {PAYMENT_METHOD_LABELS[getEnrollment(detailModal.id)?.paymentMethod] || getEnrollment(detailModal.id)?.paymentMethod}
+                    </p>
+                  )}
                   <p className="student-courses__payment-note">
-                    {getEnrollment(detailModal.id)?.paid ? "✅ Đã thanh toán" : "⏳ Chưa thanh toán — Đang chờ admin phê duyệt"}
+                    {getEnrollment(detailModal.id)?.paid
+                      ? "✅ Đã thanh toán"
+                      : getEnrollment(detailModal.id)?.paymentStatus === "pending"
+                        ? "⏳ Chưa thanh toán — Đang chờ admin phê duyệt"
+                        : "⏳ Chưa thanh toán"}
                   </p>
                 </div>
               )}
@@ -354,9 +412,7 @@ export default function StudentCourses() {
         <div
           className="modal-overlay"
           onClick={() => {
-            setEnrollModal(null);
-            setSelectedClass(null);
-            setShowPaymentView(false);
+            resetEnrollmentFlow();
           }}
         >
           <div className="modal student-courses__select-modal" onClick={(event) => event.stopPropagation()}>
@@ -365,9 +421,7 @@ export default function StudentCourses() {
               <button
                 className="modal-close"
                 onClick={() => {
-                  setEnrollModal(null);
-                  setSelectedClass(null);
-                  setShowPaymentView(false);
+                  resetEnrollmentFlow();
                 }}
               >
                 ✕
@@ -424,15 +478,64 @@ export default function StudentCourses() {
                       </span>
                     </div>
                   </div>
+                  <p className="student-courses__payment-method-title">Chọn phương thức thanh toán</p>
                   <div className="student-courses__payment-methods">
-                    <div className="student-courses__payment-method">
-                      <span className="student-courses__payment-icon">🏦</span>
-                      <div>
-                        <p className="student-courses__payment-method-name">Chuyển khoản / đóng tại trung tâm</p>
-                        <p className="student-courses__payment-method-desc">View này chỉ để mô phỏng bước thanh toán, chưa xử lý giao dịch thật.</p>
-                      </div>
-                    </div>
+                    {PAYMENT_METHOD_OPTIONS.map((option) => {
+                      const isSelected = selectedPaymentMethod === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`student-courses__payment-method ${isSelected ? "student-courses__payment-method--selected" : ""}`}
+                          onClick={() => handleSelectPaymentMethod(option.value)}
+                        >
+                          <span className="student-courses__payment-icon">{option.icon}</span>
+                          <div className="student-courses__payment-copy">
+                            <p className="student-courses__payment-method-name">{option.label}</p>
+                            <p className="student-courses__payment-method-desc">{option.description}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
+                  {previewLoading && (
+                    <div className="student-courses__qr-loading">
+                      <div className="spinner" />
+                    </div>
+                  )}
+                  {paymentPreview && !previewLoading && (
+                    <div className="student-courses__qr-panel">
+                      <div className="student-courses__qr-head">
+                        <div>
+                          <p className="student-courses__payment-method-name">{paymentPreview.providerName}</p>
+                          <p className="student-courses__payment-method-desc">{paymentPreview.instruction}</p>
+                        </div>
+                        {paymentPreview.mockMode && <span className="badge badge-orange">Demo</span>}
+                      </div>
+                      {paymentPreview.qrImageUrl ? (
+                        <img
+                          className="student-courses__qr-image"
+                          src={paymentPreview.qrImageUrl}
+                          alt={`QR ${paymentPreview.providerName}`}
+                        />
+                      ) : (
+                        <div className="student-courses__qr-empty">Phương thức này không cần QR.</div>
+                      )}
+                      <div className="student-courses__qr-meta">
+                        {paymentPreview.bankName && <p><strong>Ngân hàng:</strong> {paymentPreview.bankName}</p>}
+                        {paymentPreview.accountNumber && <p><strong>Số tài khoản:</strong> {paymentPreview.accountNumber}</p>}
+                        {paymentPreview.accountName && <p><strong>Chủ tài khoản:</strong> {paymentPreview.accountName}</p>}
+                        {paymentPreview.walletId && <p><strong>Ví:</strong> {paymentPreview.walletId}</p>}
+                        {paymentPreview.transferContent && <p><strong>Nội dung:</strong> {paymentPreview.transferContent}</p>}
+                        {paymentPreview.paymentCode && <p><strong>Mã thanh toán:</strong> {paymentPreview.paymentCode}</p>}
+                      </div>
+                      {paymentPreview.note && (
+                        <div className="student-courses__payment-warning">
+                          {paymentPreview.note}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="student-courses__payment-warning">
                     Nếu bạn bỏ qua thanh toán, hệ thống vẫn gửi yêu cầu đăng ký để admin phê duyệt thủ công.
                   </div>
@@ -445,8 +548,7 @@ export default function StudentCourses() {
                   <button
                     className="btn btn-ghost"
                     onClick={() => {
-                      setEnrollModal(null);
-                      setSelectedClass(null);
+                      resetEnrollmentFlow();
                     }}
                   >
                     Hủy
@@ -464,23 +566,16 @@ export default function StudentCourses() {
                   <button
                     className="btn btn-ghost student-courses__payment-btn"
                     onClick={() => setShowPaymentView(false)}
-                    disabled={enrolling}
+                    disabled={enrolling || previewLoading}
                   >
                     ← Chọn lại lớp
                   </button>
                   <button
-                    className="btn btn-warning student-courses__payment-btn"
-                    onClick={() => submitEnrollment(false)}
-                    disabled={enrolling}
-                  >
-                    {enrolling ? <span className="spinner" /> : "Bỏ qua thanh toán và gửi duyệt"}
-                  </button>
-                  <button
                     className="btn btn-primary student-courses__payment-btn"
-                    onClick={() => submitEnrollment(true)}
-                    disabled={enrolling}
+                    onClick={submitEnrollment}
+                    disabled={enrolling || previewLoading || !selectedPaymentMethod}
                   >
-                    {enrolling ? <span className="spinner" /> : "Xác nhận thanh toán"}
+                    {enrolling ? <span className="spinner" /> : (paymentPreview?.actionLabel || "Xác nhận phương thức đã chọn")}
                   </button>
                 </>
               )}

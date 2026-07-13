@@ -49,7 +49,7 @@ public class Courses {
     private LocalDateTime updatedAt;
 
     public enum Level { beginner, intermediate, advanced }
-    public enum Status { active, inactive }
+    public enum Status { active, inactive, archived }
     public enum ExamType { IELTS, TOEIC, OTHER }
 }
 

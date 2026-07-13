@@ -50,6 +50,6 @@ public class AssignmentSubmissions {
         if (submittedAt == null) submittedAt = LocalDateTime.now();
     }
 
-    public enum Status { submitted, graded, late, resubmit }
+    public enum Status { submitted, graded }
 }
 

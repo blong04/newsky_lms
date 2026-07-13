@@ -104,7 +104,6 @@ public class CoursesService {
 
         return enrollmentRepository.findByClassIdIn(classIds).stream()
                 .filter(enrollment -> enrollment.getStatus() == com.newskyenglish.model.Enrollments.Status.approved
-                        || enrollment.getStatus() == com.newskyenglish.model.Enrollments.Status.enrolled
                         || enrollment.getStatus() == com.newskyenglish.model.Enrollments.Status.completed)
                 .collect(Collectors.groupingBy(
                         enrollment -> enrollment.getClassId(),

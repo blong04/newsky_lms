@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "enrollments")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-// Entity lưu việc một học viên đăng ký vào khóa hoặc lớp cụ thể.
+// Entity lưu việc một học viên đăng ký vào một lớp học cụ thể.
 public class Enrollments {
 
     @Id
@@ -30,15 +30,11 @@ public class Enrollments {
     @Column(name = "approved_by")
     private Long approvedBy;
 
-    @Column(name = "payment_status")
-    @Builder.Default
-    private Boolean paid = false;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "approval_status")
     @Builder.Default
     private Status status = Status.pending;
 
-    public enum Status { pending, approved, rejected, enrolled, completed, dropped }
+    public enum Status { pending, approved, rejected, cancelled, completed }
 }
 

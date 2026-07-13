@@ -281,7 +281,6 @@ public class AssignmentsService {
         boolean hasAccess = enrollmentsRepository.findByUserId(userId).stream()
                 .anyMatch(enrollment -> assignment.getClassId().equals(enrollment.getClassId())
                         && (enrollment.getStatus() == Enrollments.Status.approved
-                        || enrollment.getStatus() == Enrollments.Status.enrolled
                         || enrollment.getStatus() == Enrollments.Status.completed));
         if (!hasAccess) {
             throw new ForbiddenException("Bạn chưa được ghi danh vào lớp của bài tập này");

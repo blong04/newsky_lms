@@ -44,7 +44,7 @@ export default function StudentDashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  const activeEnrollments = useMemo(() => enrollments.filter((item) => ["approved", "enrolled"].includes(item.status)), [enrollments]);
+  const activeEnrollments = useMemo(() => enrollments.filter((item) => item.status === "approved"), [enrollments]);
   const pendingEnrollments = useMemo(() => enrollments.filter((item) => item.status === "pending"), [enrollments]);
   const completedEnrollments = useMemo(() => enrollments.filter((item) => item.status === "completed"), [enrollments]);
 

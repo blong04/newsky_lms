@@ -114,13 +114,15 @@ public class ClassesService {
 
         return enrollments.stream()
                 .filter(enrollment -> enrollment.getStatus() == Enrollments.Status.approved
-                        || enrollment.getStatus() == Enrollments.Status.enrolled
                         || enrollment.getStatus() == Enrollments.Status.completed)
                 .map(enrollment -> EnrollmentsDTO.TeacherStudentResponse.fromEntity(
                         enrollment,
                         usersById.get(enrollment.getUserId()),
                         course,
-                        classRoom
+                        classRoom,
+                        false,
+                        null,
+                        null
                 ))
                 .toList();
     }
@@ -136,7 +138,7 @@ public class ClassesService {
                 .maxStudents(request.getMaxStudents())
                 .startDate(request.getStartDate())
                 .endDate(request.getEndDate())
-                .status(request.getStatus() != null ? request.getStatus() : Classes.Status.active)
+                .status(request.getStatus() != null ? request.getStatus() : Classes.Status.pending)
                 .build();
 
         return ClassesDTO.Response.fromEntity(
@@ -207,7 +209,6 @@ public class ClassesService {
 
         return enrollmentsRepository.findByClassIdIn(classIds).stream()
                 .filter(enrollment -> enrollment.getStatus() == Enrollments.Status.approved
-                        || enrollment.getStatus() == Enrollments.Status.enrolled
                         || enrollment.getStatus() == Enrollments.Status.completed)
                 .collect(Collectors.groupingBy(
                         Enrollments::getClassId,
@@ -219,7 +220,6 @@ public class ClassesService {
     private Integer resolveCurrentStudentCount(Long classId) {
         return (int) enrollmentsRepository.findByClassId(classId).stream()
                 .filter(enrollment -> enrollment.getStatus() == Enrollments.Status.approved
-                        || enrollment.getStatus() == Enrollments.Status.enrolled
                         || enrollment.getStatus() == Enrollments.Status.completed)
                 .count();
     }

@@ -564,7 +564,6 @@ public class QuizzesService {
         boolean hasAccess = enrollmentsRepository.findByUserId(userId).stream()
                 .anyMatch(enrollment -> quizClassIds.contains(enrollment.getClassId())
                         && (enrollment.getStatus() == Enrollments.Status.approved
-                        || enrollment.getStatus() == Enrollments.Status.enrolled
                         || enrollment.getStatus() == Enrollments.Status.completed));
         if (!hasAccess) {
             throw new ForbiddenException("Bạn chưa được ghi danh vào lớp của bài kiểm tra này");

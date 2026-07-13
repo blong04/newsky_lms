@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "payments")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-// Entity lưu trạng thái thanh toán học phí theo người dùng và khóa học.
+// Entity lưu giao dịch thanh toán gắn trực tiếp với từng enrollment.
 public class Payments {
 
     @Id
@@ -17,11 +17,8 @@ public class Payments {
     @Column(name = "pay_id")
     private Long id;
 
-    @Column(name = "user_id")
-    private Long userId;
-
-    @Column(name = "course_id")
-    private Long courseId;
+    @Column(name = "enrollment_id")
+    private Long enrollmentId;
 
     @Column(name = "amount", precision = 10, scale = 2)
     private BigDecimal amount;
@@ -29,8 +26,8 @@ public class Payments {
     @Column(name = "payment_method", length = 50)
     private String paymentMethod;
 
-    // Schema dump hiện ghi là maid_at, nên giữ đúng tên cột để tránh lệch.
-    @Column(name = "maid_at")
+    // Thời điểm thanh toán được ghi nhận thành công hoặc tạo giao dịch.
+    @Column(name = "paid_at")
     private LocalDateTime paidAt;
 
     @Column(name = "status", length = 50)

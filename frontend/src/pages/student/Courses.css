@@ -300,10 +300,29 @@
   border: 1.5px solid var(--gray-200);
   border-radius: 8px;
   cursor: pointer;
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.student-courses__payment-method:hover {
+  border-color: var(--primary);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.student-courses__payment-method--selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.15);
 }
 
 .student-courses__payment-icon {
   font-size: 1.3rem;
+}
+
+.student-courses__payment-copy {
+  flex: 1;
+  text-align: left;
 }
 
 .student-courses__payment-method-name {
@@ -325,6 +344,60 @@
   font-size: 0.78rem;
 }
 
+.student-courses__payment-method-tag {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--gray-600);
+}
+
+.student-courses__qr-loading {
+  display: flex;
+  justify-content: center;
+  padding: 18px 0 6px;
+}
+
+.student-courses__qr-panel {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.student-courses__qr-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.student-courses__qr-image {
+  display: block;
+  width: min(100%, 280px);
+  margin: 14px auto 0;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  background: #fff;
+}
+
+.student-courses__qr-empty {
+  margin-top: 14px;
+  padding: 14px;
+  text-align: center;
+  border: 1px dashed var(--gray-300);
+  border-radius: 10px;
+  color: var(--gray-500);
+  background: #fff;
+}
+
+.student-courses__qr-meta {
+  margin-top: 14px;
+  display: grid;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--gray-700);
+}
+
 .student-courses__payment-footer {
   flex-direction: column;
   gap: 8px;
@@ -341,5 +414,9 @@
 
   .student-courses__class-side {
     text-align: left;
+  }
+
+  .student-courses__qr-head {
+    flex-direction: column;
   }
 }

@@ -7,8 +7,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-// Repository truy vấn lịch sử thanh toán theo người dùng hoặc khóa học.
+// Repository truy vấn giao dịch thanh toán theo enrollment.
 public interface PaymentsRepository extends JpaRepository<Payments, Long> {
-    List<Payments> findByUserId(Long userId);
-    List<Payments> findByCourseId(Long courseId);
+    List<Payments> findByEnrollmentId(Long enrollmentId);
+    List<Payments> findByEnrollmentIdIn(List<Long> enrollmentIds);
 }

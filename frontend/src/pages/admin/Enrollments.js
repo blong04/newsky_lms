@@ -5,6 +5,7 @@ import { enrollmentService } from "../../services/enrollmentService";
 import { userService } from "../../services/userService";
 import { ENROLLMENT_STATUS_BADGES, ENROLLMENT_STATUS_LABELS } from "../../constants/enrollments";
 import { getExamBadgeClass } from "../../constants/courses";
+import { PAYMENT_METHOD_LABELS } from "../../constants/payments";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import toast from "react-hot-toast";
 import "./Enrollments.css";
@@ -145,10 +146,9 @@ export default function AdminEnrollments() {
             <option value="">Tất cả</option>
             <option value="pending">⏳ Chờ duyệt</option>
             <option value="approved">✅ Đã duyệt</option>
-            <option value="enrolled">📚 Đang học</option>
             <option value="rejected">❌ Từ chối</option>
             <option value="completed">🎓 Hoàn thành</option>
-            <option value="dropped">🚫 Đã hủy</option>
+            <option value="cancelled">🚫 Đã hủy</option>
           </select>
         </div>
         <span className="admin-enrollments__result-count">{filteredEnrollments.length} đăng ký</span>
@@ -210,9 +210,25 @@ export default function AdminEnrollments() {
                         </td>
                         <td>
                           {enrollment.paid ? (
-                            <span className="badge badge-green">✅ Đã TT</span>
+                            <div>
+                              <span className="badge badge-green">✅ Đã TT</span>
+                              {enrollment.paymentMethod && (
+                                <p className="admin-enrollments__muted admin-enrollments__tiny">
+                                  {PAYMENT_METHOD_LABELS[enrollment.paymentMethod] || enrollment.paymentMethod}
+                                </p>
+                              )}
+                            </div>
                           ) : (
-                            <span className="badge badge-yellow">⏳ Chưa TT</span>
+                            <div>
+                              <span className={`badge ${enrollment.paymentStatus === "failed" ? "badge-red" : "badge-yellow"}`}>
+                                {enrollment.paymentStatus === "failed" ? "❌ Lỗi TT" : "⏳ Chưa TT"}
+                              </span>
+                              {enrollment.paymentMethod && (
+                                <p className="admin-enrollments__muted admin-enrollments__tiny">
+                                  {PAYMENT_METHOD_LABELS[enrollment.paymentMethod] || enrollment.paymentMethod}
+                                </p>
+                              )}
+                            </div>
                           )}
                         </td>
                         <td>

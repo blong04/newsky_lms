@@ -39,7 +39,7 @@ export default function StudentSchedule() {
           courseService.getAll(),
         ]);
 
-        const myEnrollments = (enrollmentData || []).filter((item) => ["approved", "enrolled"].includes(item.status));
+        const myEnrollments = (enrollmentData || []).filter((item) => ["approved", "completed"].includes(item.status));
         const allClasses = classData || [];
         const allCourses = courseData || [];
 

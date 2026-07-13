@@ -85,7 +85,7 @@ export default function AdminClasses() {
 
   const getApprovedCount = (classId) =>
     getClassEnrollments(classId).filter((enrollment) =>
-      ["approved", "enrolled", "completed"].includes(enrollment.status)
+      ["approved", "completed"].includes(enrollment.status)
     ).length;
 
   const filteredClasses = classes.filter((classItem) => {

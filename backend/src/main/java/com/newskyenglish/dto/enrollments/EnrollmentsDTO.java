@@ -28,6 +28,10 @@ public class EnrollmentsDTO {
         @NotNull(message = "Thiếu classId")
         private Long classId;
 
+        @NotBlank(message = "Thiếu phương thức thanh toán")
+        private String paymentMethod;
+
+        // FE vẫn có view mô phỏng thanh toán nên giữ cờ này để backend tạo payment phù hợp.
         private Boolean paid;
     }
 
@@ -53,10 +57,16 @@ public class EnrollmentsDTO {
         private LocalDateTime approvedDate;
         private Long approvedBy;
         private Boolean paid;
+        private String paymentStatus;
+        private String paymentMethod;
         private Enrollments.Status status;
 
         // Dùng cho các endpoint enrollment cơ bản chưa cần join thêm dữ liệu.
-        public static Response fromEntity(Enrollments enrollment, Long courseId) {
+        public static Response fromEntity(Enrollments enrollment,
+                                          Long courseId,
+                                          Boolean paid,
+                                          String paymentStatus,
+                                          String paymentMethod) {
             return Response.builder()
                     .id(enrollment.getId())
                     .userId(enrollment.getUserId())
@@ -65,7 +75,9 @@ public class EnrollmentsDTO {
                     .enrollDate(enrollment.getEnrollDate())
                     .approvedDate(enrollment.getApprovedDate())
                     .approvedBy(enrollment.getApprovedBy())
-                    .paid(enrollment.getPaid())
+                    .paid(paid)
+                    .paymentStatus(paymentStatus)
+                    .paymentMethod(paymentMethod)
                     .status(enrollment.getStatus())
                     .build();
         }
@@ -84,6 +96,8 @@ public class EnrollmentsDTO {
         private LocalDateTime enrollDate;
         private LocalDateTime approvedDate;
         private Boolean paid;
+        private String paymentStatus;
+        private String paymentMethod;
         private String userName;
         private String userEmail;
         private String courseName;
@@ -94,7 +108,10 @@ public class EnrollmentsDTO {
         public static AdminDetailResponse fromEntity(Enrollments enrollment,
                                                      Users user,
                                                      Courses course,
-                                                     Classes classRoom) {
+                                                     Classes classRoom,
+                                                     Boolean paid,
+                                                     String paymentStatus,
+                                                     String paymentMethod) {
             return AdminDetailResponse.builder()
                     .id(enrollment.getId())
                     .userId(enrollment.getUserId())
@@ -103,7 +120,9 @@ public class EnrollmentsDTO {
                     .status(enrollment.getStatus())
                     .enrollDate(enrollment.getEnrollDate())
                     .approvedDate(enrollment.getApprovedDate())
-                    .paid(enrollment.getPaid())
+                    .paid(paid)
+                    .paymentStatus(paymentStatus)
+                    .paymentMethod(paymentMethod)
                     .userName(user != null ? user.getName() : null)
                     .userEmail(user != null ? user.getEmail() : null)
                     .courseName(course != null ? course.getTitle() : null)
@@ -126,6 +145,8 @@ public class EnrollmentsDTO {
         private LocalDateTime enrollDate;
         private LocalDateTime approvedDate;
         private Boolean paid;
+        private String paymentStatus;
+        private String paymentMethod;
         private String courseName;
         private Courses.ExamType examType;
         private String className;
@@ -138,7 +159,10 @@ public class EnrollmentsDTO {
         public static StudentResponse fromEntity(Enrollments enrollment,
                                                  Courses course,
                                                  Classes classRoom,
-                                                 Integer currentStudents) {
+                                                 Integer currentStudents,
+                                                 Boolean paid,
+                                                 String paymentStatus,
+                                                 String paymentMethod) {
             return StudentResponse.builder()
                     .id(enrollment.getId())
                     .userId(enrollment.getUserId())
@@ -147,7 +171,9 @@ public class EnrollmentsDTO {
                     .status(enrollment.getStatus())
                     .enrollDate(enrollment.getEnrollDate())
                     .approvedDate(enrollment.getApprovedDate())
-                    .paid(enrollment.getPaid())
+                    .paid(paid)
+                    .paymentStatus(paymentStatus)
+                    .paymentMethod(paymentMethod)
                     .courseName(course != null ? course.getTitle() : null)
                     .examType(course != null ? course.getExamType() : null)
                     .className(classRoom != null ? classRoom.getName() : null)
@@ -170,6 +196,8 @@ public class EnrollmentsDTO {
         private Long classId;
         private Enrollments.Status status;
         private Boolean paid;
+        private String paymentStatus;
+        private String paymentMethod;
         private LocalDateTime enrollDate;
         private String userName;
         private String userEmail;
@@ -181,14 +209,19 @@ public class EnrollmentsDTO {
         public static TeacherStudentResponse fromEntity(Enrollments enrollment,
                                                         Users user,
                                                         Courses course,
-                                                        Classes classRoom) {
+                                                        Classes classRoom,
+                                                        Boolean paid,
+                                                        String paymentStatus,
+                                                        String paymentMethod) {
             return TeacherStudentResponse.builder()
                     .id(enrollment.getId())
                     .userId(enrollment.getUserId())
                     .courseId(course != null ? course.getId() : null)
                     .classId(enrollment.getClassId())
                     .status(enrollment.getStatus())
-                    .paid(enrollment.getPaid())
+                    .paid(paid)
+                    .paymentStatus(paymentStatus)
+                    .paymentMethod(paymentMethod)
                     .enrollDate(enrollment.getEnrollDate())
                     .userName(user != null ? user.getName() : null)
                     .userEmail(user != null ? user.getEmail() : null)

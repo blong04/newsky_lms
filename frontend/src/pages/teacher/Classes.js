@@ -229,7 +229,7 @@ export default function TeacherClasses() {
                           </div>
                         </td>
                         <td>
-                          <span className={`badge ${enrollment.status === "enrolled" ? "badge-green" : enrollment.status === "approved" ? "badge-blue" : "badge-gray"}`}>
+                          <span className={`badge ${enrollment.status === "approved" ? "badge-green" : enrollment.status === "completed" ? "badge-gray" : "badge-blue"}`}>
                             {enrollment.status}
                           </span>
                         </td>

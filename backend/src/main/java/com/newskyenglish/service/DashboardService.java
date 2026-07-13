@@ -63,8 +63,7 @@ public class DashboardService {
         List<Enrollments> enrollments = enrollmentsRepository.findByUserId(userId);
 
         long activeEnrollmentCount = enrollments.stream()
-                .filter(enrollment -> enrollment.getStatus() == Enrollments.Status.approved
-                        || enrollment.getStatus() == Enrollments.Status.enrolled)
+                .filter(enrollment -> enrollment.getStatus() == Enrollments.Status.approved)
                 .count();
         long completedEnrollmentCount = enrollments.stream()
                 .filter(enrollment -> enrollment.getStatus() == Enrollments.Status.completed)
