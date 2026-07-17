@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -75,8 +77,8 @@ public class QuizzesService {
 
     @Transactional(readOnly = true)
     // Lọc quiz theo loại chứng chỉ như IELTS hoặc TOEIC.
-    public List<QuizzesDTO.Response> getByType(Quizzes.ExamType examType) {
-        return quizRepository.findByExamType(examType).stream()
+    public List<QuizzesDTO.Response> getByType(Quizzes.Type type) {
+        return quizRepository.findByType(type).stream()
                 .map(this::toQuizResponse)
                 .toList();
     }
@@ -117,13 +119,11 @@ public class QuizzesService {
     public QuizzesDTO.Response create(QuizzesCreateRequest request) {
         Quizzes quiz = Quizzes.builder()
                 .title(request.getTitle())
-                .type(request.getType() != null ? request.getType() : Quizzes.QuizType.mcq)
-                .examType(request.getExamType() != null ? request.getExamType() : Quizzes.ExamType.OTHER)
-                .examPart(request.getExamPart())
-                .passageText(request.getPassageText())
-                .audioUrl(request.getAudioUrl())
-                .instructions(request.getInstructions())
+                .description(request.getDescription())
+                .type(request.getType() != null ? request.getType() : Quizzes.Type.OTHER)
+                .part(request.getPart())
                 .timeLimit(request.getTimeLimit())
+                .status(request.getStatus() != null ? request.getStatus() : Quizzes.Status.active)
                 .build();
 
         Quizzes createdQuiz = quizRepository.save(quiz);
@@ -142,13 +142,11 @@ public class QuizzesService {
         Quizzes quiz = findQuiz(id);
 
         if (request.getTitle() != null) quiz.setTitle(request.getTitle());
+        if (request.getDescription() != null) quiz.setDescription(request.getDescription());
         if (request.getType() != null) quiz.setType(request.getType());
-        if (request.getExamType() != null) quiz.setExamType(request.getExamType());
-        if (request.getExamPart() != null) quiz.setExamPart(request.getExamPart());
-        if (request.getPassageText() != null) quiz.setPassageText(request.getPassageText());
-        if (request.getAudioUrl() != null) quiz.setAudioUrl(request.getAudioUrl());
-        if (request.getInstructions() != null) quiz.setInstructions(request.getInstructions());
+        if (request.getPart() != null) quiz.setPart(request.getPart());
         if (request.getTimeLimit() != null) quiz.setTimeLimit(request.getTimeLimit());
+        if (request.getStatus() != null) quiz.setStatus(request.getStatus());
 
         Quizzes updatedQuiz = quizRepository.save(quiz);
 
@@ -248,6 +246,9 @@ public class QuizzesService {
         Long userId = currentUserService.extractUserId(authorizationHeader);
         Quizzes quiz = findQuiz(quizId);
         ensureStudentHasQuizAccess(quiz, userId);
+        if (submissionRepository.findFirstByQuizIdAndUserId(quizId, userId).isPresent()) {
+            throw new BadRequestException("Bạn đã nộp bài kiểm tra này rồi");
+        }
 
         Map<String, Object> submittedAnswers = request.getAnswers() != null ? request.getAnswers() : Map.of();
         List<Questions> questions = getQuestionsByGroups(getQuizGroups(quizId));
@@ -263,7 +264,7 @@ public class QuizzesService {
             String normalizedAnswer = answer != null ? answer.toString().trim() : "";
             normalizedAnswers.put(String.valueOf(question.getId()), normalizedAnswer);
 
-            if ("writing".equalsIgnoreCase(question.getQuestionType())) {
+            if (isManualGradeQuestion(question)) {
                 continue;
             }
 
@@ -276,25 +277,32 @@ public class QuizzesService {
             }
         }
 
-        int score = autoGradableQuestionCount > 0
-                ? Math.round((correctCount * 100f) / autoGradableQuestionCount)
-                : 0;
+        BigDecimal score = autoGradableQuestionCount > 0
+                ? BigDecimal.valueOf(correctCount)
+                .multiply(BigDecimal.valueOf(100))
+                .divide(BigDecimal.valueOf(autoGradableQuestionCount), 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
 
-        QuizSubmissions submission = submissionRepository.findFirstByQuizIdAndUserId(quizId, userId)
-                .orElseGet(QuizSubmissions::new);
+        Integer duration = request.getDuration();
+
+        QuizSubmissions submission = QuizSubmissions.builder().build();
         submission.setQuizId(quiz.getId());
         submission.setUserId(userId);
         submission.setAnswersJson(writeAnswersAsJson(normalizedAnswers));
-        submission.setScore((float) score);
-        submission.setTimeSpent(request.getTimeSpent());
+        submission.setStartedAt(duration != null ? LocalDateTime.now().minusSeconds(duration) : null);
+        submission.setScore(score);
+        submission.setCorrectAnswers(correctCount);
+        submission.setTotalQuestions(autoGradableQuestionCount);
+        submission.setDuration(duration);
+        submission.setStatus("submitted");
         submission.setSubmittedAt(LocalDateTime.now());
-        submissionRepository.save(submission);
+        QuizSubmissions savedSubmission = submissionRepository.save(submission);
 
         return QuizzesDTO.SubmitResultResponse.builder()
-                .submissionId(submission.getId())
+                .submissionId(savedSubmission.getId())
                 .correct(correctCount)
                 .total(autoGradableQuestionCount)
-                .score(score)
+                .score(score.intValue())
                 .build();
     }
 
@@ -310,6 +318,8 @@ public class QuizzesService {
         assertTeacherOwnsQuiz(teacherId, quiz);
 
         submission.setScore(request.getScore());
+        submission.setStatus("graded");
+        submission.setGradedAt(LocalDateTime.now());
         return QuizzesDTO.SubmissionResponse.fromEntity(submissionRepository.save(submission));
     }
 
@@ -479,6 +489,14 @@ public class QuizzesService {
         } catch (JsonProcessingException exception) {
             throw new BadRequestException("Không thể lưu bài làm quiz");
         }
+    }
+
+    // Các câu tự luận cần giáo viên chấm tay nên không đưa vào điểm auto-grade.
+    private boolean isManualGradeQuestion(Questions question) {
+        String questionType = question.getQuestionType() != null
+                ? question.getQuestionType().trim().toLowerCase()
+                : "";
+        return "writing".equals(questionType) || "essay".equals(questionType);
     }
 
     // Lấy danh sách class id mà quiz hiện đang liên kết.

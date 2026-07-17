@@ -134,10 +134,7 @@ export default function StudentExercises() {
                 >
                   <div className="student-exercises__main">
                     <div className="student-exercises__badge-row">
-                      <span className={`badge ${assignment.examType === "IELTS" ? "badge-blue" : assignment.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                        {assignment.examType || "Khác"}
-                      </span>
-                      <span className="badge badge-orange">{assignment.examPart || assignment.type || "Bài tập"}</span>
+                      <span className="badge badge-orange">{assignment.type || "Bài tập"}</span>
                       {nearDeadline && !expired && <span className="badge badge-yellow">⚠️ Sắp hết hạn</span>}
                       {expired && <span className="badge badge-red">❌ Hết hạn</span>}
                       {assignment.submitted && <span className="badge badge-green">✅ Đã nộp</span>}
@@ -184,10 +181,10 @@ export default function StudentExercises() {
               <article key={quiz.id} className="student-exercises__card student-exercises__card--normal">
                 <div className="student-exercises__main">
                   <div className="student-exercises__badge-row">
-                    <span className={`badge ${quiz.examType === "IELTS" ? "badge-blue" : quiz.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                      {quiz.examType || "Khác"}
+                    <span className={`badge ${quiz.type === "IELTS" ? "badge-blue" : quiz.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                      {quiz.type || "Khác"}
                     </span>
-                    <span className="badge badge-purple">{quiz.examPart || "Quiz"}</span>
+                    <span className="badge badge-purple">{quiz.part || "Quiz"}</span>
                     {quiz.timeLimit && <span className="badge badge-yellow">⏱ {quiz.timeLimit} phút</span>}
                     {quiz.completed && <span className="badge badge-green">✅ Đã làm</span>}
                   </div>
@@ -196,8 +193,8 @@ export default function StudentExercises() {
                   {quiz.score != null && (
                     <p className="student-exercises__quiz-score">
                       Điểm: {quiz.score}/100
-                      {quiz.examType === "IELTS" && ` (Band ~${(quiz.score / 100 * 9).toFixed(1)})`}
-                      {quiz.examType === "TOEIC" && ` (~${Math.round(quiz.score / 100 * 990)}/990)`}
+                      {quiz.type === "IELTS" && ` (Band ~${(quiz.score / 100 * 9).toFixed(1)})`}
+                      {quiz.type === "TOEIC" && ` (~${Math.round(quiz.score / 100 * 990)}/990)`}
                     </p>
                   )}
                 </div>

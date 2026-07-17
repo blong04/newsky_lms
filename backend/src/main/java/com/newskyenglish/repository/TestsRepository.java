@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 // Repository truy vấn bài thi thử theo loại chứng chỉ.
 public interface TestsRepository extends JpaRepository<Tests, Long> {
-    List<Tests> findByExamType(String examType);
+    List<Tests> findByType(String type);
 }

@@ -186,15 +186,11 @@ public class TestsService {
         Tests test = Tests.builder()
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .testType(request.getTestType())
-                .examType(request.getExamType())
-                .examPart(request.getExamPart())
-                .skillType(request.getSkillType())
-                .durationMinutes(request.getDurationMinutes())
+                .type(request.getType())
+                .part(request.getPart())
+                .timeLimit(request.getTimeLimit())
                 .totalScore(request.getTotalScore())
                 .attemptsAllowed(request.getAttemptsAllowed())
-                .startTime(request.getStartTime())
-                .endTime(request.getEndTime())
                 .status(request.getStatus() != null ? request.getStatus() : "active")
                 .build();
         Tests savedTest = testsRepository.save(test);
@@ -214,15 +210,11 @@ public class TestsService {
 
         if (request.getTitle() != null) test.setTitle(request.getTitle());
         if (request.getDescription() != null) test.setDescription(request.getDescription());
-        if (request.getTestType() != null) test.setTestType(request.getTestType());
-        if (request.getExamType() != null) test.setExamType(request.getExamType());
-        if (request.getExamPart() != null) test.setExamPart(request.getExamPart());
-        if (request.getSkillType() != null) test.setSkillType(request.getSkillType());
-        if (request.getDurationMinutes() != null) test.setDurationMinutes(request.getDurationMinutes());
+        if (request.getType() != null) test.setType(request.getType());
+        if (request.getPart() != null) test.setPart(request.getPart());
+        if (request.getTimeLimit() != null) test.setTimeLimit(request.getTimeLimit());
         if (request.getTotalScore() != null) test.setTotalScore(request.getTotalScore());
         if (request.getAttemptsAllowed() != null) test.setAttemptsAllowed(request.getAttemptsAllowed());
-        if (request.getStartTime() != null) test.setStartTime(request.getStartTime());
-        if (request.getEndTime() != null) test.setEndTime(request.getEndTime());
         if (request.getStatus() != null) test.setStatus(request.getStatus());
         Tests savedTest = testsRepository.save(test);
 
@@ -276,7 +268,7 @@ public class TestsService {
             String normalizedAnswer = answer != null ? answer.toString().trim() : "";
             normalizedAnswers.put(String.valueOf(question.getId()), normalizedAnswer);
 
-            if ("writing".equalsIgnoreCase(question.getQuestionType())) {
+            if (isManualGradeQuestion(question)) {
                 continue;
             }
 
@@ -298,9 +290,9 @@ public class TestsService {
                 .mockTestId(test.getId())
                 .userId(userId)
                 .answersJson(writeAnswersAsJson(normalizedAnswers))
-                .startedAt(LocalDateTime.now().minusSeconds(request.getDurationSeconds() != null ? request.getDurationSeconds() : 0))
+                .startedAt(request.getDuration() != null ? LocalDateTime.now().minusSeconds(request.getDuration()) : null)
                 .submittedAt(LocalDateTime.now())
-                .durationSeconds(request.getDurationSeconds())
+                .duration(request.getDuration())
                 .totalScore(score)
                 .correctAnswers(correctCount)
                 .totalQuestions(autoGradableQuestionCount)
@@ -330,6 +322,7 @@ public class TestsService {
 
         submission.setTotalScore(request.getTotalScore());
         submission.setStatus("graded");
+        submission.setGradedAt(LocalDateTime.now());
         return TestsDTO.SubmissionResponse.fromEntity(testSubmissionsRepository.save(submission));
     }
 
@@ -505,6 +498,14 @@ public class TestsService {
         } catch (JsonProcessingException exception) {
             throw new BadRequestException("Không thể lưu bài làm test");
         }
+    }
+
+    // Các câu tự luận cần chấm tay nên không dùng để auto-grade.
+    private boolean isManualGradeQuestion(Questions question) {
+        String questionType = question.getQuestionType() != null
+                ? question.getQuestionType().trim().toLowerCase()
+                : "";
+        return "writing".equals(questionType) || "essay".equals(questionType);
     }
 
     // Lấy danh sách lớp mà mock test hiện đang liên kết.

@@ -47,7 +47,7 @@ public class AssignmentSubmissionsDTO {
         private String comment;
         private AssignmentSubmissions.Status status;
         private LocalDateTime submittedAt;
-        private LocalDateTime updatedAt;
+        private LocalDateTime gradedAt;
 
         // Chuyển entity bài nộp sang response DTO cho teacher/student.
         public static Response fromEntity(AssignmentSubmissions submission) {
@@ -61,7 +61,7 @@ public class AssignmentSubmissionsDTO {
                     .comment(submission.getComment())
                     .status(submission.getStatus())
                     .submittedAt(submission.getSubmittedAt())
-                    .updatedAt(submission.getUpdatedAt())
+                    .gradedAt(submission.getGradedAt())
                     .build();
         }
     }

@@ -42,8 +42,8 @@ public class AssignmentSubmissions {
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    @Column(name = "graded_at")
+    private LocalDateTime gradedAt;
 
     @PrePersist
     public void prePersist() {

@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -25,16 +26,16 @@ public class QuizzesDTO {
     public static class Response {
         private Long id;
         private String title;
-        private Quizzes.QuizType type;
-        private Quizzes.ExamType examType;
-        private String examPart;
-        private String passageText;
-        private String audioUrl;
-        private String instructions;
+        private String description;
+        private Quizzes.Type type;
+        private String part;
         private Integer timeLimit;
+        private Quizzes.Status status;
         private Long classId;
         private List<Long> classIds;
         private Long questionCount;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
 
         // Dùng cho danh sách quiz và các màn tổng quan khi chưa cần đếm câu hỏi.
         public static Response fromEntity(Quizzes quiz) {
@@ -47,16 +48,16 @@ public class QuizzesDTO {
             return Response.builder()
                     .id(quiz.getId())
                     .title(quiz.getTitle())
+                    .description(quiz.getDescription())
                     .type(quiz.getType())
-                    .examType(quiz.getExamType())
-                    .examPart(quiz.getExamPart())
-                    .passageText(quiz.getPassageText())
-                    .audioUrl(quiz.getAudioUrl())
-                    .instructions(quiz.getInstructions())
+                    .part(quiz.getPart())
                     .timeLimit(quiz.getTimeLimit())
+                    .status(quiz.getStatus())
                     .classId(normalizedClassIds.isEmpty() ? null : normalizedClassIds.get(0))
                     .classIds(normalizedClassIds)
                     .questionCount(questionCount)
+                    .createdAt(quiz.getCreatedAt())
+                    .updatedAt(quiz.getUpdatedAt())
                     .build();
         }
     }
@@ -199,8 +200,13 @@ public class QuizzesDTO {
         private Long quizId;
         private Long userId;
         private String answersJson;
-        private Float score;
-        private Integer timeSpent;
+        private BigDecimal score;
+        private LocalDateTime startedAt;
+        private LocalDateTime gradedAt;
+        private Integer duration;
+        private Integer correctAnswers;
+        private Integer totalQuestions;
+        private String status;
         private LocalDateTime submittedAt;
 
         // Dùng cho kết quả quiz ở teacher/admin/student.
@@ -211,7 +217,12 @@ public class QuizzesDTO {
                     .userId(submission.getUserId())
                     .answersJson(submission.getAnswersJson())
                     .score(submission.getScore())
-                    .timeSpent(submission.getTimeSpent())
+                    .startedAt(submission.getStartedAt())
+                    .gradedAt(submission.getGradedAt())
+                    .duration(submission.getDuration())
+                    .correctAnswers(submission.getCorrectAnswers())
+                    .totalQuestions(submission.getTotalQuestions())
+                    .status(submission.getStatus())
                     .submittedAt(submission.getSubmittedAt())
                     .build();
         }
@@ -227,7 +238,7 @@ public class QuizzesDTO {
         private Map<String, Object> answers;
 
         // Tổng số giây học viên đã làm bài trước khi nộp.
-        private Integer timeSpent;
+        private Integer duration;
     }
 
     @Data
@@ -252,7 +263,7 @@ public class QuizzesDTO {
     public static class GradeSubmissionRequest {
         // Giáo viên nhập điểm cuối cùng cho bài làm quiz.
         @NotNull(message = "Thiếu điểm bài làm")
-        private Float score;
+        private BigDecimal score;
     }
 }
 

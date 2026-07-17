@@ -20,15 +20,11 @@ const INITIAL_FORM = {
   classIds: [],
   title: "",
   description: "",
-  testType: "full_mock_test",
   examType: "IELTS",
-  examPart: "Full Test",
-  skillType: "full_test",
-  durationMinutes: 165,
+  part: "Full Test",
+  timeLimit: 165,
   totalScore: 9,
   attemptsAllowed: 1,
-  startTime: "",
-  endTime: "",
   status: "active",
 };
 
@@ -78,7 +74,7 @@ export default function AdminTests() {
         || test.title?.toLowerCase().includes(normalizedSearch)
         || test.description?.toLowerCase().includes(normalizedSearch);
 
-      return matchesSearch && (!filterExamType || test.examType === filterExamType);
+      return matchesSearch && (!filterExamType || test.type === filterExamType);
     })
   ), [tests, search, filterExamType]);
 
@@ -131,7 +127,7 @@ export default function AdminTests() {
   const startEditFlow = async (test) => {
     try {
       const detail = await testService.getFullTest(test.id);
-      const examType = detail.test.examType || "IELTS";
+      const examType = detail.test.type || "IELTS";
       const nextSections = splitQuestionsIntoSections(examType, detail.groups || [], detail.questions || []);
 
       setEditorMode("edit");
@@ -142,15 +138,11 @@ export default function AdminTests() {
         classIds: getLinkedClassIds(detail.test),
         title: detail.test.title || "",
         description: detail.test.description || "",
-        testType: detail.test.testType || "full_mock_test",
         examType,
-        examPart: detail.test.examPart || "Full Test",
-        skillType: detail.test.skillType || "full_test",
-        durationMinutes: detail.test.durationMinutes || applyBlueprintDefaults(INITIAL_FORM, examType).durationMinutes,
+        part: detail.test.part || "Full Test",
+        timeLimit: detail.test.timeLimit || applyBlueprintDefaults(INITIAL_FORM, examType).timeLimit,
         totalScore: detail.test.totalScore || applyBlueprintDefaults(INITIAL_FORM, examType).totalScore,
         attemptsAllowed: detail.test.attemptsAllowed || 1,
-        startTime: detail.test.startTime ? detail.test.startTime.slice(0, 16) : "",
-        endTime: detail.test.endTime ? detail.test.endTime.slice(0, 16) : "",
         status: detail.test.status || "active",
       });
       setSections(nextSections);
@@ -213,12 +205,16 @@ export default function AdminTests() {
     try {
       const serializedSections = serializeTestSections(sections);
       const payload = {
-        ...form,
         classId: classIds[0] || null,
         classIds,
-        durationMinutes: Number(form.durationMinutes || 0),
+        title: form.title,
+        description: form.description,
+        type: form.examType,
+        part: form.part || "Full Test",
+        timeLimit: Number(form.timeLimit || 0),
         totalScore: Number(form.totalScore || 0),
         attemptsAllowed: Number(form.attemptsAllowed || 1),
+        status: form.status,
         questions: serializedSections.questions,
         groups: serializedSections.groups,
       };
@@ -399,8 +395,8 @@ export default function AdminTests() {
                   <input
                     type="number"
                     min={1}
-                    value={form.durationMinutes}
-                    onChange={(event) => setForm({ ...form, durationMinutes: event.target.value })}
+                    value={form.timeLimit}
+                    onChange={(event) => setForm({ ...form, timeLimit: event.target.value })}
                   />
                 </div>
                 <div className="form-group">
@@ -424,22 +420,6 @@ export default function AdminTests() {
               </div>
 
               <div className="form-row">
-                <div className="form-group">
-                  <label>Bắt đầu</label>
-                  <input
-                    type="datetime-local"
-                    value={form.startTime}
-                    onChange={(event) => setForm({ ...form, startTime: event.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Kết thúc</label>
-                  <input
-                    type="datetime-local"
-                    value={form.endTime}
-                    onChange={(event) => setForm({ ...form, endTime: event.target.value })}
-                  />
-                </div>
                 <div className="form-group">
                   <label>Trạng thái</label>
                   <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
@@ -718,12 +698,12 @@ export default function AdminTests() {
                     </td>
                     <td>{getClassNames(getLinkedClassIds(test))}</td>
                     <td>
-                      <span className={`badge ${test.examType === "IELTS" ? "badge-blue" : test.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                        {test.examType}
+                      <span className={`badge ${test.type === "IELTS" ? "badge-blue" : test.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                        {test.type}
                       </span>
                     </td>
                     <td>{test.totalScore || "—"}</td>
-                    <td>{test.durationMinutes ? `${test.durationMinutes} phút` : "—"}</td>
+                    <td>{test.timeLimit ? `${test.timeLimit} phút` : "—"}</td>
                     <td>
                       <div className="admin-tests__actions">
                         <button className="btn btn-info btn-sm" title="Xem" onClick={() => openView(test)}>👁️</button>
@@ -755,11 +735,11 @@ export default function AdminTests() {
                 </div>
                 <div className="admin-tests__summary-card">
                   <span>Chứng chỉ</span>
-                  <strong>{viewDetail.test.examType}</strong>
+                  <strong>{viewDetail.test.type}</strong>
                 </div>
                 <div className="admin-tests__summary-card">
                   <span>Thời gian</span>
-                  <strong>{viewDetail.test.durationMinutes || "—"} phút</strong>
+                  <strong>{viewDetail.test.timeLimit || "—"} phút</strong>
                 </div>
               </div>
 

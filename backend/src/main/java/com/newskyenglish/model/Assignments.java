@@ -25,8 +25,8 @@ public class Assignments {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    // Schema mới dùng assignment_type dạng text tự do thay vì enum cứng.
-    @Column(name = "assignment_type", length = 50)
+    // Schema mới đã rút gọn tên cột thành type.
+    @Column(name = "type", length = 50)
     private String type;
 
     @Column(name = "due_date")

@@ -20,10 +20,8 @@ export const TEST_BLUEPRINTS = {
   IELTS: {
     label: "IELTS Full Mock Test",
     defaults: {
-      testType: "full_mock_test",
-      examPart: "Full Test",
-      skillType: "full_test",
-      durationMinutes: 165,
+      part: "Full Test",
+      timeLimit: 165,
       totalScore: 9,
       attemptsAllowed: 1,
       status: "active",
@@ -40,10 +38,8 @@ export const TEST_BLUEPRINTS = {
   TOEIC: {
     label: "TOEIC Full Mock Test",
     defaults: {
-      testType: "full_mock_test",
-      examPart: "Full Test",
-      skillType: "full_test",
-      durationMinutes: 120,
+      part: "Full Test",
+      timeLimit: 120,
       totalScore: 990,
       attemptsAllowed: 1,
       status: "active",
@@ -92,10 +88,8 @@ export const applyBlueprintDefaults = (currentForm, examType) => {
   return {
     ...currentForm,
     examType,
-    testType: blueprint.defaults.testType,
-    examPart: blueprint.defaults.examPart,
-    skillType: blueprint.defaults.skillType,
-    durationMinutes: blueprint.defaults.durationMinutes,
+    part: blueprint.defaults.part,
+    timeLimit: blueprint.defaults.timeLimit,
     totalScore: blueprint.defaults.totalScore,
     attemptsAllowed: blueprint.defaults.attemptsAllowed,
     status: blueprint.defaults.status,

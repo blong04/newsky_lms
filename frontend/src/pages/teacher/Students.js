@@ -345,7 +345,7 @@ export default function TeacherStudents() {
                               <div>
                                 <p className="teacher-students__name">{assignment?.title || `Bài tập #${submission.assignId}`}</p>
                                 <p className="teacher-students__tiny teacher-students__muted">
-                                  {assignment?.examPart || assignment?.type || "Bài tập"} • {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString("vi-VN") : "Chưa có thời gian"}
+                                  {assignment?.type || "Bài tập"} • {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString("vi-VN") : "Chưa có thời gian"}
                                 </p>
                               </div>
                               <span className={`badge ${submission.status === "graded" ? "badge-green" : "badge-yellow"}`}>
@@ -377,7 +377,7 @@ export default function TeacherStudents() {
                               <div>
                                 <p className="teacher-students__name">{quiz?.title || `Quiz #${submission.quizId}`}</p>
                                 <p className="teacher-students__tiny teacher-students__muted">
-                                  {quiz?.examPart || "Quiz"} • {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString("vi-VN") : "Chưa có thời gian"}
+                                  {quiz?.part || "Quiz"} • {submission.submittedAt ? new Date(submission.submittedAt).toLocaleString("vi-VN") : "Chưa có thời gian"}
                                 </p>
                                 {classNames && (
                                   <p className="teacher-students__tiny teacher-students__muted">Lớp: {classNames}</p>
@@ -410,7 +410,7 @@ export default function TeacherStudents() {
                               <div>
                                 <p className="teacher-students__name">{test?.title || `Test #${submission.testId}`}</p>
                                 <p className="teacher-students__tiny teacher-students__muted">
-                                  {test?.examType || "Test"} • Lần {submission.attemptNumber || 1}
+                                  {test?.type || "Test"} • Lần {submission.attemptNumber || 1}
                                 </p>
                                 {classNames && (
                                   <p className="teacher-students__tiny teacher-students__muted">Lớp: {classNames}</p>

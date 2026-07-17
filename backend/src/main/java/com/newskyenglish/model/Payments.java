@@ -26,7 +26,10 @@ public class Payments {
     @Column(name = "payment_method", length = 50)
     private String paymentMethod;
 
-    // Thời điểm thanh toán được ghi nhận thành công hoặc tạo giao dịch.
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    // Thời điểm thanh toán được ghi nhận thành công.
     @Column(name = "paid_at")
     private LocalDateTime paidAt;
 

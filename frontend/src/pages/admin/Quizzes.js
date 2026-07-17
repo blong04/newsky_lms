@@ -4,7 +4,6 @@ import { QUESTION_TYPE_LABELS } from "../../constants/quizzes";
 import { quizService } from "../../services/quizService";
 import { buildQuizSectionsForDisplay } from "../../utils/assessmentSections";
 import { getLinkedClassIds, normalizeClassIdsPayload } from "../../utils/assessment";
-import { inferQuizType } from "../../utils/quiz";
 import {
   QUIZ_BLUEPRINTS,
   applyQuizBlueprintDefaults,
@@ -44,10 +43,7 @@ const INITIAL_QUIZ = {
   title: "",
   examType: "IELTS",
   examPart: "",
-  instructions: "",
   timeLimit: 60,
-  passageText: "",
-  audioUrl: "",
 };
 
 export default function AdminQuizzes() {
@@ -91,7 +87,7 @@ export default function AdminQuizzes() {
   }, []);
 
   const filteredQuizzes = useMemo(() => (
-    quizzes.filter((quiz) => !filterType || quiz.examType === filterType)
+    quizzes.filter((quiz) => !filterType || quiz.type === filterType)
   ), [quizzes, filterType]);
 
   const selectedPart = EXAM_STRUCTURE[quizForm.examType]?.parts.find((part) => part.key === quizForm.examPart);
@@ -133,7 +129,6 @@ export default function AdminQuizzes() {
       ...current,
       examType,
       examPart: "",
-      instructions: "",
       timeLimit: examType === "TOEIC" ? 45 : 60,
     }));
     setSections([]);
@@ -158,8 +153,8 @@ export default function AdminQuizzes() {
     try {
       const fullQuiz = await quizService.getFullQuiz(quiz.id);
       const nextSections = hydrateQuizSections(
-        fullQuiz.quiz.examType || "IELTS",
-        fullQuiz.quiz.examPart,
+        fullQuiz.quiz.type || "IELTS",
+        fullQuiz.quiz.part,
         fullQuiz.groups || [],
         fullQuiz.questions || [],
       );
@@ -171,12 +166,9 @@ export default function AdminQuizzes() {
         classId: fullQuiz.quiz.classId || "",
         classIds: getLinkedClassIds(fullQuiz.quiz),
         title: fullQuiz.quiz.title || "",
-        examType: fullQuiz.quiz.examType || "IELTS",
-        examPart: fullQuiz.quiz.examPart || "",
-        instructions: fullQuiz.quiz.instructions || "",
+        examType: fullQuiz.quiz.type || "IELTS",
+        examPart: fullQuiz.quiz.part || "",
         timeLimit: fullQuiz.quiz.timeLimit || 60,
-        passageText: fullQuiz.quiz.passageText || "",
-        audioUrl: fullQuiz.quiz.audioUrl || "",
       });
       setSections(nextSections);
       setExpandedSectionKey(nextSections[0]?.clientKey || null);
@@ -226,11 +218,12 @@ export default function AdminQuizzes() {
       const allQuestions = serializedSections.questions;
       const classIds = normalizeClassIdsPayload(quizForm.classIds, quizForm.classId);
       const payload = {
-        ...quizForm,
         classId: classIds[0] || null,
         classIds,
+        title: quizForm.title,
+        type: quizForm.examType,
+        part: quizForm.examPart,
         timeLimit: Number(quizForm.timeLimit),
-        type: inferQuizType(quizForm.examPart, allQuestions),
         groups: serializedSections.groups,
         questions: allQuestions,
       };
@@ -425,15 +418,6 @@ export default function AdminQuizzes() {
                 />
               </div>
 
-              <div className="form-group">
-                <label>Hướng dẫn làm bài</label>
-                <textarea
-                  rows={3}
-                  value={quizForm.instructions}
-                  onChange={(event) => setQuizForm({ ...quizForm, instructions: event.target.value })}
-                  placeholder="Hướng dẫn chung cho học viên trước khi làm bài"
-                />
-              </div>
             </div>
 
             <div className="admin-quizzes__footer-actions">
@@ -712,9 +696,9 @@ export default function AdminQuizzes() {
                     <td className="admin-quizzes__title-cell">{quiz.title}</td>
                     <td>{getClassNames(getLinkedClassIds(quiz))}</td>
                     <td>
-                      <span className={`badge ${quiz.examType === "IELTS" ? "badge-blue" : "badge-green"}`}>{quiz.examType}</span>
+                      <span className={`badge ${quiz.type === "IELTS" ? "badge-blue" : quiz.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>{quiz.type}</span>
                     </td>
-                    <td>{quiz.examPart || "—"}</td>
+                    <td>{quiz.part || "—"}</td>
                     <td>{quiz.timeLimit ? `${quiz.timeLimit} phút` : "—"}</td>
                     <td>
                       <div className="admin-quizzes__row-actions">
@@ -748,14 +732,14 @@ export default function AdminQuizzes() {
                 <div>
                   <label className="admin-quizzes__label">Loại</label>
                   <p className="admin-quizzes__value">
-                    <span className={`badge ${viewModal.quiz.examType === "IELTS" ? "badge-blue" : "badge-green"}`}>
-                      {viewModal.quiz.examType}
+                    <span className={`badge ${viewModal.quiz.type === "IELTS" ? "badge-blue" : viewModal.quiz.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                      {viewModal.quiz.type}
                     </span>
                   </p>
                 </div>
                 <div>
                   <label className="admin-quizzes__label">Phần thi</label>
-                  <p className="admin-quizzes__value admin-quizzes__value--strong">{viewModal.quiz.examPart || "—"}</p>
+                  <p className="admin-quizzes__value admin-quizzes__value--strong">{viewModal.quiz.part || "—"}</p>
                 </div>
               </div>
 
@@ -763,13 +747,6 @@ export default function AdminQuizzes() {
                 <label className="admin-quizzes__label">Thời gian làm bài</label>
                 <p className="admin-quizzes__value">{viewModal.quiz.timeLimit ? `${viewModal.quiz.timeLimit} phút` : "Không giới hạn"}</p>
               </div>
-
-              {viewModal.quiz.instructions && (
-                <div>
-                  <label className="admin-quizzes__label">Hướng dẫn</label>
-                  <p className="admin-quizzes__text-block">{viewModal.quiz.instructions}</p>
-                </div>
-              )}
 
               <div>
                 <label className="admin-quizzes__label">Câu hỏi</label>

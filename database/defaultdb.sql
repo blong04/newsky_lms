@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1:3306
--- Thời gian đã tạo: Th7 12, 2026 lúc 01:06 PM
+-- Thời gian đã tạo: Th7 17, 2026 lúc 03:18 PM
 -- Phiên bản máy phục vụ: 9.1.0
 -- Phiên bản PHP: 8.3.14
 
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `assignments` (
   `class_id` int DEFAULT NULL,
   `title` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
-  `assignment_type` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `type` enum('worksheet','writing','speaking_note','reflection','quiz_practice','project','essay','presentation','other') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `due_date` datetime DEFAULT NULL,
   `max_score` decimal(5,2) DEFAULT '100.00',
   `status` enum('active','inactive','closed') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `assignments` (
 -- Đang đổ dữ liệu cho bảng `assignments`
 --
 
-INSERT INTO `assignments` (`assign_id`, `class_id`, `title`, `description`, `assignment_type`, `due_date`, `max_score`, `status`, `created_at`, `updated_at`) VALUES
+INSERT INTO `assignments` (`assign_id`, `class_id`, `title`, `description`, `type`, `due_date`, `max_score`, `status`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Diagnostic vocabulary journal: campus life', 'Write a short journal entry in English about three situations on campus where you would need to ask for help, directions, or clarification. Use at least fifteen target words from the foundation unit.', 'writing', '2026-07-19 21:00:00', 10.00, 'active', '2026-07-10 09:00:00', '2026-07-10 09:00:00'),
 (2, 2, 'Sentence transformation worksheet: tenses and clauses', 'Rewrite each sentence so that the meaning stays the same. Focus on present perfect, relative clauses, and connectors of contrast from the pre-intermediate syllabus.', 'worksheet', '2026-07-21 21:00:00', 10.00, 'active', '2026-07-11 09:00:00', '2026-07-11 09:00:00'),
 (3, 3, 'Reading strategy log: urban farming article', 'Read the article about rooftop gardens, list unfamiliar words, and explain which skimming and scanning steps helped you identify each answer in the article.', 'reflection', '2026-07-22 20:30:00', 10.00, 'active', '2026-07-12 09:00:00', '2026-07-12 09:00:00'),
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS `assignment_submissions` (
   `feedback` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `status` enum('submitted','graded') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'submitted',
   `submitted_at` datetime DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `graded_at` datetime DEFAULT NULL,
   PRIMARY KEY (`assign_submission_id`),
   KEY `fk_assignmentsubmit_assignment` (`assign_id`),
   KEY `fk_assignmentsubmit_user` (`user_id`)
@@ -88,13 +88,13 @@ CREATE TABLE IF NOT EXISTS `assignment_submissions` (
 -- Đang đổ dữ liệu cho bảng `assignment_submissions`
 --
 
-INSERT INTO `assignment_submissions` (`assign_submission_id`, `assign_id`, `user_id`, `content`, `answers_json`, `score`, `feedback`, `status`, `submitted_at`, `updated_at`) VALUES
+INSERT INTO `assignment_submissions` (`assign_submission_id`, `assign_id`, `user_id`, `content`, `answers_json`, `score`, `feedback`, `status`, `submitted_at`, `graded_at`) VALUES
 (1, 1, 1, 'In my journal I described asking for directions to the language lab, requesting feedback from a teacher after class, and checking a room change at the reception desk. I used target words such as schedule, register, reminder, borrow, clarify, and assignment.', NULL, 8.50, 'Good range of target vocabulary. Try to vary your sentence openings and add one more example in the final paragraph.', 'graded', '2026-07-18 20:10:00', '2026-07-19 09:00:00'),
 (2, 2, 1, 'I rewrote all twelve sentences and added short notes about why I chose the tense or connector. The relative clause section was the easiest, but I corrected two present perfect sentences after checking the workbook again.', NULL, 8.00, 'Grammar choices are mostly correct. Review the difference between since and for in time expressions.', 'graded', '2026-07-20 19:45:00', '2026-07-21 08:30:00'),
 (3, 4, 1, 'My outline argues that large cities should reduce private car use in crowded districts. Body paragraph one focuses on traffic and air quality, and body paragraph two explains how better public transport can support workers and students.', NULL, 7.50, 'Clear thesis and logical paragraphing. Add stronger examples for body paragraph two.', 'graded', '2026-07-24 21:15:00', '2026-07-25 10:00:00'),
 (4, 5, 1, 'I reviewed five listening questions from the mock test. In most cases I followed a distractor because I reacted to a familiar word too early and missed the speaker correction that came after it.', NULL, 8.00, 'Reflection is honest and useful. Keep identifying correction markers such as actually, however, and instead.', 'graded', '2026-07-27 19:20:00', '2026-07-28 09:15:00'),
 (5, 7, 1, 'Dear Ms. Adams, thank you for your message. We can move the project update meeting to Thursday at 3:30 p.m. in Meeting Room B. I apologize for the change and will send the revised agenda before noon.', NULL, 82.00, 'The message is polite and complete. Watch subject line capitalization.', 'graded', '2026-04-15 17:30:00', '2026-04-16 08:30:00'),
-(6, 8, 1, 'This week I practiced the greeting script four times after class. My main problem was rising intonation in polite offers, so I slowed down and copied the model audio sentence by sentence.', NULL, NULL, NULL, 'submitted', '2026-07-30 19:50:00', '2026-07-30 19:50:00'),
+(6, 8, 1, 'This week I practiced the greeting script four times after class. My main problem was rising intonation in polite offers, so I slowed down and copied the model audio sentence by sentence.', NULL, NULL, NULL, 'submitted', '2026-07-30 19:50:00', NULL),
 (7, 3, 9, 'I listed ten unknown words from the rooftop garden article and explained how headings helped me predict where the answers would appear. Skimming saved time, but I still need to improve paraphrase recognition.', NULL, 7.50, 'Nice strategy notes. Add line references for the trickiest answers next time.', 'graded', '2026-07-22 19:05:00', '2026-07-23 08:10:00'),
 (8, 11, 10, 'I completed the radio note sheet and summarized the event announcement. The final sentence was rewritten because I originally missed the new registration deadline.', NULL, 7.00, 'Summary is clear. Recheck number details before submitting.', 'graded', '2026-07-23 20:05:00', '2026-07-24 09:05:00'),
 (9, 10, 11, 'My hometown introduction focused on Da Lat, the flower festival, and local coffee shops. I added a short reason why visitors enjoy the cooler weather and slower pace of life.', NULL, 8.00, 'Natural speaking notes. Add one stronger transition between idea two and idea three.', 'graded', '2026-08-02 19:20:00', '2026-08-03 09:00:00');
@@ -165,8 +165,8 @@ CREATE TABLE IF NOT EXISTS `courses` (
   `title` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `price` decimal(10,2) DEFAULT '0.00',
-  `level` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `course_type` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `level` enum('beginner','intermediate','advanced') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `course_type` enum('IELTS','TOEIC','OTHER') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `status` enum('active','inactive','archived') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -265,20 +265,16 @@ CREATE TABLE IF NOT EXISTS `mock_tests` (
   `test_id` int NOT NULL AUTO_INCREMENT,
   `title` varchar(150) COLLATE utf8mb4_general_ci NOT NULL,
   `description` text COLLATE utf8mb4_general_ci,
-  `test_type` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `exam_type` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `exam_part` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `skill_type` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
-  `duration_minutes` int DEFAULT NULL,
+  `type` enum('IELTS','TOEIC','OTHER') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `part` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `time_limit` int UNSIGNED DEFAULT NULL,
   `total_score` decimal(5,2) DEFAULT '100.00',
   `attempts_allowed` int DEFAULT '1',
-  `start_time` datetime DEFAULT NULL,
-  `end_time` datetime DEFAULT NULL,
   `status` enum('draft','active','inactive','closed') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'draft',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`test_id`),
-  KEY `idx_tests_exam_type` (`exam_type`),
+  KEY `idx_tests_exam_type` (`type`),
   KEY `idx_tests_status` (`status`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -286,12 +282,12 @@ CREATE TABLE IF NOT EXISTS `mock_tests` (
 -- Đang đổ dữ liệu cho bảng `mock_tests`
 --
 
-INSERT INTO `mock_tests` (`test_id`, `title`, `description`, `test_type`, `exam_type`, `exam_part`, `skill_type`, `duration_minutes`, `total_score`, `attempts_allowed`, `start_time`, `end_time`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'IELTS Academic Mock 01 - Education and Cities', 'A full mock test used in the foundation and pre-intermediate IELTS streams. The passages focus on school meals, public parks, and recycled water systems.', 'full_mock_test', 'IELTS', 'Full Test', 'full_test', 165, 9.00, 1, '2026-07-19 08:00:00', '2026-08-31 23:00:00', 'active', '2026-07-12 09:00:00', '2026-07-12 09:00:00'),
-(2, 'IELTS Academic Mock 02 - Health and Environment', 'A second academic full mock with listening notes on health campaigns, research passages on sleep, plastic reduction, and museum learning, plus two writing tasks.', 'full_mock_test', 'IELTS', 'Full Test', 'full_test', 165, 9.00, 1, '2026-07-23 08:00:00', '2026-09-05 23:00:00', 'active', '2026-07-15 09:00:00', '2026-07-15 09:00:00'),
-(3, 'TOEIC Full Mock 01 - Workplace Communication Benchmark', 'A complete TOEIC-style paper covering office photos, customer calls, branch conversations, short talks, grammar review, text completion, and operational reading.', 'full_mock_test', 'TOEIC', 'Full Test', 'full_test', 120, 990.00, 1, '2026-07-25 08:00:00', '2026-09-12 23:00:00', 'active', '2026-07-16 09:00:00', '2026-07-16 09:00:00'),
-(4, 'TOEIC Full Mock 02 - Office Operations Practice Set', 'A second full TOEIC-style paper with warehouse and recruitment themes, training talks, HR grammar, policy completion, and procurement reading.', 'full_mock_test', 'TOEIC', 'Full Test', 'full_test', 120, 990.00, 2, '2026-07-27 08:00:00', '2026-09-15 23:00:00', 'active', '2026-07-17 09:00:00', '2026-07-17 09:00:00'),
-(5, 'IELTS Band 6.5 Weekend Simulation', 'A weekend simulation for the band 6.5 class with a balanced full test and writing topics on energy use and screen time in daily life.', 'full_mock_test', 'IELTS', 'Full Test', 'full_test', 165, 9.00, 1, '2026-07-29 08:00:00', '2026-09-20 23:00:00', 'active', '2026-07-18 09:00:00', '2026-07-18 09:00:00');
+INSERT INTO `mock_tests` (`test_id`, `title`, `description`, `type`, `part`, `time_limit`, `total_score`, `attempts_allowed`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'IELTS Academic Mock 01 - Education and Cities', 'A full mock test used in the foundation and pre-intermediate IELTS streams. The passages focus on school meals, public parks, and recycled water systems.', 'IELTS', 'Full Test', 165, 9.00, 1, 'active', '2026-07-12 09:00:00', '2026-07-12 09:00:00'),
+(2, 'IELTS Academic Mock 02 - Health and Environment', 'A second academic full mock with listening notes on health campaigns, research passages on sleep, plastic reduction, and museum learning, plus two writing tasks.', 'IELTS', 'Full Test', 165, 9.00, 1, 'active', '2026-07-15 09:00:00', '2026-07-15 09:00:00'),
+(3, 'TOEIC Full Mock 01 - Workplace Communication Benchmark', 'A complete TOEIC-style paper covering office photos, customer calls, branch conversations, short talks, grammar review, text completion, and operational reading.', 'TOEIC', 'Full Test', 120, 990.00, 1, 'active', '2026-07-16 09:00:00', '2026-07-16 09:00:00'),
+(4, 'TOEIC Full Mock 02 - Office Operations Practice Set', 'A second full TOEIC-style paper with warehouse and recruitment themes, training talks, HR grammar, policy completion, and procurement reading.', 'TOEIC', 'Full Test', 120, 990.00, 2, 'active', '2026-07-17 09:00:00', '2026-07-17 09:00:00'),
+(5, 'IELTS Band 6.5 Weekend Simulation', 'A weekend simulation for the band 6.5 class with a balanced full test and writing topics on energy use and screen time in daily life.', 'IELTS', 'Full Test', 165, 9.00, 1, 'active', '2026-07-18 09:00:00', '2026-07-18 09:00:00');
 
 -- --------------------------------------------------------
 
@@ -307,13 +303,13 @@ CREATE TABLE IF NOT EXISTS `mock_test_submissions` (
   `answers_json` longtext COLLATE utf8mb4_general_ci,
   `started_at` datetime DEFAULT NULL,
   `submitted_at` datetime DEFAULT NULL,
-  `duration_seconds` int DEFAULT NULL,
+  `graded_at` datetime DEFAULT NULL,
+  `duration` int UNSIGNED DEFAULT NULL,
   `total_score` decimal(5,2) DEFAULT '0.00',
-  `correct_answers` int DEFAULT '0',
-  `total_questions` int DEFAULT '0',
-  `attempt_number` int DEFAULT '1',
+  `correct_answers` int UNSIGNED DEFAULT '0',
+  `total_questions` int UNSIGNED DEFAULT '0',
+  `attempt_number` int UNSIGNED DEFAULT '1',
   `status` enum('submitted','graded') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'submitted',
-  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`test_submission_id`),
   KEY `fk_test_submissions_user` (`user_id`),
   KEY `fk_mock_test_submissions_test` (`mock_test_id`)
@@ -323,12 +319,12 @@ CREATE TABLE IF NOT EXISTS `mock_test_submissions` (
 -- Đang đổ dữ liệu cho bảng `mock_test_submissions`
 --
 
-INSERT INTO `mock_test_submissions` (`test_submission_id`, `mock_test_id`, `user_id`, `answers_json`, `started_at`, `submitted_at`, `duration_seconds`, `total_score`, `correct_answers`, `total_questions`, `attempt_number`, `status`, `created_at`) VALUES
-(1, 1, 1, '{\"41\": \"A\", \"42\": \"B\", \"43\": \"C\", \"44\": \"D\", \"45\": \"A\", \"46\": \"B\", \"47\": \"D\", \"48\": \"D\", \"49\": \"A\", \"50\": \"B\", \"51\": \"C\", \"52\": \"D\", \"53\": \"A\", \"54\": \"C\", \"55\": \"C\", \"56\": \"D\", \"57\": \"A\", \"58\": \"B\", \"59\": \"C\", \"60\": \"D\", \"61\": \"B\", \"62\": \"B\", \"63\": \"C\", \"64\": \"D\", \"65\": \"A\", \"66\": \"B\", \"67\": \"C\", \"68\": \"A\", \"69\": \"A\", \"70\": \"B\", \"71\": \"C\", \"72\": \"D\", \"73\": \"A\", \"74\": \"B\", \"75\": \"D\", \"76\": \"D\", \"77\": \"A\", \"78\": \"B\", \"79\": \"C\", \"80\": \"D\", \"296\": \"B\", \"297\": \"B\", \"298\": \"B\", \"299\": \"B\", \"300\": \"B\", \"301\": \"B\", \"302\": \"C\", \"303\": \"B\", \"304\": \"B\", \"305\": \"B\", \"306\": \"B\", \"307\": \"B\", \"308\": \"B\", \"309\": \"B\", \"310\": \"B\", \"311\": \"B\", \"312\": \"B\", \"313\": \"B\", \"314\": \"B\", \"315\": \"C\", \"316\": \"B\", \"317\": \"B\", \"318\": \"B\", \"319\": \"B\", \"320\": \"B\", \"321\": \"B\", \"322\": \"B\", \"323\": \"B\", \"324\": \"B\", \"325\": \"B\", \"326\": \"B\", \"327\": \"B\", \"328\": \"C\", \"329\": \"B\", \"330\": \"B\", \"331\": \"B\", \"332\": \"B\", \"333\": \"B\", \"334\": \"B\", \"335\": \"C\", \"511\": \"Essay draft for Writing Task 1 by student 1.\", \"515\": \"Essay draft for Writing Task 2 by student 1.\"}', '2026-07-19 08:00:00', '2026-07-19 10:37:00', 9420, 7.99, 71, 80, 1, 'graded', '2026-07-19 10:37:00'),
-(2, 2, 1, '{\"81\": \"A\", \"82\": \"B\", \"83\": \"C\", \"84\": \"D\", \"85\": \"D\", \"86\": \"B\", \"87\": \"C\", \"88\": \"D\", \"89\": \"A\", \"90\": \"A\", \"91\": \"C\", \"92\": \"D\", \"93\": \"A\", \"94\": \"B\", \"95\": \"B\", \"96\": \"D\", \"97\": \"A\", \"98\": \"B\", \"99\": \"C\", \"100\": \"C\", \"101\": \"A\", \"102\": \"B\", \"103\": \"C\", \"104\": \"D\", \"105\": \"D\", \"106\": \"B\", \"107\": \"C\", \"108\": \"D\", \"109\": \"A\", \"110\": \"A\", \"111\": \"C\", \"112\": \"D\", \"113\": \"A\", \"114\": \"B\", \"115\": \"B\", \"116\": \"D\", \"117\": \"A\", \"118\": \"B\", \"119\": \"C\", \"120\": \"C\", \"336\": \"B\", \"337\": \"B\", \"338\": \"B\", \"339\": \"B\", \"340\": \"A\", \"341\": \"B\", \"342\": \"B\", \"343\": \"B\", \"344\": \"B\", \"345\": \"A\", \"346\": \"B\", \"347\": \"B\", \"348\": \"B\", \"349\": \"B\", \"350\": \"B\", \"351\": \"B\", \"352\": \"B\", \"353\": \"A\", \"354\": \"B\", \"355\": \"B\", \"356\": \"B\", \"357\": \"B\", \"358\": \"A\", \"359\": \"B\", \"360\": \"B\", \"361\": \"B\", \"362\": \"B\", \"363\": \"B\", \"364\": \"B\", \"365\": \"B\", \"366\": \"A\", \"367\": \"B\", \"368\": \"B\", \"369\": \"B\", \"370\": \"B\", \"371\": \"A\", \"372\": \"B\", \"373\": \"B\", \"374\": \"B\", \"375\": \"B\", \"512\": \"Essay draft for Writing Task 1 by student 1.\", \"516\": \"Essay draft for Writing Task 2 by student 1.\"}', '2026-07-26 08:05:00', '2026-07-26 10:34:00', 8940, 7.43, 66, 80, 1, 'submitted', '2026-07-26 10:34:00'),
-(3, 4, 1, '{\"581\": \"A\", \"582\": \"A\", \"583\": \"A\", \"584\": \"B\", \"585\": \"A\", \"586\": \"A\", \"587\": \"A\", \"588\": \"B\", \"589\": \"A\", \"590\": \"B\", \"591\": \"A\", \"592\": \"A\", \"593\": \"A\", \"594\": \"A\", \"595\": \"A\", \"596\": \"C\", \"597\": \"A\", \"598\": \"A\", \"599\": \"A\", \"600\": \"A\", \"601\": \"A\", \"602\": \"B\", \"603\": \"A\", \"604\": \"B\", \"605\": \"A\", \"606\": \"A\", \"607\": \"A\", \"608\": \"B\", \"609\": \"A\", \"610\": \"A\", \"717\": \"A\", \"718\": \"B\", \"719\": \"C\", \"720\": \"D\", \"721\": \"A\", \"722\": \"B\", \"751\": \"A\", \"752\": \"B\", \"753\": \"C\", \"754\": \"D\", \"755\": \"A\", \"756\": \"B\", \"757\": \"C\", \"758\": \"A\", \"759\": \"A\", \"760\": \"B\", \"761\": \"C\", \"762\": \"D\", \"763\": \"A\", \"764\": \"B\", \"765\": \"C\", \"766\": \"A\", \"767\": \"A\", \"768\": \"B\", \"769\": \"C\", \"770\": \"D\", \"771\": \"A\", \"772\": \"B\", \"773\": \"C\", \"774\": \"A\", \"775\": \"A\", \"828\": \"A\", \"829\": \"A\", \"830\": \"A\", \"831\": \"A\", \"832\": \"A\", \"833\": \"A\", \"834\": \"A\", \"835\": \"B\", \"836\": \"A\", \"837\": \"A\", \"838\": \"A\", \"839\": \"A\", \"840\": \"A\", \"841\": \"A\", \"842\": \"A\", \"843\": \"B\", \"844\": \"A\", \"845\": \"A\", \"846\": \"A\", \"847\": \"A\", \"848\": \"A\", \"849\": \"A\", \"850\": \"A\", \"851\": \"B\", \"852\": \"A\", \"853\": \"A\", \"854\": \"A\", \"855\": \"A\", \"856\": \"A\", \"857\": \"A\", \"858\": \"A\", \"859\": \"B\", \"860\": \"A\", \"861\": \"A\", \"862\": \"A\", \"863\": \"A\", \"864\": \"A\", \"865\": \"A\", \"866\": \"A\", \"946\": \"A\", \"947\": \"A\", \"948\": \"A\", \"949\": \"A\", \"950\": \"A\", \"951\": \"A\", \"952\": \"A\", \"953\": \"B\", \"954\": \"A\", \"955\": \"A\", \"956\": \"A\", \"957\": \"A\", \"958\": \"A\", \"959\": \"A\", \"960\": \"A\", \"961\": \"B\", \"962\": \"A\", \"963\": \"A\", \"964\": \"A\", \"965\": \"A\", \"966\": \"A\", \"967\": \"A\", \"968\": \"A\", \"969\": \"B\", \"970\": \"A\", \"971\": \"A\", \"972\": \"A\", \"973\": \"A\", \"974\": \"A\", \"975\": \"A\", \"995\": \"A\", \"996\": \"A\", \"997\": \"A\", \"998\": \"A\", \"999\": \"A\", \"1000\": \"A\", \"1001\": \"A\", \"1002\": \"B\", \"1003\": \"A\", \"1004\": \"A\", \"1005\": \"A\", \"1006\": \"A\", \"1007\": \"A\", \"1008\": \"A\", \"1009\": \"A\", \"1010\": \"B\", \"1096\": \"A\", \"1097\": \"A\", \"1098\": \"A\", \"1099\": \"A\", \"1100\": \"A\", \"1101\": \"A\", \"1102\": \"A\", \"1103\": \"B\", \"1104\": \"A\", \"1105\": \"A\", \"1106\": \"A\", \"1107\": \"A\", \"1108\": \"A\", \"1109\": \"A\", \"1110\": \"A\", \"1111\": \"B\", \"1112\": \"A\", \"1113\": \"A\", \"1114\": \"A\", \"1115\": \"A\", \"1116\": \"A\", \"1117\": \"A\", \"1118\": \"A\", \"1119\": \"B\", \"1120\": \"A\", \"1121\": \"A\", \"1122\": \"A\", \"1123\": \"A\", \"1124\": \"A\", \"1125\": \"A\", \"1126\": \"A\", \"1127\": \"B\", \"1128\": \"A\", \"1129\": \"A\", \"1130\": \"A\", \"1131\": \"A\", \"1132\": \"A\", \"1133\": \"A\", \"1134\": \"A\", \"1135\": \"B\", \"1136\": \"A\", \"1137\": \"A\", \"1138\": \"A\", \"1139\": \"A\", \"1140\": \"A\", \"1141\": \"A\", \"1142\": \"A\", \"1143\": \"B\", \"1144\": \"A\", \"1145\": \"A\", \"1146\": \"A\", \"1147\": \"A\", \"1148\": \"A\", \"1149\": \"A\"}', '2026-04-21 08:00:00', '2026-04-21 09:53:00', 6780, 886.05, 179, 200, 1, 'graded', '2026-04-21 09:53:00'),
-(4, 1, 9, '{\"41\": \"A\", \"42\": \"B\", \"43\": \"C\", \"44\": \"D\", \"45\": \"A\", \"46\": \"D\", \"47\": \"C\", \"48\": \"D\", \"49\": \"A\", \"50\": \"B\", \"51\": \"C\", \"52\": \"B\", \"53\": \"A\", \"54\": \"B\", \"55\": \"C\", \"56\": \"D\", \"57\": \"A\", \"58\": \"D\", \"59\": \"C\", \"60\": \"D\", \"61\": \"A\", \"62\": \"B\", \"63\": \"C\", \"64\": \"B\", \"65\": \"A\", \"66\": \"B\", \"67\": \"C\", \"68\": \"D\", \"69\": \"A\", \"70\": \"D\", \"71\": \"C\", \"72\": \"D\", \"73\": \"A\", \"74\": \"B\", \"75\": \"C\", \"76\": \"B\", \"77\": \"A\", \"78\": \"B\", \"79\": \"C\", \"80\": \"D\", \"296\": \"B\", \"297\": \"B\", \"298\": \"B\", \"299\": \"B\", \"300\": \"B\", \"301\": \"D\", \"302\": \"B\", \"303\": \"B\", \"304\": \"B\", \"305\": \"B\", \"306\": \"B\", \"307\": \"D\", \"308\": \"B\", \"309\": \"B\", \"310\": \"B\", \"311\": \"B\", \"312\": \"B\", \"313\": \"B\", \"314\": \"D\", \"315\": \"B\", \"316\": \"B\", \"317\": \"B\", \"318\": \"B\", \"319\": \"B\", \"320\": \"D\", \"321\": \"B\", \"322\": \"B\", \"323\": \"B\", \"324\": \"B\", \"325\": \"B\", \"326\": \"B\", \"327\": \"D\", \"328\": \"B\", \"329\": \"B\", \"330\": \"B\", \"331\": \"B\", \"332\": \"B\", \"333\": \"D\", \"334\": \"B\", \"335\": \"B\", \"511\": \"Essay draft for Writing Task 1 by student 9.\", \"515\": \"Essay draft for Writing Task 2 by student 9.\"}', '2026-07-20 08:10:00', '2026-07-20 10:40:00', 9000, 7.65, 68, 80, 1, 'submitted', '2026-07-20 10:40:00'),
-(5, 4, 10, '{\"581\": \"A\", \"582\": \"A\", \"583\": \"A\", \"584\": \"A\", \"585\": \"A\", \"586\": \"A\", \"587\": \"A\", \"588\": \"D\", \"589\": \"A\", \"590\": \"B\", \"591\": \"A\", \"592\": \"D\", \"593\": \"A\", \"594\": \"A\", \"595\": \"A\", \"596\": \"A\", \"597\": \"A\", \"598\": \"A\", \"599\": \"A\", \"600\": \"D\", \"601\": \"A\", \"602\": \"B\", \"603\": \"A\", \"604\": \"D\", \"605\": \"A\", \"606\": \"A\", \"607\": \"A\", \"608\": \"A\", \"609\": \"A\", \"610\": \"A\", \"717\": \"A\", \"718\": \"B\", \"719\": \"C\", \"720\": \"C\", \"721\": \"A\", \"722\": \"B\", \"751\": \"A\", \"752\": \"B\", \"753\": \"C\", \"754\": \"C\", \"755\": \"A\", \"756\": \"B\", \"757\": \"C\", \"758\": \"C\", \"759\": \"A\", \"760\": \"B\", \"761\": \"C\", \"762\": \"C\", \"763\": \"A\", \"764\": \"B\", \"765\": \"C\", \"766\": \"C\", \"767\": \"A\", \"768\": \"B\", \"769\": \"C\", \"770\": \"C\", \"771\": \"A\", \"772\": \"B\", \"773\": \"C\", \"774\": \"C\", \"775\": \"A\", \"828\": \"A\", \"829\": \"A\", \"830\": \"A\", \"831\": \"D\", \"832\": \"A\", \"833\": \"A\", \"834\": \"A\", \"835\": \"D\", \"836\": \"A\", \"837\": \"A\", \"838\": \"A\", \"839\": \"D\", \"840\": \"A\", \"841\": \"A\", \"842\": \"A\", \"843\": \"D\", \"844\": \"A\", \"845\": \"A\", \"846\": \"A\", \"847\": \"D\", \"848\": \"A\", \"849\": \"A\", \"850\": \"A\", \"851\": \"D\", \"852\": \"A\", \"853\": \"A\", \"854\": \"A\", \"855\": \"D\", \"856\": \"A\", \"857\": \"A\", \"858\": \"A\", \"859\": \"D\", \"860\": \"A\", \"861\": \"A\", \"862\": \"A\", \"863\": \"D\", \"864\": \"A\", \"865\": \"A\", \"866\": \"A\", \"946\": \"A\", \"947\": \"A\", \"948\": \"A\", \"949\": \"D\", \"950\": \"A\", \"951\": \"A\", \"952\": \"A\", \"953\": \"D\", \"954\": \"A\", \"955\": \"A\", \"956\": \"A\", \"957\": \"D\", \"958\": \"A\", \"959\": \"A\", \"960\": \"A\", \"961\": \"D\", \"962\": \"A\", \"963\": \"A\", \"964\": \"A\", \"965\": \"D\", \"966\": \"A\", \"967\": \"A\", \"968\": \"A\", \"969\": \"D\", \"970\": \"A\", \"971\": \"A\", \"972\": \"A\", \"973\": \"D\", \"974\": \"A\", \"975\": \"A\", \"995\": \"A\", \"996\": \"A\", \"997\": \"A\", \"998\": \"D\", \"999\": \"A\", \"1000\": \"A\", \"1001\": \"A\", \"1002\": \"D\", \"1003\": \"A\", \"1004\": \"A\", \"1005\": \"A\", \"1006\": \"D\", \"1007\": \"A\", \"1008\": \"A\", \"1009\": \"A\", \"1010\": \"D\", \"1096\": \"A\", \"1097\": \"A\", \"1098\": \"A\", \"1099\": \"D\", \"1100\": \"A\", \"1101\": \"A\", \"1102\": \"A\", \"1103\": \"D\", \"1104\": \"A\", \"1105\": \"A\", \"1106\": \"A\", \"1107\": \"D\", \"1108\": \"A\", \"1109\": \"A\", \"1110\": \"A\", \"1111\": \"D\", \"1112\": \"A\", \"1113\": \"A\", \"1114\": \"A\", \"1115\": \"D\", \"1116\": \"A\", \"1117\": \"A\", \"1118\": \"A\", \"1119\": \"D\", \"1120\": \"A\", \"1121\": \"A\", \"1122\": \"A\", \"1123\": \"D\", \"1124\": \"A\", \"1125\": \"A\", \"1126\": \"A\", \"1127\": \"D\", \"1128\": \"A\", \"1129\": \"A\", \"1130\": \"A\", \"1131\": \"D\", \"1132\": \"A\", \"1133\": \"A\", \"1134\": \"A\", \"1135\": \"D\", \"1136\": \"A\", \"1137\": \"A\", \"1138\": \"A\", \"1139\": \"D\", \"1140\": \"A\", \"1141\": \"A\", \"1142\": \"A\", \"1143\": \"D\", \"1144\": \"A\", \"1145\": \"A\", \"1146\": \"A\", \"1147\": \"D\", \"1148\": \"A\", \"1149\": \"A\"}', '2026-07-31 08:05:00', '2026-07-31 10:00:00', 6900, 757.35, 153, 200, 1, 'submitted', '2026-07-31 10:00:00');
+INSERT INTO `mock_test_submissions` (`test_submission_id`, `mock_test_id`, `user_id`, `answers_json`, `started_at`, `submitted_at`, `graded_at`, `duration`, `total_score`, `correct_answers`, `total_questions`, `attempt_number`, `status`) VALUES
+(1, 1, 1, '{\"41\": \"A\", \"42\": \"B\", \"43\": \"C\", \"44\": \"D\", \"45\": \"A\", \"46\": \"B\", \"47\": \"D\", \"48\": \"D\", \"49\": \"A\", \"50\": \"B\", \"51\": \"C\", \"52\": \"D\", \"53\": \"A\", \"54\": \"C\", \"55\": \"C\", \"56\": \"D\", \"57\": \"A\", \"58\": \"B\", \"59\": \"C\", \"60\": \"D\", \"61\": \"B\", \"62\": \"B\", \"63\": \"C\", \"64\": \"D\", \"65\": \"A\", \"66\": \"B\", \"67\": \"C\", \"68\": \"A\", \"69\": \"A\", \"70\": \"B\", \"71\": \"C\", \"72\": \"D\", \"73\": \"A\", \"74\": \"B\", \"75\": \"D\", \"76\": \"D\", \"77\": \"A\", \"78\": \"B\", \"79\": \"C\", \"80\": \"D\", \"296\": \"B\", \"297\": \"B\", \"298\": \"B\", \"299\": \"B\", \"300\": \"B\", \"301\": \"B\", \"302\": \"C\", \"303\": \"B\", \"304\": \"B\", \"305\": \"B\", \"306\": \"B\", \"307\": \"B\", \"308\": \"B\", \"309\": \"B\", \"310\": \"B\", \"311\": \"B\", \"312\": \"B\", \"313\": \"B\", \"314\": \"B\", \"315\": \"C\", \"316\": \"B\", \"317\": \"B\", \"318\": \"B\", \"319\": \"B\", \"320\": \"B\", \"321\": \"B\", \"322\": \"B\", \"323\": \"B\", \"324\": \"B\", \"325\": \"B\", \"326\": \"B\", \"327\": \"B\", \"328\": \"C\", \"329\": \"B\", \"330\": \"B\", \"331\": \"B\", \"332\": \"B\", \"333\": \"B\", \"334\": \"B\", \"335\": \"C\", \"511\": \"Essay draft for Writing Task 1 by student 1.\", \"515\": \"Essay draft for Writing Task 2 by student 1.\"}', '2026-07-19 08:00:00', '2026-07-19 10:37:00', '2026-07-19 10:37:00', 9420, 7.99, 71, 80, 1, 'graded'),
+(2, 2, 1, '{\"81\": \"A\", \"82\": \"B\", \"83\": \"C\", \"84\": \"D\", \"85\": \"D\", \"86\": \"B\", \"87\": \"C\", \"88\": \"D\", \"89\": \"A\", \"90\": \"A\", \"91\": \"C\", \"92\": \"D\", \"93\": \"A\", \"94\": \"B\", \"95\": \"B\", \"96\": \"D\", \"97\": \"A\", \"98\": \"B\", \"99\": \"C\", \"100\": \"C\", \"101\": \"A\", \"102\": \"B\", \"103\": \"C\", \"104\": \"D\", \"105\": \"D\", \"106\": \"B\", \"107\": \"C\", \"108\": \"D\", \"109\": \"A\", \"110\": \"A\", \"111\": \"C\", \"112\": \"D\", \"113\": \"A\", \"114\": \"B\", \"115\": \"B\", \"116\": \"D\", \"117\": \"A\", \"118\": \"B\", \"119\": \"C\", \"120\": \"C\", \"336\": \"B\", \"337\": \"B\", \"338\": \"B\", \"339\": \"B\", \"340\": \"A\", \"341\": \"B\", \"342\": \"B\", \"343\": \"B\", \"344\": \"B\", \"345\": \"A\", \"346\": \"B\", \"347\": \"B\", \"348\": \"B\", \"349\": \"B\", \"350\": \"B\", \"351\": \"B\", \"352\": \"B\", \"353\": \"A\", \"354\": \"B\", \"355\": \"B\", \"356\": \"B\", \"357\": \"B\", \"358\": \"A\", \"359\": \"B\", \"360\": \"B\", \"361\": \"B\", \"362\": \"B\", \"363\": \"B\", \"364\": \"B\", \"365\": \"B\", \"366\": \"A\", \"367\": \"B\", \"368\": \"B\", \"369\": \"B\", \"370\": \"B\", \"371\": \"A\", \"372\": \"B\", \"373\": \"B\", \"374\": \"B\", \"375\": \"B\", \"512\": \"Essay draft for Writing Task 1 by student 1.\", \"516\": \"Essay draft for Writing Task 2 by student 1.\"}', '2026-07-26 08:05:00', '2026-07-26 10:34:00', NULL, 8940, 7.43, 66, 80, 1, 'submitted'),
+(3, 4, 1, '{\"581\": \"A\", \"582\": \"A\", \"583\": \"A\", \"584\": \"B\", \"585\": \"A\", \"586\": \"A\", \"587\": \"A\", \"588\": \"B\", \"589\": \"A\", \"590\": \"B\", \"591\": \"A\", \"592\": \"A\", \"593\": \"A\", \"594\": \"A\", \"595\": \"A\", \"596\": \"C\", \"597\": \"A\", \"598\": \"A\", \"599\": \"A\", \"600\": \"A\", \"601\": \"A\", \"602\": \"B\", \"603\": \"A\", \"604\": \"B\", \"605\": \"A\", \"606\": \"A\", \"607\": \"A\", \"608\": \"B\", \"609\": \"A\", \"610\": \"A\", \"717\": \"A\", \"718\": \"B\", \"719\": \"C\", \"720\": \"D\", \"721\": \"A\", \"722\": \"B\", \"751\": \"A\", \"752\": \"B\", \"753\": \"C\", \"754\": \"D\", \"755\": \"A\", \"756\": \"B\", \"757\": \"C\", \"758\": \"A\", \"759\": \"A\", \"760\": \"B\", \"761\": \"C\", \"762\": \"D\", \"763\": \"A\", \"764\": \"B\", \"765\": \"C\", \"766\": \"A\", \"767\": \"A\", \"768\": \"B\", \"769\": \"C\", \"770\": \"D\", \"771\": \"A\", \"772\": \"B\", \"773\": \"C\", \"774\": \"A\", \"775\": \"A\", \"828\": \"A\", \"829\": \"A\", \"830\": \"A\", \"831\": \"A\", \"832\": \"A\", \"833\": \"A\", \"834\": \"A\", \"835\": \"B\", \"836\": \"A\", \"837\": \"A\", \"838\": \"A\", \"839\": \"A\", \"840\": \"A\", \"841\": \"A\", \"842\": \"A\", \"843\": \"B\", \"844\": \"A\", \"845\": \"A\", \"846\": \"A\", \"847\": \"A\", \"848\": \"A\", \"849\": \"A\", \"850\": \"A\", \"851\": \"B\", \"852\": \"A\", \"853\": \"A\", \"854\": \"A\", \"855\": \"A\", \"856\": \"A\", \"857\": \"A\", \"858\": \"A\", \"859\": \"B\", \"860\": \"A\", \"861\": \"A\", \"862\": \"A\", \"863\": \"A\", \"864\": \"A\", \"865\": \"A\", \"866\": \"A\", \"946\": \"A\", \"947\": \"A\", \"948\": \"A\", \"949\": \"A\", \"950\": \"A\", \"951\": \"A\", \"952\": \"A\", \"953\": \"B\", \"954\": \"A\", \"955\": \"A\", \"956\": \"A\", \"957\": \"A\", \"958\": \"A\", \"959\": \"A\", \"960\": \"A\", \"961\": \"B\", \"962\": \"A\", \"963\": \"A\", \"964\": \"A\", \"965\": \"A\", \"966\": \"A\", \"967\": \"A\", \"968\": \"A\", \"969\": \"B\", \"970\": \"A\", \"971\": \"A\", \"972\": \"A\", \"973\": \"A\", \"974\": \"A\", \"975\": \"A\", \"995\": \"A\", \"996\": \"A\", \"997\": \"A\", \"998\": \"A\", \"999\": \"A\", \"1000\": \"A\", \"1001\": \"A\", \"1002\": \"B\", \"1003\": \"A\", \"1004\": \"A\", \"1005\": \"A\", \"1006\": \"A\", \"1007\": \"A\", \"1008\": \"A\", \"1009\": \"A\", \"1010\": \"B\", \"1096\": \"A\", \"1097\": \"A\", \"1098\": \"A\", \"1099\": \"A\", \"1100\": \"A\", \"1101\": \"A\", \"1102\": \"A\", \"1103\": \"B\", \"1104\": \"A\", \"1105\": \"A\", \"1106\": \"A\", \"1107\": \"A\", \"1108\": \"A\", \"1109\": \"A\", \"1110\": \"A\", \"1111\": \"B\", \"1112\": \"A\", \"1113\": \"A\", \"1114\": \"A\", \"1115\": \"A\", \"1116\": \"A\", \"1117\": \"A\", \"1118\": \"A\", \"1119\": \"B\", \"1120\": \"A\", \"1121\": \"A\", \"1122\": \"A\", \"1123\": \"A\", \"1124\": \"A\", \"1125\": \"A\", \"1126\": \"A\", \"1127\": \"B\", \"1128\": \"A\", \"1129\": \"A\", \"1130\": \"A\", \"1131\": \"A\", \"1132\": \"A\", \"1133\": \"A\", \"1134\": \"A\", \"1135\": \"B\", \"1136\": \"A\", \"1137\": \"A\", \"1138\": \"A\", \"1139\": \"A\", \"1140\": \"A\", \"1141\": \"A\", \"1142\": \"A\", \"1143\": \"B\", \"1144\": \"A\", \"1145\": \"A\", \"1146\": \"A\", \"1147\": \"A\", \"1148\": \"A\", \"1149\": \"A\"}', '2026-04-21 08:00:00', '2026-04-21 09:53:00', '2026-04-21 09:53:00', 6780, 886.05, 179, 200, 1, 'graded'),
+(4, 1, 9, '{\"41\": \"A\", \"42\": \"B\", \"43\": \"C\", \"44\": \"D\", \"45\": \"A\", \"46\": \"D\", \"47\": \"C\", \"48\": \"D\", \"49\": \"A\", \"50\": \"B\", \"51\": \"C\", \"52\": \"B\", \"53\": \"A\", \"54\": \"B\", \"55\": \"C\", \"56\": \"D\", \"57\": \"A\", \"58\": \"D\", \"59\": \"C\", \"60\": \"D\", \"61\": \"A\", \"62\": \"B\", \"63\": \"C\", \"64\": \"B\", \"65\": \"A\", \"66\": \"B\", \"67\": \"C\", \"68\": \"D\", \"69\": \"A\", \"70\": \"D\", \"71\": \"C\", \"72\": \"D\", \"73\": \"A\", \"74\": \"B\", \"75\": \"C\", \"76\": \"B\", \"77\": \"A\", \"78\": \"B\", \"79\": \"C\", \"80\": \"D\", \"296\": \"B\", \"297\": \"B\", \"298\": \"B\", \"299\": \"B\", \"300\": \"B\", \"301\": \"D\", \"302\": \"B\", \"303\": \"B\", \"304\": \"B\", \"305\": \"B\", \"306\": \"B\", \"307\": \"D\", \"308\": \"B\", \"309\": \"B\", \"310\": \"B\", \"311\": \"B\", \"312\": \"B\", \"313\": \"B\", \"314\": \"D\", \"315\": \"B\", \"316\": \"B\", \"317\": \"B\", \"318\": \"B\", \"319\": \"B\", \"320\": \"D\", \"321\": \"B\", \"322\": \"B\", \"323\": \"B\", \"324\": \"B\", \"325\": \"B\", \"326\": \"B\", \"327\": \"D\", \"328\": \"B\", \"329\": \"B\", \"330\": \"B\", \"331\": \"B\", \"332\": \"B\", \"333\": \"D\", \"334\": \"B\", \"335\": \"B\", \"511\": \"Essay draft for Writing Task 1 by student 9.\", \"515\": \"Essay draft for Writing Task 2 by student 9.\"}', '2026-07-20 08:10:00', '2026-07-20 10:40:00', NULL, 9000, 7.65, 68, 80, 1, 'submitted'),
+(5, 4, 10, '{\"581\": \"A\", \"582\": \"A\", \"583\": \"A\", \"584\": \"A\", \"585\": \"A\", \"586\": \"A\", \"587\": \"A\", \"588\": \"D\", \"589\": \"A\", \"590\": \"B\", \"591\": \"A\", \"592\": \"D\", \"593\": \"A\", \"594\": \"A\", \"595\": \"A\", \"596\": \"A\", \"597\": \"A\", \"598\": \"A\", \"599\": \"A\", \"600\": \"D\", \"601\": \"A\", \"602\": \"B\", \"603\": \"A\", \"604\": \"D\", \"605\": \"A\", \"606\": \"A\", \"607\": \"A\", \"608\": \"A\", \"609\": \"A\", \"610\": \"A\", \"717\": \"A\", \"718\": \"B\", \"719\": \"C\", \"720\": \"C\", \"721\": \"A\", \"722\": \"B\", \"751\": \"A\", \"752\": \"B\", \"753\": \"C\", \"754\": \"C\", \"755\": \"A\", \"756\": \"B\", \"757\": \"C\", \"758\": \"C\", \"759\": \"A\", \"760\": \"B\", \"761\": \"C\", \"762\": \"C\", \"763\": \"A\", \"764\": \"B\", \"765\": \"C\", \"766\": \"C\", \"767\": \"A\", \"768\": \"B\", \"769\": \"C\", \"770\": \"C\", \"771\": \"A\", \"772\": \"B\", \"773\": \"C\", \"774\": \"C\", \"775\": \"A\", \"828\": \"A\", \"829\": \"A\", \"830\": \"A\", \"831\": \"D\", \"832\": \"A\", \"833\": \"A\", \"834\": \"A\", \"835\": \"D\", \"836\": \"A\", \"837\": \"A\", \"838\": \"A\", \"839\": \"D\", \"840\": \"A\", \"841\": \"A\", \"842\": \"A\", \"843\": \"D\", \"844\": \"A\", \"845\": \"A\", \"846\": \"A\", \"847\": \"D\", \"848\": \"A\", \"849\": \"A\", \"850\": \"A\", \"851\": \"D\", \"852\": \"A\", \"853\": \"A\", \"854\": \"A\", \"855\": \"D\", \"856\": \"A\", \"857\": \"A\", \"858\": \"A\", \"859\": \"D\", \"860\": \"A\", \"861\": \"A\", \"862\": \"A\", \"863\": \"D\", \"864\": \"A\", \"865\": \"A\", \"866\": \"A\", \"946\": \"A\", \"947\": \"A\", \"948\": \"A\", \"949\": \"D\", \"950\": \"A\", \"951\": \"A\", \"952\": \"A\", \"953\": \"D\", \"954\": \"A\", \"955\": \"A\", \"956\": \"A\", \"957\": \"D\", \"958\": \"A\", \"959\": \"A\", \"960\": \"A\", \"961\": \"D\", \"962\": \"A\", \"963\": \"A\", \"964\": \"A\", \"965\": \"D\", \"966\": \"A\", \"967\": \"A\", \"968\": \"A\", \"969\": \"D\", \"970\": \"A\", \"971\": \"A\", \"972\": \"A\", \"973\": \"D\", \"974\": \"A\", \"975\": \"A\", \"995\": \"A\", \"996\": \"A\", \"997\": \"A\", \"998\": \"D\", \"999\": \"A\", \"1000\": \"A\", \"1001\": \"A\", \"1002\": \"D\", \"1003\": \"A\", \"1004\": \"A\", \"1005\": \"A\", \"1006\": \"D\", \"1007\": \"A\", \"1008\": \"A\", \"1009\": \"A\", \"1010\": \"D\", \"1096\": \"A\", \"1097\": \"A\", \"1098\": \"A\", \"1099\": \"D\", \"1100\": \"A\", \"1101\": \"A\", \"1102\": \"A\", \"1103\": \"D\", \"1104\": \"A\", \"1105\": \"A\", \"1106\": \"A\", \"1107\": \"D\", \"1108\": \"A\", \"1109\": \"A\", \"1110\": \"A\", \"1111\": \"D\", \"1112\": \"A\", \"1113\": \"A\", \"1114\": \"A\", \"1115\": \"D\", \"1116\": \"A\", \"1117\": \"A\", \"1118\": \"A\", \"1119\": \"D\", \"1120\": \"A\", \"1121\": \"A\", \"1122\": \"A\", \"1123\": \"D\", \"1124\": \"A\", \"1125\": \"A\", \"1126\": \"A\", \"1127\": \"D\", \"1128\": \"A\", \"1129\": \"A\", \"1130\": \"A\", \"1131\": \"D\", \"1132\": \"A\", \"1133\": \"A\", \"1134\": \"A\", \"1135\": \"D\", \"1136\": \"A\", \"1137\": \"A\", \"1138\": \"A\", \"1139\": \"D\", \"1140\": \"A\", \"1141\": \"A\", \"1142\": \"A\", \"1143\": \"D\", \"1144\": \"A\", \"1145\": \"A\", \"1146\": \"A\", \"1147\": \"D\", \"1148\": \"A\", \"1149\": \"A\"}', '2026-07-31 08:05:00', '2026-07-31 10:00:00', NULL, 6900, 757.35, 153, 200, 1, 'submitted');
 
 -- --------------------------------------------------------
 
@@ -342,7 +338,7 @@ CREATE TABLE IF NOT EXISTS `notifications` (
   `sender_id` int DEFAULT NULL,
   `title` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
   `content` text COLLATE utf8mb4_general_ci NOT NULL,
-  `notification_type` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
+  `notification_type` enum('system','class_update','assignment','quiz','mock_test','payment','approval','schedule') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'system',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`notification_id`),
   KEY `fk_notifications_sender` (`sender_id`)
@@ -358,7 +354,7 @@ INSERT INTO `notifications` (`notification_id`, `sender_id`, `title`, `content`,
 (3, 30, 'Mock listening review reminder', 'Please review the listening traps discussed in class and complete the reflection task before the weekend workshop.', 'assignment', '2026-07-17 19:45:00'),
 (4, 31, 'TOEIC grammar mini-quiz available', 'A new TOEIC Part 5 practice quiz is now available for class 22. Focus on finance and office operations vocabulary.', 'quiz', '2026-07-20 08:10:00'),
 (5, 2, 'Payment follow-up for TOEIC 600+', 'Your registration for TOEIC 600+ has been approved. Please complete payment confirmation within three working days to keep your seat.', 'payment', '2026-07-20 10:20:00'),
-(6, 2, 'Weekend simulation schedule', 'The IELTS weekend simulation will begin at 8:00 AM on Saturday. Arrive fifteen minutes early for instructions and seating.', 'test', '2026-07-27 16:30:00');
+(6, 2, 'Weekend simulation schedule', 'The IELTS weekend simulation will begin at 8:00 AM on Saturday. Arrive fifteen minutes early for instructions and seating.', 'mock_test', '2026-07-27 16:30:00');
 
 -- --------------------------------------------------------
 
@@ -398,28 +394,6 @@ INSERT INTO `notification_receivers` (`receiver_id`, `notification_id`, `user_id
 -- --------------------------------------------------------
 
 --
--- Cấu trúc bảng cho bảng `passages`
---
-
-DROP TABLE IF EXISTS `passages`;
-CREATE TABLE IF NOT EXISTS `passages` (
-  `passage_id` int NOT NULL AUTO_INCREMENT,
-  `quiz_id` int DEFAULT NULL,
-  `assign_id` int DEFAULT NULL,
-  `title` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `content` longtext COLLATE utf8mb4_general_ci NOT NULL,
-  `payment_type` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `order_num` int DEFAULT '1',
-  `mock_test_id` int DEFAULT NULL,
-  PRIMARY KEY (`passage_id`),
-  KEY `fk_passages_assignment` (`assign_id`),
-  KEY `fk_passages_quiz` (`quiz_id`),
-  KEY `fk_passages_mock_test` (`mock_test_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Cấu trúc bảng cho bảng `payments`
 --
 
@@ -428,8 +402,9 @@ CREATE TABLE IF NOT EXISTS `payments` (
   `pay_id` int NOT NULL AUTO_INCREMENT,
   `enrollment_id` int DEFAULT NULL,
   `amount` decimal(10,2) DEFAULT NULL,
-  `payment_method` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `paid_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `payment_method` enum('bank_transfer','vnpay','momo','cash','deferred') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `paid_at` datetime DEFAULT NULL,
   `status` enum('pending','paid','failed','refunded','cancelled') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending',
   PRIMARY KEY (`pay_id`),
   KEY `fk_payments_enrollment` (`enrollment_id`)
@@ -439,26 +414,26 @@ CREATE TABLE IF NOT EXISTS `payments` (
 -- Đang đổ dữ liệu cho bảng `payments`
 --
 
-INSERT INTO `payments` (`pay_id`, `enrollment_id`, `amount`, `payment_method`, `paid_at`, `status`) VALUES
-(1, 7, 2800000.00, 'banking', '2026-06-11 10:20:00', 'paid'),
-(2, 2, 3000000.00, 'momo', '2026-06-12 10:15:00', 'paid'),
-(3, 3, 3500000.00, 'banking', '2026-06-15 11:20:00', 'paid'),
-(4, 4, 3600000.00, 'cash', '2026-06-18 11:15:00', 'paid'),
-(5, 5, 3900000.00, 'banking', '2026-06-20 10:45:00', 'paid'),
-(6, 6, 3400000.00, 'banking', '2026-04-03 11:15:00', 'paid'),
-(7, 8, 2600000.00, 'momo', '2026-07-03 10:30:00', 'pending'),
-(8, 9, 1800000.00, 'cash', '2026-07-04 10:15:00', 'paid'),
-(9, 12, 2800000.00, 'banking', '2026-06-16 10:25:00', 'paid'),
-(10, 11, 3200000.00, 'momo', '2026-06-17 10:35:00', 'paid'),
-(11, 13, 3200000.00, 'cash', '2026-06-19 10:20:00', 'paid'),
-(12, 14, 3500000.00, 'momo', '2026-06-20 10:35:00', 'paid'),
-(13, 15, 3400000.00, 'banking', '2026-04-04 10:40:00', 'paid'),
-(14, 17, 3600000.00, 'momo', '2026-06-23 10:25:00', 'paid'),
-(15, 19, 2600000.00, 'banking', '2026-06-28 10:40:00', 'pending'),
-(16, 21, 3000000.00, 'cash', '2026-07-01 10:20:00', 'pending'),
-(17, 23, 1800000.00, 'banking', '2026-04-12 10:10:00', 'paid'),
-(18, 25, 2600000.00, 'cash', '2026-04-18 10:05:00', 'paid'),
-(19, 27, 2600000.00, 'momo', '2026-07-07 10:10:00', 'paid');
+INSERT INTO `payments` (`pay_id`, `enrollment_id`, `amount`, `payment_method`, `created_at`, `paid_at`, `status`) VALUES
+(1, 7, 2800000.00, 'bank_transfer', '2026-07-17 22:07:59', '2026-06-11 10:20:00', 'paid'),
+(2, 2, 3000000.00, 'momo', '2026-07-17 22:07:59', '2026-06-12 10:15:00', 'paid'),
+(3, 3, 3500000.00, 'bank_transfer', '2026-07-17 22:07:59', '2026-06-15 11:20:00', 'paid'),
+(4, 4, 3600000.00, 'cash', '2026-07-17 22:07:59', '2026-06-18 11:15:00', 'paid'),
+(5, 5, 3900000.00, 'bank_transfer', '2026-07-17 22:07:59', '2026-06-20 10:45:00', 'paid'),
+(6, 6, 3400000.00, 'bank_transfer', '2026-07-17 22:07:59', '2026-04-03 11:15:00', 'paid'),
+(7, 8, 2600000.00, 'momo', '2026-07-17 22:07:59', NULL, 'pending'),
+(8, 9, 1800000.00, 'cash', '2026-07-17 22:07:59', '2026-07-04 10:15:00', 'paid'),
+(9, 12, 2800000.00, 'bank_transfer', '2026-07-17 22:07:59', '2026-06-16 10:25:00', 'paid'),
+(10, 11, 3200000.00, 'momo', '2026-07-17 22:07:59', '2026-06-17 10:35:00', 'paid'),
+(11, 13, 3200000.00, 'cash', '2026-07-17 22:07:59', '2026-06-19 10:20:00', 'paid'),
+(12, 14, 3500000.00, 'momo', '2026-07-17 22:07:59', '2026-06-20 10:35:00', 'paid'),
+(13, 15, 3400000.00, 'bank_transfer', '2026-07-17 22:07:59', '2026-04-04 10:40:00', 'paid'),
+(14, 17, 3600000.00, 'momo', '2026-07-17 22:07:59', '2026-06-23 10:25:00', 'paid'),
+(15, 19, 2600000.00, 'bank_transfer', '2026-07-17 22:07:59', NULL, 'pending'),
+(16, 21, 3000000.00, 'cash', '2026-07-17 22:07:59', NULL, 'pending'),
+(17, 23, 1800000.00, 'bank_transfer', '2026-07-17 22:07:59', '2026-04-12 10:10:00', 'paid'),
+(18, 25, 2600000.00, 'cash', '2026-07-17 22:07:59', '2026-04-18 10:05:00', 'paid'),
+(19, 27, 2600000.00, 'momo', '2026-07-17 22:07:59', '2026-07-07 10:10:00', 'paid');
 
 -- --------------------------------------------------------
 
@@ -470,7 +445,7 @@ DROP TABLE IF EXISTS `questions`;
 CREATE TABLE IF NOT EXISTS `questions` (
   `question_id` int NOT NULL AUTO_INCREMENT,
   `group_id` int NOT NULL,
-  `question_type` varchar(50) COLLATE utf8mb4_general_ci DEFAULT 'mcq',
+  `question_type` enum('mcq','listening_mcq','reading_mcq','fill_blank','matching','short_answer','essay') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'mcq',
   `question_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `image_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `audio_url` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
@@ -812,13 +787,13 @@ INSERT INTO `questions` (`question_id`, `group_id`, `question_type`, `question_t
 (413, 48, 'mcq', 'Question 12: Which statement best matches the writer overall view?', NULL, NULL, 12, 'It solved a problem immediately without any support from residents.', 'It combined practical planning with clear communication and monitoring.', 'It depended mainly on expensive imported equipment.', 'It reduced all maintenance requirements to almost zero.', 'B', 'The passage consistently highlights measured improvement, practical design, and follow-up communication rather than instant or cost-free success.'),
 (414, 48, 'mcq', 'Question 13: According to the passage, what is one key benefit of the railway food trade?', NULL, NULL, 13, 'It solved a problem immediately without any support from residents.', 'It combined practical planning with clear communication and monitoring.', 'It depended mainly on expensive imported equipment.', 'It reduced all maintenance requirements to almost zero.', 'B', 'The passage consistently highlights measured improvement, practical design, and follow-up communication rather than instant or cost-free success.'),
 (415, 48, 'mcq', 'Question 14: Which detail is used as evidence in the passage?', NULL, NULL, 14, 'It solved a problem immediately without any support from residents.', 'It combined practical planning with clear communication and monitoring.', 'It depended mainly on expensive imported equipment.', 'It reduced all maintenance requirements to almost zero.', 'B', 'The passage consistently highlights measured improvement, practical design, and follow-up communication rather than instant or cost-free success.'),
-(511, 23, 'writing', 'The chart below shows how employees in Metro City traveled to work in 2018 and 2025. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task achievement, cohesion, vocabulary, and grammar.'),
-(512, 29, 'writing', 'The graph compares weekly library visits by four age groups between 2019 and 2024. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task achievement, cohesion, vocabulary, and grammar.'),
-(513, 49, 'writing', 'The bar chart compares household energy use for lighting, cooling, cooking, and devices in 2015 and 2025. Summarize the information by selecting and reporting the main features.', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task achievement, cohesion, vocabulary, and grammar.'),
-(514, 8, 'writing', 'Some city governments are considering strict limits on private cars in downtown areas. Do the advantages of this policy outweigh the disadvantages?', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task response, coherence, lexical resource, and grammar.'),
-(515, 24, 'writing', 'Some people believe governments should invest more in public transport than in new roads for private vehicles. Discuss both views and give your own opinion.', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task response, coherence, lexical resource, and grammar.'),
-(516, 30, 'writing', 'Many companies now allow staff to work from home several days each week. Do the advantages of this arrangement outweigh the disadvantages?', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task response, coherence, lexical resource, and grammar.'),
-(517, 50, 'writing', 'Many people think that children spend too much time looking at screens and not enough time doing outdoor activities. To what extent do you agree or disagree?', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task response, coherence, lexical resource, and grammar.'),
+(511, 23, 'essay', 'The chart below shows how employees in Metro City traveled to work in 2018 and 2025. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task achievement, cohesion, vocabulary, and grammar.'),
+(512, 29, 'essay', 'The graph compares weekly library visits by four age groups between 2019 and 2024. Summarize the information by selecting and reporting the main features, and make comparisons where relevant.', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task achievement, cohesion, vocabulary, and grammar.'),
+(513, 49, 'essay', 'The bar chart compares household energy use for lighting, cooling, cooking, and devices in 2015 and 2025. Summarize the information by selecting and reporting the main features.', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task achievement, cohesion, vocabulary, and grammar.'),
+(514, 8, 'essay', 'Some city governments are considering strict limits on private cars in downtown areas. Do the advantages of this policy outweigh the disadvantages?', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task response, coherence, lexical resource, and grammar.'),
+(515, 24, 'essay', 'Some people believe governments should invest more in public transport than in new roads for private vehicles. Discuss both views and give your own opinion.', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task response, coherence, lexical resource, and grammar.'),
+(516, 30, 'essay', 'Many companies now allow staff to work from home several days each week. Do the advantages of this arrangement outweigh the disadvantages?', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task response, coherence, lexical resource, and grammar.'),
+(517, 50, 'essay', 'Many people think that children spend too much time looking at screens and not enough time doing outdoor activities. To what extent do you agree or disagree?', NULL, NULL, 1, NULL, NULL, NULL, NULL, 'Open ended writing task', 'This task is graded manually using task response, coherence, lexical resource, and grammar.'),
 (521, 9, 'mcq', 'Question 1: The finance team requested that all expense forms be submitted by Friday so that reimbursements could be processed ____ the monthly review meeting.', NULL, NULL, 1, 'before', 'during', 'among', 'since', 'A', 'The sentence needs a preposition showing time before an event.');
 INSERT INTO `questions` (`question_id`, `group_id`, `question_type`, `question_text`, `image_url`, `audio_url`, `order_num`, `option_a`, `option_b`, `option_c`, `option_d`, `correct_answer`, `explanation`) VALUES
 (522, 9, 'mcq', 'Question 2: Ms. Lee will present the updated sales forecast at the meeting, and the branch managers are expected to review it ____ advance.', NULL, NULL, 2, 'in', 'on', 'for', 'at', 'A', 'The fixed phrase is review something in advance.'),
@@ -1430,13 +1405,13 @@ DROP TABLE IF EXISTS `quizzes`;
 CREATE TABLE IF NOT EXISTS `quizzes` (
   `quiz_id` int NOT NULL AUTO_INCREMENT,
   `title` varchar(150) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `quiz_type` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `exam_type` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `exam_part` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `passage_text` longtext COLLATE utf8mb4_general_ci,
-  `audio_url` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `instructions` text COLLATE utf8mb4_general_ci,
-  `time_limit` int DEFAULT NULL,
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
+  `type` enum('IELTS','TOEIC','OTHER') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT 'OTHER',
+  `part` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `time_limit` int UNSIGNED DEFAULT NULL,
+  `status` enum('draft','active','inactive','closed') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'draft',
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`quiz_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -1444,12 +1419,12 @@ CREATE TABLE IF NOT EXISTS `quizzes` (
 -- Đang đổ dữ liệu cho bảng `quizzes`
 --
 
-INSERT INTO `quizzes` (`quiz_id`, `title`, `quiz_type`, `exam_type`, `exam_part`, `passage_text`, `audio_url`, `instructions`, `time_limit`) VALUES
-(1, 'IELTS Listening Check - Orientation Week', 'mcq', 'IELTS', 'Listening', NULL, NULL, 'Listen to each section carefully and choose the best answer. Questions move from practical details to short academic information.', 30),
-(2, 'IELTS Reading Practice - Community and Environment', 'mcq', 'IELTS', 'Reading', NULL, NULL, 'Read the three passages and answer all forty questions. Pay attention to paraphrase and inference.', 60),
-(3, 'IELTS Writing Task 2 - Urban Policy Essay', 'writing', 'IELTS', 'Writing_Task2', NULL, NULL, 'Write at least 250 words. Present a clear position and support it with specific reasons or examples.', 40),
-(4, 'TOEIC Part 5 Review - Office Grammar and Vocabulary', 'mcq', 'TOEIC', 'Part5', NULL, NULL, 'Choose the best answer to complete each sentence in a business or office context.', 20),
-(5, 'TOEIC Part 7 Reading Sets - Workplace Communication', 'mcq', 'TOEIC', 'Part7', NULL, NULL, 'Read each text set and answer the questions that follow. Use both explicit details and implied meaning.', 55);
+INSERT INTO `quizzes` (`quiz_id`, `title`, `description`, `type`, `part`, `time_limit`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'IELTS Listening Check - Orientation Week', 'Quiz IELTS Listening Check - Orientation Week', 'IELTS', 'Listening', 30, 'active', '2026-07-17 21:43:33', '2026-07-17 21:43:33'),
+(2, 'IELTS Reading Practice - Community and Environment', 'Quiz IELTS Reading Practice - Community and Environment', 'IELTS', 'Reading', 60, 'active', '2026-07-17 21:43:33', '2026-07-17 21:43:33'),
+(3, 'IELTS Writing Task 2 - Urban Policy Essay', 'Quiz IELTS Writing Task 2 - Urban Policy Essay', 'IELTS', 'Writing_Task2', 40, 'active', '2026-07-17 21:43:33', '2026-07-17 21:43:33'),
+(4, 'TOEIC Part 5 Review - Office Grammar and Vocabulary', 'Quiz TOEIC Part 5 Review - Office Grammar and Vocabulary', 'TOEIC', 'Part5', 20, 'active', '2026-07-17 21:43:33', '2026-07-17 21:43:33'),
+(5, 'TOEIC Part 7 Reading Sets - Workplace Communication', 'Quiz TOEIC Part 7 Reading Sets - Workplace Communication', 'TOEIC', 'Part7', 55, 'active', '2026-07-17 21:43:33', '2026-07-17 21:43:33');
 
 -- --------------------------------------------------------
 
@@ -1462,6 +1437,8 @@ CREATE TABLE IF NOT EXISTS `quiz_classes` (
   `quiz_class_id` int NOT NULL AUTO_INCREMENT,
   `quiz_id` int NOT NULL,
   `class_id` int NOT NULL,
+  `open_time` datetime DEFAULT NULL,
+  `close_time` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`quiz_class_id`),
   UNIQUE KEY `uq_quiz_classes_quiz_class` (`quiz_id`,`class_id`),
@@ -1472,16 +1449,16 @@ CREATE TABLE IF NOT EXISTS `quiz_classes` (
 -- Đang đổ dữ liệu cho bảng `quiz_classes`
 --
 
-INSERT INTO `quiz_classes` (`quiz_class_id`, `quiz_id`, `class_id`, `created_at`) VALUES
-(1, 1, 1, '2026-07-12 08:00:00'),
-(2, 1, 2, '2026-07-12 08:00:00'),
-(3, 2, 21, '2026-07-13 08:00:00'),
-(4, 2, 24, '2026-07-13 08:00:00'),
-(5, 3, 5, '2026-07-14 08:00:00'),
-(6, 3, 23, '2026-07-14 08:00:00'),
-(7, 4, 22, '2026-07-15 08:00:00'),
-(8, 5, 15, '2026-07-16 08:00:00'),
-(9, 5, 16, '2026-07-16 08:00:00');
+INSERT INTO `quiz_classes` (`quiz_class_id`, `quiz_id`, `class_id`, `open_time`, `close_time`, `created_at`) VALUES
+(1, 1, 1, NULL, NULL, '2026-07-12 08:00:00'),
+(2, 1, 2, NULL, NULL, '2026-07-12 08:00:00'),
+(3, 2, 21, NULL, NULL, '2026-07-13 08:00:00'),
+(4, 2, 24, NULL, NULL, '2026-07-13 08:00:00'),
+(5, 3, 5, NULL, NULL, '2026-07-14 08:00:00'),
+(6, 3, 23, NULL, NULL, '2026-07-14 08:00:00'),
+(7, 4, 22, NULL, NULL, '2026-07-15 08:00:00'),
+(8, 5, 15, NULL, NULL, '2026-07-16 08:00:00'),
+(9, 5, 16, NULL, NULL, '2026-07-16 08:00:00');
 
 -- --------------------------------------------------------
 
@@ -1495,9 +1472,14 @@ CREATE TABLE IF NOT EXISTS `quiz_submissions` (
   `quiz_id` int DEFAULT NULL,
   `user_id` int DEFAULT NULL,
   `answers_json` longtext COLLATE utf8mb4_general_ci,
-  `score` float DEFAULT NULL,
-  `duration` int DEFAULT NULL,
+  `started_at` datetime DEFAULT NULL,
+  `score` decimal(5,2) DEFAULT NULL,
+  `correct_answers` int UNSIGNED DEFAULT '0',
+  `total_questions` int UNSIGNED DEFAULT '0',
+  `status` enum('submitted','graded') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'submitted',
+  `duration` int UNSIGNED DEFAULT NULL,
   `submitted_at` datetime DEFAULT NULL,
+  `graded_at` datetime DEFAULT NULL,
   PRIMARY KEY (`quiz_submission_id`),
   KEY `fk_quiz_submissions_user` (`user_id`),
   KEY `fk_quiz_submissions_quiz` (`quiz_id`)
@@ -1507,12 +1489,12 @@ CREATE TABLE IF NOT EXISTS `quiz_submissions` (
 -- Đang đổ dữ liệu cho bảng `quiz_submissions`
 --
 
-INSERT INTO `quiz_submissions` (`quiz_submission_id`, `quiz_id`, `user_id`, `answers_json`, `score`, `duration`, `submitted_at`) VALUES
-(1, 1, 1, '{\"1\": \"A\", \"2\": \"B\", \"3\": \"C\", \"4\": \"D\", \"5\": \"A\", \"6\": \"C\", \"7\": \"C\", \"8\": \"D\", \"9\": \"A\", \"10\": \"B\", \"11\": \"A\", \"12\": \"B\", \"13\": \"C\", \"14\": \"D\", \"15\": \"A\", \"16\": \"C\", \"17\": \"C\", \"18\": \"D\", \"19\": \"A\", \"20\": \"B\", \"21\": \"A\", \"22\": \"B\", \"23\": \"C\", \"24\": \"D\", \"25\": \"A\", \"26\": \"C\", \"27\": \"C\", \"28\": \"D\", \"29\": \"A\", \"30\": \"B\", \"31\": \"A\", \"32\": \"B\", \"33\": \"C\", \"34\": \"D\", \"35\": \"A\", \"36\": \"C\", \"37\": \"C\", \"38\": \"D\", \"39\": \"A\", \"40\": \"B\"}', 90, 1680, '2026-07-18 20:15:00'),
-(2, 2, 1, '{\"256\": \"B\", \"257\": \"B\", \"258\": \"B\", \"259\": \"B\", \"260\": \"A\", \"261\": \"B\", \"262\": \"B\", \"263\": \"B\", \"264\": \"B\", \"265\": \"A\", \"266\": \"B\", \"267\": \"B\", \"268\": \"B\", \"269\": \"B\", \"270\": \"B\", \"271\": \"B\", \"272\": \"B\", \"273\": \"A\", \"274\": \"B\", \"275\": \"B\", \"276\": \"B\", \"277\": \"B\", \"278\": \"A\", \"279\": \"B\", \"280\": \"B\", \"281\": \"B\", \"282\": \"B\", \"283\": \"B\", \"284\": \"B\", \"285\": \"B\", \"286\": \"A\", \"287\": \"B\", \"288\": \"B\", \"289\": \"B\", \"290\": \"B\", \"291\": \"A\", \"292\": \"B\", \"293\": \"B\", \"294\": \"B\", \"295\": \"B\"}', 85, 2810, '2026-07-26 09:20:00'),
-(3, 5, 1, '{\"648\": \"B\", \"649\": \"B\", \"650\": \"B\", \"651\": \"B\", \"652\": \"B\", \"653\": \"B\", \"654\": \"B\", \"655\": \"B\", \"656\": \"B\", \"657\": \"B\", \"658\": \"B\", \"659\": \"B\", \"660\": \"B\", \"661\": \"B\", \"662\": \"B\", \"663\": \"B\", \"664\": \"B\", \"665\": \"B\", \"666\": \"B\", \"667\": \"B\", \"668\": \"B\", \"669\": \"B\", \"670\": \"B\", \"671\": \"B\", \"672\": \"B\", \"673\": \"B\", \"674\": \"B\", \"675\": \"B\", \"676\": \"B\", \"677\": \"B\", \"678\": \"B\", \"679\": \"B\", \"680\": \"B\", \"681\": \"B\", \"682\": \"B\", \"683\": \"B\", \"684\": \"B\", \"685\": \"B\", \"686\": \"B\", \"687\": \"B\", \"688\": \"B\", \"689\": \"B\", \"690\": \"B\", \"691\": \"B\", \"692\": \"B\", \"693\": \"B\", \"694\": \"B\", \"695\": \"B\", \"696\": \"B\", \"697\": \"B\", \"698\": \"B\", \"699\": \"B\", \"700\": \"B\", \"701\": \"B\"}', 100, 3195, '2026-04-22 10:10:00'),
-(4, 1, 9, '{\"1\": \"A\", \"2\": \"B\", \"3\": \"C\", \"4\": \"A\", \"5\": \"A\", \"6\": \"B\", \"7\": \"C\", \"8\": \"A\", \"9\": \"A\", \"10\": \"B\", \"11\": \"A\", \"12\": \"B\", \"13\": \"C\", \"14\": \"A\", \"15\": \"A\", \"16\": \"B\", \"17\": \"C\", \"18\": \"A\", \"19\": \"A\", \"20\": \"B\", \"21\": \"A\", \"22\": \"B\", \"23\": \"C\", \"24\": \"A\", \"25\": \"A\", \"26\": \"B\", \"27\": \"C\", \"28\": \"A\", \"29\": \"A\", \"30\": \"B\", \"31\": \"A\", \"32\": \"B\", \"33\": \"C\", \"34\": \"A\", \"35\": \"A\", \"36\": \"B\", \"37\": \"C\", \"38\": \"A\", \"39\": \"A\", \"40\": \"B\"}', 80, 1770, '2026-07-20 19:40:00'),
-(5, 4, 10, '{\"521\": \"A\", \"522\": \"A\", \"523\": \"D\", \"524\": \"B\", \"525\": \"A\", \"526\": \"D\", \"527\": \"A\", \"528\": \"A\", \"529\": \"D\", \"530\": \"B\", \"531\": \"A\", \"532\": \"D\", \"533\": \"A\", \"534\": \"A\", \"535\": \"D\", \"536\": \"B\", \"537\": \"A\", \"538\": \"D\", \"539\": \"A\", \"540\": \"A\", \"541\": \"D\", \"542\": \"B\", \"543\": \"A\", \"544\": \"D\", \"545\": \"A\", \"546\": \"A\", \"547\": \"D\", \"548\": \"B\", \"549\": \"A\", \"550\": \"D\"}', 66.7, 1095, '2026-07-30 08:55:00');
+INSERT INTO `quiz_submissions` (`quiz_submission_id`, `quiz_id`, `user_id`, `answers_json`, `started_at`, `score`, `correct_answers`, `total_questions`, `status`, `duration`, `submitted_at`, `graded_at`) VALUES
+(1, 1, 1, '{\"1\": \"A\", \"2\": \"B\", \"3\": \"C\", \"4\": \"D\", \"5\": \"A\", \"6\": \"C\", \"7\": \"C\", \"8\": \"D\", \"9\": \"A\", \"10\": \"B\", \"11\": \"A\", \"12\": \"B\", \"13\": \"C\", \"14\": \"D\", \"15\": \"A\", \"16\": \"C\", \"17\": \"C\", \"18\": \"D\", \"19\": \"A\", \"20\": \"B\", \"21\": \"A\", \"22\": \"B\", \"23\": \"C\", \"24\": \"D\", \"25\": \"A\", \"26\": \"C\", \"27\": \"C\", \"28\": \"D\", \"29\": \"A\", \"30\": \"B\", \"31\": \"A\", \"32\": \"B\", \"33\": \"C\", \"34\": \"D\", \"35\": \"A\", \"36\": \"C\", \"37\": \"C\", \"38\": \"D\", \"39\": \"A\", \"40\": \"B\"}', '2026-07-18 19:47:00', 90.00, 0, 0, 'submitted', 1680, '2026-07-18 20:15:00', NULL),
+(2, 2, 1, '{\"256\": \"B\", \"257\": \"B\", \"258\": \"B\", \"259\": \"B\", \"260\": \"A\", \"261\": \"B\", \"262\": \"B\", \"263\": \"B\", \"264\": \"B\", \"265\": \"A\", \"266\": \"B\", \"267\": \"B\", \"268\": \"B\", \"269\": \"B\", \"270\": \"B\", \"271\": \"B\", \"272\": \"B\", \"273\": \"A\", \"274\": \"B\", \"275\": \"B\", \"276\": \"B\", \"277\": \"B\", \"278\": \"A\", \"279\": \"B\", \"280\": \"B\", \"281\": \"B\", \"282\": \"B\", \"283\": \"B\", \"284\": \"B\", \"285\": \"B\", \"286\": \"A\", \"287\": \"B\", \"288\": \"B\", \"289\": \"B\", \"290\": \"B\", \"291\": \"A\", \"292\": \"B\", \"293\": \"B\", \"294\": \"B\", \"295\": \"B\"}', '2026-07-26 08:33:10', 85.00, 0, 0, 'submitted', 2810, '2026-07-26 09:20:00', NULL),
+(3, 5, 1, '{\"648\": \"B\", \"649\": \"B\", \"650\": \"B\", \"651\": \"B\", \"652\": \"B\", \"653\": \"B\", \"654\": \"B\", \"655\": \"B\", \"656\": \"B\", \"657\": \"B\", \"658\": \"B\", \"659\": \"B\", \"660\": \"B\", \"661\": \"B\", \"662\": \"B\", \"663\": \"B\", \"664\": \"B\", \"665\": \"B\", \"666\": \"B\", \"667\": \"B\", \"668\": \"B\", \"669\": \"B\", \"670\": \"B\", \"671\": \"B\", \"672\": \"B\", \"673\": \"B\", \"674\": \"B\", \"675\": \"B\", \"676\": \"B\", \"677\": \"B\", \"678\": \"B\", \"679\": \"B\", \"680\": \"B\", \"681\": \"B\", \"682\": \"B\", \"683\": \"B\", \"684\": \"B\", \"685\": \"B\", \"686\": \"B\", \"687\": \"B\", \"688\": \"B\", \"689\": \"B\", \"690\": \"B\", \"691\": \"B\", \"692\": \"B\", \"693\": \"B\", \"694\": \"B\", \"695\": \"B\", \"696\": \"B\", \"697\": \"B\", \"698\": \"B\", \"699\": \"B\", \"700\": \"B\", \"701\": \"B\"}', '2026-04-22 09:16:45', 100.00, 0, 0, 'submitted', 3195, '2026-04-22 10:10:00', NULL),
+(4, 1, 9, '{\"1\": \"A\", \"2\": \"B\", \"3\": \"C\", \"4\": \"A\", \"5\": \"A\", \"6\": \"B\", \"7\": \"C\", \"8\": \"A\", \"9\": \"A\", \"10\": \"B\", \"11\": \"A\", \"12\": \"B\", \"13\": \"C\", \"14\": \"A\", \"15\": \"A\", \"16\": \"B\", \"17\": \"C\", \"18\": \"A\", \"19\": \"A\", \"20\": \"B\", \"21\": \"A\", \"22\": \"B\", \"23\": \"C\", \"24\": \"A\", \"25\": \"A\", \"26\": \"B\", \"27\": \"C\", \"28\": \"A\", \"29\": \"A\", \"30\": \"B\", \"31\": \"A\", \"32\": \"B\", \"33\": \"C\", \"34\": \"A\", \"35\": \"A\", \"36\": \"B\", \"37\": \"C\", \"38\": \"A\", \"39\": \"A\", \"40\": \"B\"}', '2026-07-20 19:10:30', 80.00, 0, 0, 'submitted', 1770, '2026-07-20 19:40:00', NULL),
+(5, 4, 10, '{\"521\": \"A\", \"522\": \"A\", \"523\": \"D\", \"524\": \"B\", \"525\": \"A\", \"526\": \"D\", \"527\": \"A\", \"528\": \"A\", \"529\": \"D\", \"530\": \"B\", \"531\": \"A\", \"532\": \"D\", \"533\": \"A\", \"534\": \"A\", \"535\": \"D\", \"536\": \"B\", \"537\": \"A\", \"538\": \"D\", \"539\": \"A\", \"540\": \"A\", \"541\": \"D\", \"542\": \"B\", \"543\": \"A\", \"544\": \"D\", \"545\": \"A\", \"546\": \"A\", \"547\": \"D\", \"548\": \"B\", \"549\": \"A\", \"550\": \"D\"}', '2026-07-30 08:36:45', 66.70, 0, 0, 'submitted', 1095, '2026-07-30 08:55:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -1593,6 +1575,8 @@ CREATE TABLE IF NOT EXISTS `test_classes` (
   `test_class_id` int NOT NULL AUTO_INCREMENT,
   `mock_test_id` int NOT NULL,
   `class_id` int NOT NULL,
+  `open_time` datetime DEFAULT NULL,
+  `close_time` datetime DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`test_class_id`),
   UNIQUE KEY `uq_test_classes_test_class` (`mock_test_id`,`class_id`),
@@ -1603,15 +1587,15 @@ CREATE TABLE IF NOT EXISTS `test_classes` (
 -- Đang đổ dữ liệu cho bảng `test_classes`
 --
 
-INSERT INTO `test_classes` (`test_class_id`, `mock_test_id`, `class_id`, `created_at`) VALUES
-(1, 1, 1, '2026-07-12 10:00:00'),
-(2, 1, 2, '2026-07-12 10:00:00'),
-(3, 2, 21, '2026-07-15 10:00:00'),
-(4, 2, 24, '2026-07-15 10:00:00'),
-(5, 3, 22, '2026-07-16 10:00:00'),
-(6, 4, 15, '2026-07-17 10:00:00'),
-(7, 4, 16, '2026-07-17 10:00:00'),
-(8, 5, 8, '2026-07-18 10:00:00');
+INSERT INTO `test_classes` (`test_class_id`, `mock_test_id`, `class_id`, `open_time`, `close_time`, `created_at`) VALUES
+(1, 1, 1, '2026-07-19 08:00:00', '2026-08-31 23:00:00', '2026-07-12 10:00:00'),
+(2, 1, 2, '2026-07-19 08:00:00', '2026-08-31 23:00:00', '2026-07-12 10:00:00'),
+(3, 2, 21, '2026-07-23 08:00:00', '2026-09-05 23:00:00', '2026-07-15 10:00:00'),
+(4, 2, 24, '2026-07-23 08:00:00', '2026-09-05 23:00:00', '2026-07-15 10:00:00'),
+(5, 3, 22, '2026-07-25 08:00:00', '2026-09-12 23:00:00', '2026-07-16 10:00:00'),
+(6, 4, 15, '2026-07-27 08:00:00', '2026-09-15 23:00:00', '2026-07-17 10:00:00'),
+(7, 4, 16, '2026-07-27 08:00:00', '2026-09-15 23:00:00', '2026-07-17 10:00:00'),
+(8, 5, 8, '2026-07-29 08:00:00', '2026-09-20 23:00:00', '2026-07-18 10:00:00');
 
 -- --------------------------------------------------------
 
@@ -1623,11 +1607,11 @@ DROP TABLE IF EXISTS `users`;
 CREATE TABLE IF NOT EXISTS `users` (
   `user_id` int NOT NULL AUTO_INCREMENT,
   `full_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
-  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
   `phone` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
-  `role_id` int DEFAULT NULL,
+  `role_id` int NOT NULL,
   `avata_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1667,7 +1651,7 @@ INSERT INTO `users` (`user_id`, `full_name`, `email`, `password`, `phone`, `addr
 (141, 'Hoàng Nhật Trường', 'zayluon@gmail.com', '$2y$12$t3rMzddW81tjOy86UQMWbu5CMDw.HP91XQJcmY7OUN072UXHN57Um', NULL, NULL, 1, NULL, '2025-12-01 00:14:45', '2025-12-01 00:15:32', 1, 'active', NULL, NULL),
 (144, 'Quang Nè', 'dh52201675@student.stu.edu.vn', '$2y$12$KT19VIARHCwJMZL5/TyIA.GYlkjB1yZcOCWLYmibJyf0TAdea80u.', NULL, NULL, 3, NULL, '2025-12-02 10:57:03', '2025-12-02 10:57:03', 1, 'active', NULL, NULL),
 (145, 'Hoàng Nhật Trường', 'long0961511354@gmail.com', '$2y$12$Hcs3tHM8Rfg/RnYNOEChGuAu0FHbA4bbrcneGwf7mTP.eMJYsAheq', NULL, NULL, 2, NULL, '2025-12-05 23:13:26', '2025-12-05 23:14:02', 1, 'active', NULL, NULL),
-(147, 'A ha ha', 'asda@gmail.com', '$2a$10$L1ZUwZJeMGhnPtqEWfbztenaMsyDTjwpiqKNk25gOOwBl5C3JNhh.', NULL, NULL, 2, NULL, NULL, NULL, 0, 'active', NULL, NULL);
+(147, 'A ha ha', 'asda@gmail.com', '$2a$10$L1ZUwZJeMGhnPtqEWfbztenaMsyDTjwpiqKNk25gOOwBl5C3JNhh.', NULL, NULL, 2, NULL, '2026-07-17 22:07:59', '2026-07-17 22:07:59', 0, 'active', NULL, NULL);
 
 --
 -- Các ràng buộc cho các bảng đã đổ
@@ -1720,14 +1704,6 @@ ALTER TABLE `notifications`
 ALTER TABLE `notification_receivers`
   ADD CONSTRAINT `fk_notification_receivers_notification` FOREIGN KEY (`notification_id`) REFERENCES `notifications` (`notification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_notification_receivers_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
--- Các ràng buộc cho bảng `passages`
---
-ALTER TABLE `passages`
-  ADD CONSTRAINT `fk_passages_assignment` FOREIGN KEY (`assign_id`) REFERENCES `assignments` (`assign_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_passages_mock_test` FOREIGN KEY (`mock_test_id`) REFERENCES `mock_tests` (`test_id`) ON DELETE SET NULL ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_passages_quiz` FOREIGN KEY (`quiz_id`) REFERENCES `quizzes` (`quiz_id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `payments`

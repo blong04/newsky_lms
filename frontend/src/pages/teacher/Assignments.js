@@ -197,9 +197,12 @@ export default function TeacherAssignments() {
 
     try {
       const payload = {
-        ...form,
         classId: form.classId ? Number(form.classId) : null,
+        title: form.title,
+        description: form.description,
+        type: form.examPart || form.type,
         maxScore: Number(form.maxScore),
+        deadline: form.deadline || null,
       };
 
       if (modal === "add") {
@@ -293,9 +296,9 @@ export default function TeacherAssignments() {
       classId: assignment.classId || "",
       title: assignment.title,
       description: assignment.description || "",
-      type: assignment.type,
-      examType: assignment.examType,
-      examPart: assignment.examPart || "",
+      type: assignment.type || "writing",
+      examType: "IELTS",
+      examPart: assignment.type || "",
       maxScore: assignment.maxScore,
       deadline: assignment.deadline ? assignment.deadline.slice(0, 16) : "",
     });
@@ -380,12 +383,10 @@ export default function TeacherAssignments() {
                           {assignment.description?.slice(0, 60)}{assignment.description?.length > 60 ? "..." : ""}
                         </p>
                       </td>
-                      <td>
-                        <span className={`badge ${assignment.examType === "IELTS" ? "badge-blue" : assignment.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                          {assignment.examType}
-                        </span>
+      <td>
+                        <span className="badge badge-gray">{assignment.type || "—"}</span>
                       </td>
-                      <td className="teacher-assignments__tiny">{assignment.examPart || assignment.type || "—"}</td>
+                      <td className="teacher-assignments__tiny">{assignment.type || "—"}</td>
                       <td className="teacher-assignments__title">{assignment.maxScore}</td>
                       <td className="teacher-assignments__muted teacher-assignments__tiny">
                         {assignment.deadline
@@ -450,11 +451,11 @@ export default function TeacherAssignments() {
                         <p className="teacher-assignments__warning-note">Xem bài làm và chấm lại điểm nếu cần</p>
                       </td>
                       <td>
-                        <span className={`badge ${quiz.examType === "IELTS" ? "badge-blue" : quiz.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                          {quiz.examType}
+                        <span className={`badge ${quiz.type === "IELTS" ? "badge-blue" : quiz.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                          {quiz.type}
                         </span>
                       </td>
-                      <td><span className="badge badge-purple">{quiz.examPart || "—"}</span></td>
+                      <td><span className="badge badge-purple">{quiz.part || "—"}</span></td>
                       <td className="teacher-assignments__tiny">{quiz.timeLimit ? `${quiz.timeLimit} phút` : "—"}</td>
                       <td>
                           <div className="teacher-assignments__row-actions">
@@ -507,12 +508,12 @@ export default function TeacherAssignments() {
                         <p className="teacher-assignments__warning-note">Xem lượt làm và điều chỉnh điểm nếu cần</p>
                       </td>
                       <td>
-                        <span className={`badge ${test.examType === "IELTS" ? "badge-blue" : test.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                          {test.examType}
+                        <span className={`badge ${test.type === "IELTS" ? "badge-blue" : test.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                          {test.type}
                         </span>
                       </td>
-                      <td><span className="badge badge-purple">{test.skillType || test.testType || "Full test"}</span></td>
-                      <td className="teacher-assignments__tiny">{test.durationMinutes ? `${test.durationMinutes} phút` : "—"}</td>
+                      <td><span className="badge badge-purple">{test.part || "Full test"}</span></td>
+                      <td className="teacher-assignments__tiny">{test.timeLimit ? `${test.timeLimit} phút` : "—"}</td>
                       <td>
                         <div className="teacher-assignments__row-actions">
                           <button
@@ -766,8 +767,8 @@ export default function TeacherAssignments() {
                           </span>
                         </td>
                         <td className="teacher-assignments__tiny teacher-assignments__muted">
-                          {selected?.examType === "IELTS" && `Band ${(Number(result.score) / 100 * 9).toFixed(1)}`}
-                          {selected?.examType === "TOEIC" && `~${Math.round(Number(result.score) / 100 * 990)}/990`}
+                          {selected?.type === "IELTS" && `Band ${(Number(result.score) / 100 * 9).toFixed(1)}`}
+                          {selected?.type === "TOEIC" && `~${Math.round(Number(result.score) / 100 * 990)}/990`}
                         </td>
                         <td className="teacher-assignments__tiny teacher-assignments__muted">
                           {result.submittedAt ? new Date(result.submittedAt).toLocaleString("vi-VN") : "—"}

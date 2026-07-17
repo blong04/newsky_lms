@@ -33,8 +33,11 @@ public class TestSubmissions {
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
 
-    @Column(name = "duration_seconds")
-    private Integer durationSeconds;
+    @Column(name = "graded_at")
+    private LocalDateTime gradedAt;
+
+    @Column(name = "duration")
+    private Integer duration;
 
     @Column(name = "total_score", precision = 5, scale = 2)
     private BigDecimal totalScore;
@@ -51,16 +54,4 @@ public class TestSubmissions {
 
     @Column(name = "status", length = 50, nullable = false)
     private String status;
-
-    @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt;
-
-    // Gán mốc tạo trước khi persist để dữ liệu trả về không bị thiếu createdAt.
-    @PrePersist
-    private void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
 }

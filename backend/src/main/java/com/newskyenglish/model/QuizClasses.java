@@ -23,6 +23,12 @@ public class QuizClasses {
     @Column(name = "class_id", nullable = false)
     private Long classId;
 
+    @Column(name = "open_time")
+    private LocalDateTime openTime;
+
+    @Column(name = "close_time")
+    private LocalDateTime closeTime;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private LocalDateTime createdAt;

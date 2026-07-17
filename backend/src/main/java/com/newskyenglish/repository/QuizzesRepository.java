@@ -8,6 +8,6 @@ import java.util.List;
 @Repository
 // Repository truy vấn quiz theo loại chứng chỉ hoặc danh sách id đã gắn qua bảng trung gian.
 public interface QuizzesRepository extends JpaRepository<Quizzes, Long> {
-    List<Quizzes> findByExamType(Quizzes.ExamType examType);
+    List<Quizzes> findByType(Quizzes.Type type);
 }
 

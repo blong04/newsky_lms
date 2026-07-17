@@ -14,20 +14,16 @@ public class QuizzesCreateRequest {
     private List<Long> classIds;
     // title là tên hiển thị của bài kiểm tra trên admin và student.
     private String title;
-    // type xác định kiểu quiz tổng quát như trắc nghiệm hay viết.
-    private Quizzes.QuizType type;
-    // examType phục vụ phân loại bài theo IELTS, TOEIC hoặc loại khác.
-    private Quizzes.ExamType examType;
-    // examPart cho biết part/skill cụ thể như Reading, Listening, Part 5...
-    private String examPart;
-    // passageText là đoạn văn chung của bài hoặc part nếu cần.
-    private String passageText;
-    // audioUrl là file nghe chung cho cả bài khi áp dụng.
-    private String audioUrl;
-    // instructions là hướng dẫn hiển thị trước khi học viên làm bài.
-    private String instructions;
+    // description là mô tả ngắn của bài kiểm tra.
+    private String description;
+    // type là loại bài theo chứng chỉ như IELTS hoặc TOEIC.
+    private Quizzes.Type type;
+    // part cho biết part/skill cụ thể như Reading, Listening, Part 5...
+    private String part;
     // timeLimit là thời gian giới hạn tính theo phút.
     private Integer timeLimit;
+    // status lưu trạng thái hiển thị của quiz như draft/active/closed.
+    private Quizzes.Status status;
     // groups dùng cho các quiz có nhiều passage hoặc section riêng.
     private List<GroupRequest> groups;
     // questions là danh sách câu hỏi cần lưu cùng quiz.

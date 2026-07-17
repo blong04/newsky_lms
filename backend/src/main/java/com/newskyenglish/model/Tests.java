@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "mock_tests")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-// Entity đại diện cho bài thi thử full form; liên kết lớp học đi qua bảng test_classes.
+// Entity đại diện cho bài thi thử full form với metadata cốt lõi của đề.
 public class Tests {
 
     @Id
@@ -25,20 +25,14 @@ public class Tests {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "test_type", length = 50, nullable = false)
-    private String testType;
+    @Column(name = "type", length = 50, nullable = false)
+    private String type;
 
-    @Column(name = "exam_type", length = 50, nullable = false)
-    private String examType;
+    @Column(name = "part", length = 50)
+    private String part;
 
-    @Column(name = "exam_part", length = 50)
-    private String examPart;
-
-    @Column(name = "skill_type", length = 50, nullable = false)
-    private String skillType;
-
-    @Column(name = "duration_minutes")
-    private Integer durationMinutes;
+    @Column(name = "time_limit")
+    private Integer timeLimit;
 
     @Column(name = "total_score", precision = 5, scale = 2)
     private BigDecimal totalScore;
@@ -46,12 +40,6 @@ public class Tests {
     @Column(name = "attempts_allowed")
     @Builder.Default
     private Integer attemptsAllowed = 1;
-
-    @Column(name = "start_time")
-    private LocalDateTime startTime;
-
-    @Column(name = "end_time")
-    private LocalDateTime endTime;
 
     @Column(name = "status", length = 50, nullable = false)
     private String status;
@@ -64,7 +52,6 @@ public class Tests {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Giữ timestamp nhất quán ngay cả khi Hibernate chưa flush xuống DB.
     @PrePersist
     private void onCreate() {
         LocalDateTime now = LocalDateTime.now();
@@ -76,7 +63,6 @@ public class Tests {
         }
     }
 
-    // Cập nhật mốc sửa cuối ở tầng entity để response luôn phản ánh đúng.
     @PreUpdate
     private void onUpdate() {
         updatedAt = LocalDateTime.now();

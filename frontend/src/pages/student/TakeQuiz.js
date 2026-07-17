@@ -68,7 +68,7 @@ export default function TakeQuiz() {
       // Gửi câu trả lời lên backend để lưu submission và chấm phần auto-grade nhất quán với results page.
       const response = await quizService.submitStudentQuiz(quizId, {
         answers,
-        timeSpent: quiz?.timeLimit && timeLeft != null ? (quiz.timeLimit * 60) - timeLeft : null,
+        duration: quiz?.timeLimit && timeLeft != null ? (quiz.timeLimit * 60) - timeLeft : null,
       });
       setResult(response);
       setSubmitted(true);
@@ -101,8 +101,8 @@ export default function TakeQuiz() {
           </div>
           <p>{result.correct}/{result.total} câu đúng</p>
           <div className="result-band">
-            {quiz.examType === "IELTS" && <p>Band ước tính: <strong>{(result.score / 100 * 9).toFixed(1)}</strong></p>}
-            {quiz.examType === "TOEIC" && <p>Score ước tính: <strong>{Math.round(result.score / 100 * 990)}</strong>/990</p>}
+            {quiz.type === "IELTS" && <p>Band ước tính: <strong>{(result.score / 100 * 9).toFixed(1)}</strong></p>}
+            {quiz.type === "TOEIC" && <p>Score ước tính: <strong>{Math.round(result.score / 100 * 990)}</strong>/990</p>}
           </div>
           <button className="btn btn-primary" onClick={() => navigate(-1)}>← Quay lại</button>
         </div>
@@ -115,30 +115,14 @@ export default function TakeQuiz() {
       {/* Header quiz cố định để student luôn thấy tiêu đề và đồng hồ. */}
       <div className="quiz-header">
         <div className="quiz-info">
-          <span className={`badge ${quiz.examType === "IELTS" ? "badge-blue" : "badge-green"}`}>{quiz.examType}</span>
+          <span className={`badge ${quiz.type === "IELTS" ? "badge-blue" : quiz.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>{quiz.type}</span>
           <h2>{quiz.title}</h2>
-          <p>{quiz.examPart}</p>
+          <p>{quiz.part}</p>
         </div>
         <div className={`quiz-timer ${timeLeft !== null && timeLeft < 300 ? "take-quiz__timer--danger" : ""}`}>
           {timeLeft !== null && <><span>⏱</span><span className="timer-display">{formatCountdown(timeLeft)}</span></>}
         </div>
       </div>
-
-      {quiz.instructions && <div className="quiz-instructions"><strong>📋 Hướng dẫn:</strong> {quiz.instructions}</div>}
-
-      {quiz.audioUrl && (
-        <div className="quiz-audio">
-          <p><strong>🔊 File nghe:</strong></p>
-          <audio controls src={quiz.audioUrl} className="take-quiz__audio" />
-        </div>
-      )}
-
-      {quiz.passageText && (
-        <div className="quiz-passage">
-          <h4>📄 Bài đọc</h4>
-          <div className="passage-text">{quiz.passageText}</div>
-        </div>
-      )}
 
       {/* Phần nội dung câu hỏi theo group hoặc danh sách phẳng. */}
       <div className="questions-section">

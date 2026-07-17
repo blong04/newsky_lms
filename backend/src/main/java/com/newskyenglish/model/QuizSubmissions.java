@@ -2,6 +2,9 @@ package com.newskyenglish.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -24,13 +27,28 @@ public class QuizSubmissions {
     @Column(name = "answers_json", columnDefinition = "LONGTEXT")
     private String answersJson;
 
-    @Column(name = "score")
-    private Float score;
+    @Column(name = "started_at")
+    private LocalDateTime startedAt;
+
+    @Column(name = "score", precision = 5, scale = 2)
+    private BigDecimal score;
+
+    @Column(name = "correct_answers")
+    private Integer correctAnswers;
+
+    @Column(name = "total_questions")
+    private Integer totalQuestions;
+
+    @Column(name = "status", length = 50)
+    private String status;
 
     @Column(name = "duration")
-    private Integer timeSpent;
+    private Integer duration;
 
     @Column(name = "submitted_at")
     private LocalDateTime submittedAt;
+
+    @Column(name = "graded_at")
+    private LocalDateTime gradedAt;
 }
 

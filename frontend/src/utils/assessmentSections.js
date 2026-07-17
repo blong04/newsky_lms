@@ -90,7 +90,10 @@ const shouldUseBlueprintFallback = (sections = [], expectedSectionCount = 0) => 
 // Dựng section hiển thị cho quiz theo dữ liệu thực tế; nếu backend chưa lưu group thì tự suy ra từ blueprint.
 export const buildQuizSectionsForDisplay = (quizMeta, groups, questions) => {
   const directSections = buildQuizSections(groups, questions);
-  const blueprint = resolveQuizBlueprint(quizMeta?.examType, quizMeta?.examPart);
+  const blueprint = resolveQuizBlueprint(
+    quizMeta?.type,
+    quizMeta?.part
+  );
 
   if (!blueprint || !shouldUseBlueprintFallback(directSections, blueprint.groups?.length || 0)) {
     return directSections;
@@ -103,7 +106,7 @@ export const buildQuizSectionsForDisplay = (quizMeta, groups, questions) => {
 // Dựng section hiển thị cho test full form; ưu tiên group thực, nếu thiếu sẽ chia lại theo blueprint TOEIC/IELTS.
 export const buildTestSectionsForDisplay = (testMeta, groups, questions) => {
   const directSections = buildQuizSections(groups, questions);
-  const blueprint = TEST_BLUEPRINTS[testMeta?.examType];
+  const blueprint = TEST_BLUEPRINTS[testMeta?.type];
 
   if (!blueprint || !shouldUseBlueprintFallback(directSections, blueprint.sections?.length || 0)) {
     return directSections;

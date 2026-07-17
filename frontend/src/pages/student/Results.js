@@ -264,13 +264,8 @@ export default function StudentResults() {
                       <td><p className="student-results__item-title">{assignment?.title || `Bài tập #${submission.assignId}`}</p></td>
                       <td>
                         <div className="student-results__badge-list">
-                          {assignment?.examType && (
-                            <span className={`badge ${assignment.examType === "IELTS" ? "badge-blue" : "badge-green"}`}>
-                              {assignment.examType}
-                            </span>
-                          )}
-                          {(assignment?.examPart || assignment?.part) && (
-                            <span className="badge badge-gray">{assignment?.examPart || assignment?.part}</span>
+                          {assignment?.type && (
+                            <span className="badge badge-gray">{assignment.type}</span>
                           )}
                         </div>
                       </td>
@@ -284,7 +279,7 @@ export default function StudentResults() {
                           <div>
                             <span className={`student-results__score ${scoreColorClass(score, maxScore)}`}>{score}</span>
                             <span className="student-results__score-denominator">/{maxScore}</span>
-                            {assignment?.examType === "IELTS" && Number(maxScore) <= 9 && (
+                            {assignment?.type === "IELTS" && Number(maxScore) <= 9 && (
                               <p className="student-results__tiny student-results__muted">Band {Number(score).toFixed(1)}</p>
                             )}
                           </div>
@@ -335,17 +330,17 @@ export default function StudentResults() {
                 quizSubmissions.map((submission) => {
                   const quiz = getQuiz(submission.quizId);
                   const score = Number(submission.score || 0);
-                  const exam = quiz?.examType || "";
-                  const mins = submission.timeSpent
-                    ? Math.floor(submission.timeSpent / 60)
+                  const exam = quiz?.type || "";
+                  const mins = submission.duration
+                    ? Math.floor(submission.duration / 60)
                     : null;
 
                   return (
                     <tr key={submission.id}>
                       <td>
                         <p className="student-results__item-title">{quiz?.title || `Quiz #${submission.quizId}`}</p>
-                        {quiz?.examPart && (
-                          <p className="student-results__tiny student-results__muted">{quiz.examPart}</p>
+                        {quiz?.part && (
+                          <p className="student-results__tiny student-results__muted">{quiz.part}</p>
                         )}
                       </td>
                       <td>
@@ -405,18 +400,18 @@ export default function StudentResults() {
                   const test = getTest(submission.testId);
                   const score = Number(submission.totalScore || 0);
                   const totalScore = Number(test?.totalScore || 100);
-                  const mins = submission.durationSeconds ? Math.floor(submission.durationSeconds / 60) : null;
+                  const mins = submission.duration ? Math.floor(submission.duration / 60) : null;
 
                   return (
                     <tr key={submission.id}>
                       <td>
                         <p className="student-results__item-title">{test?.title || `Test #${submission.testId}`}</p>
-                        <p className="student-results__tiny student-results__muted">{test?.skillType || test?.testType || "Full test"}</p>
+                        <p className="student-results__tiny student-results__muted">{test?.part || "Full test"}</p>
                       </td>
                       <td>
-                        {test?.examType && (
-                          <span className={`badge ${test.examType === "IELTS" ? "badge-blue" : test.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                            {test.examType}
+                        {test?.type && (
+                          <span className={`badge ${test.type === "IELTS" ? "badge-blue" : test.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                            {test.type}
                           </span>
                         )}
                       </td>
@@ -494,7 +489,7 @@ export default function StudentResults() {
               <p className="student-results__item-title">{reviewModal.quiz?.title || "Bài kiểm tra"}</p>
               <div className="student-results__review-meta">
                 <span>Điểm: {reviewModal.submission.score ?? 0}/100</span>
-                <span>Thời gian làm: {reviewModal.submission.timeSpent ? `${Math.floor(reviewModal.submission.timeSpent / 60)} phút` : "—"}</span>
+                <span>Thời gian làm: {reviewModal.submission.duration ? `${Math.floor(reviewModal.submission.duration / 60)} phút` : "—"}</span>
               </div>
               {buildQuizSectionsForDisplay(reviewModal.quiz, reviewModal.quizDetail?.groups, reviewModal.quizDetail?.questions).map((section, sectionIndex, allSections) => {
                 const previousQuestionCount = allSections

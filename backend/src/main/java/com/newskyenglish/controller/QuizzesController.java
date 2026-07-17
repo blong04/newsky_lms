@@ -33,9 +33,9 @@ public class QuizzesController {
     }
 
     // Lọc quiz theo chứng chỉ như IELTS hoặc TOEIC.
-    @GetMapping("/quizzes/type/{examType}")
-    public ResponseEntity<ApiResponse<List<QuizzesDTO.Response>>> getByType(@PathVariable Quizzes.ExamType examType) {
-        return ResponseEntity.ok(ApiResponse.success(quizService.getByType(examType)));
+    @GetMapping("/quizzes/type/{type}")
+    public ResponseEntity<ApiResponse<List<QuizzesDTO.Response>>> getByType(@PathVariable Quizzes.Type type) {
+        return ResponseEntity.ok(ApiResponse.success(quizService.getByType(type)));
     }
 
     // Lấy full dữ liệu quiz để admin/teacher quản lý hoặc học viên xem lại sau khi nộp.

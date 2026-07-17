@@ -116,11 +116,11 @@ export default function StudentTests() {
               <article key={test.id} className="student-tests__card">
                 <div className="student-tests__main">
                   <div className="student-tests__badge-row">
-                    <span className={`badge ${test.examType === "IELTS" ? "badge-blue" : test.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>
-                      {test.examType || "Khác"}
+                    <span className={`badge ${test.type === "IELTS" ? "badge-blue" : test.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>
+                      {test.type || "Khác"}
                     </span>
-                    <span className="badge badge-purple">{test.skillType || test.testType || "Full test"}</span>
-                    {test.durationMinutes && <span className="badge badge-yellow">⏱ {test.durationMinutes} phút</span>}
+                    <span className="badge badge-purple">{test.part || "Full test"}</span>
+                    {test.timeLimit && <span className="badge badge-yellow">⏱ {test.timeLimit} phút</span>}
                   </div>
 
                   <h3 className="student-tests__title">{test.title}</h3>

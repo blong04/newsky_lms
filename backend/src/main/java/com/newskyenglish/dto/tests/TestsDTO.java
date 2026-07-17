@@ -34,15 +34,11 @@ public class TestsDTO {
         private String title;
 
         private String description;
-        private String testType;
-        private String examType;
-        private String examPart;
-        private String skillType;
-        private Integer durationMinutes;
+        private String type;
+        private String part;
+        private Integer timeLimit;
         private BigDecimal totalScore;
         private Integer attemptsAllowed;
-        private LocalDateTime startTime;
-        private LocalDateTime endTime;
         private String status;
         private List<GroupRequest> groups;
         private List<QuestionRequest> questions;
@@ -57,15 +53,11 @@ public class TestsDTO {
         private List<Long> classIds;
         private String title;
         private String description;
-        private String testType;
-        private String examType;
-        private String examPart;
-        private String skillType;
-        private Integer durationMinutes;
+        private String type;
+        private String part;
+        private Integer timeLimit;
         private BigDecimal totalScore;
         private Integer attemptsAllowed;
-        private LocalDateTime startTime;
-        private LocalDateTime endTime;
         private String status;
         private List<GroupRequest> groups;
         private List<QuestionRequest> questions;
@@ -115,15 +107,11 @@ public class TestsDTO {
         private List<Long> classIds;
         private String title;
         private String description;
-        private String testType;
-        private String examType;
-        private String examPart;
-        private String skillType;
-        private Integer durationMinutes;
+        private String type;
+        private String part;
+        private Integer timeLimit;
         private BigDecimal totalScore;
         private Integer attemptsAllowed;
-        private LocalDateTime startTime;
-        private LocalDateTime endTime;
         private String status;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
@@ -136,15 +124,11 @@ public class TestsDTO {
                     .classIds(normalizedClassIds)
                     .title(test.getTitle())
                     .description(test.getDescription())
-                    .testType(test.getTestType())
-                    .examType(test.getExamType())
-                    .examPart(test.getExamPart())
-                    .skillType(test.getSkillType())
-                    .durationMinutes(test.getDurationMinutes())
+                    .type(test.getType())
+                    .part(test.getPart())
+                    .timeLimit(test.getTimeLimit())
                     .totalScore(test.getTotalScore())
                     .attemptsAllowed(test.getAttemptsAllowed())
-                    .startTime(test.getStartTime())
-                    .endTime(test.getEndTime())
                     .status(test.getStatus())
                     .createdAt(test.getCreatedAt())
                     .updatedAt(test.getUpdatedAt())
@@ -263,13 +247,13 @@ public class TestsDTO {
         private String answersJson;
         private LocalDateTime startedAt;
         private LocalDateTime submittedAt;
-        private Integer durationSeconds;
+        private LocalDateTime gradedAt;
+        private Integer duration;
         private BigDecimal totalScore;
         private Integer correctAnswers;
         private Integer totalQuestions;
         private Integer attemptNumber;
         private String status;
-        private LocalDateTime createdAt;
 
         public static SubmissionResponse fromEntity(TestSubmissions submission) {
             return SubmissionResponse.builder()
@@ -279,13 +263,13 @@ public class TestsDTO {
                     .answersJson(submission.getAnswersJson())
                     .startedAt(submission.getStartedAt())
                     .submittedAt(submission.getSubmittedAt())
-                    .durationSeconds(submission.getDurationSeconds())
+                    .gradedAt(submission.getGradedAt())
+                    .duration(submission.getDuration())
                     .totalScore(submission.getTotalScore())
                     .correctAnswers(submission.getCorrectAnswers())
                     .totalQuestions(submission.getTotalQuestions())
                     .attemptNumber(submission.getAttemptNumber())
                     .status(submission.getStatus())
-                    .createdAt(submission.getCreatedAt())
                     .build();
         }
     }
@@ -318,7 +302,7 @@ public class TestsDTO {
         @NotNull(message = "Thiếu danh sách đáp án")
         private Map<String, Object> answers;
 
-        private Integer durationSeconds;
+        private Integer duration;
     }
 
     @Data

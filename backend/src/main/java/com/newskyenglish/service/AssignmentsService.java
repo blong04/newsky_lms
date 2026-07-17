@@ -212,7 +212,7 @@ public class AssignmentsService {
             submission.setComment(request.getComment());
         }
         submission.setStatus(AssignmentSubmissions.Status.graded);
-        submission.setUpdatedAt(LocalDateTime.now());
+        submission.setGradedAt(LocalDateTime.now());
 
         return AssignmentSubmissionsDTO.Response.fromEntity(assignmentSubmitRepository.save(submission));
     }

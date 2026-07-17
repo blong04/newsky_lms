@@ -2,11 +2,15 @@ package com.newskyenglish.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "quizzes")
 @Data @NoArgsConstructor @AllArgsConstructor @Builder
-// Entity biểu diễn bài quiz chính; liên kết lớp học được quản lý qua bảng quiz_classes.
+// Entity biểu diễn bài quiz chính; passage/audio/instructions được đặt ở question_groups.
 public class Quizzes {
 
     @Id
@@ -17,36 +21,36 @@ public class Quizzes {
     @Column(name = "title", length = 150)
     private String title;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "quiz_type")
-    @Builder.Default
-    private QuizType type = QuizType.mcq;
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "exam_type")
+    @Column(name = "type")
     @Builder.Default
-    private ExamType examType = ExamType.OTHER;
+    private Type type = Type.OTHER;
 
     // IELTS Part: Reading/Listening/Writing/Speaking
     // TOEIC Part: Part1~Part7
-    @Column(name = "exam_part", length = 50)
-    private String examPart;
-
-    // Passage text cho IELTS Reading / TOEIC Reading
-    @Column(name = "passage_text", columnDefinition = "LONGTEXT")
-    private String passageText;
-
-    // Audio URL cho IELTS Listening / TOEIC Listening
-    @Column(name = "audio_url", length = 255)
-    private String audioUrl;
-
-    @Column(name = "instructions", columnDefinition = "TEXT")
-    private String instructions;
+    @Column(name = "part", length = 50)
+    private String part;
 
     @Column(name = "time_limit")
     private Integer timeLimit;
 
-    public enum QuizType { mcq, writing, speaking }
-    public enum ExamType { IELTS, TOEIC, OTHER }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
+    private Status status = Status.draft;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    public enum Type { IELTS, TOEIC, OTHER }
+    public enum Status { draft, active, inactive, closed }
 }
 

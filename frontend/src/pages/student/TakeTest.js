@@ -28,8 +28,8 @@ export default function TakeTest() {
         setTest(testData);
         setGroups(groupData || []);
         setQuestions(questionData || []);
-        if (testData.durationMinutes) {
-          setTimeLeft(testData.durationMinutes * 60);
+        if (testData.timeLimit) {
+          setTimeLeft(testData.timeLimit * 60);
         }
       })
       .catch((error) => {
@@ -65,7 +65,7 @@ export default function TakeTest() {
     try {
       const response = await testService.submitStudentTest(testId, {
         answers,
-        durationSeconds: test?.durationMinutes && timeLeft != null ? (test.durationMinutes * 60) - timeLeft : null,
+        duration: test?.timeLimit && timeLeft != null ? (test.timeLimit * 60) - timeLeft : null,
       });
       setResult(response);
       setSubmitted(true);
@@ -98,8 +98,8 @@ export default function TakeTest() {
           </div>
           <p>{result.correct}/{result.total} câu đúng</p>
           <div className="result-band">
-            {test.examType === "IELTS" && <p>Band ước tính: <strong>{((Number(result.score) / Number(test.totalScore || 100)) * 9).toFixed(1)}</strong></p>}
-            {test.examType === "TOEIC" && <p>Score ước tính: <strong>{Math.round((Number(result.score) / Number(test.totalScore || 100)) * 990)}</strong>/990</p>}
+            {test.type === "IELTS" && <p>Band ước tính: <strong>{((Number(result.score) / Number(test.totalScore || 100)) * 9).toFixed(1)}</strong></p>}
+            {test.type === "TOEIC" && <p>Score ước tính: <strong>{Math.round((Number(result.score) / Number(test.totalScore || 100)) * 990)}</strong>/990</p>}
           </div>
           <button className="btn btn-primary" onClick={() => navigate("/student/results")}>Xem kết quả</button>
         </div>
@@ -111,9 +111,9 @@ export default function TakeTest() {
     <div className="quiz-page fade-in take-test">
       <div className="quiz-header">
         <div className="quiz-info">
-          <span className={`badge ${test.examType === "IELTS" ? "badge-blue" : test.examType === "TOEIC" ? "badge-green" : "badge-gray"}`}>{test.examType}</span>
+          <span className={`badge ${test.type === "IELTS" ? "badge-blue" : test.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>{test.type}</span>
           <h2>{test.title}</h2>
-          <p>{test.skillType || test.testType}</p>
+          <p>{test.part || "Full test"}</p>
         </div>
         <div className={`quiz-timer ${timeLeft !== null && timeLeft < 300 ? "take-test__timer--danger" : ""}`}>
           {timeLeft !== null && <><span>⏱</span><span className="timer-display">{formatCountdown(timeLeft)}</span></>}
