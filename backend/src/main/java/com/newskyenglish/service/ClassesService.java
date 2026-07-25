@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -35,8 +36,8 @@ public class ClassesService {
     private final CurrentUserService currentUserService;
 
     @Transactional(readOnly = true)
-    // Lấy toàn bộ lớp học cho màn quản trị.
-    public List<ClassesDTO.Response> getAllForAdmin() {
+    // Lấy toàn bộ lớp học cho màn quản trị theo điều kiện tìm kiếm và trạng thái.
+    public List<ClassesDTO.Response> getAllForAdmin(String keyword, Classes.Status status) {
         List<Classes> classes = classesRepository.findAll();
         Map<Long, String> teacherNamesById = buildUserNameMap(classes.stream()
                 .map(Classes::getTeacherId)
@@ -50,6 +51,8 @@ public class ClassesService {
                         currentStudentsByClassId.getOrDefault(item.getId(), 0),
                         teacherNamesById.get(item.getTeacherId())
                 ))
+                .filter(response -> matchesAdminKeyword(response, keyword))
+                .filter(response -> status == null || status == response.getStatus())
                 .toList();
     }
 
@@ -68,8 +71,8 @@ public class ClassesService {
     }
 
     @Transactional(readOnly = true)
-    // Lấy danh sách lớp do giáo viên hiện tại phụ trách.
-    public List<ClassesDTO.Response> getTeacherClasses(String authorizationHeader) {
+    // Lấy danh sách lớp do giáo viên hiện tại phụ trách theo từ khóa tìm kiếm.
+    public List<ClassesDTO.Response> getTeacherClasses(String authorizationHeader, String keyword) {
         Long teacherId = currentUserService.extractUserId(authorizationHeader);
         List<Classes> assignedClasses = classesRepository.findByTeacherId(teacherId);
         Map<Long, Courses> coursesById = buildCourseMap(assignedClasses.stream()
@@ -90,6 +93,7 @@ public class ClassesService {
                             course != null ? course.getExamType() : null
                     );
                 })
+                .filter(response -> matchesTeacherKeyword(response, keyword))
                 .toList();
     }
 
@@ -236,5 +240,41 @@ public class ClassesService {
     private Classes findClass(Long id) {
         return classesRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+    }
+
+    // Kiểm tra lớp học có khớp từ khóa quản trị theo tên lớp, khóa học hoặc giáo viên hay không.
+    private boolean matchesAdminKeyword(ClassesDTO.Response response, String keyword) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+        if (normalizedKeyword.isBlank()) {
+            return true;
+        }
+
+        String className = safeLower(response.getName());
+        String courseName = safeLower(response.getCourseName());
+        String teacherName = safeLower(response.getTeacherName());
+        return className.contains(normalizedKeyword)
+                || courseName.contains(normalizedKeyword)
+                || teacherName.contains(normalizedKeyword);
+    }
+
+    // Kiểm tra lớp học có khớp từ khóa giáo viên theo tên lớp hoặc tên khóa học hay không.
+    private boolean matchesTeacherKeyword(ClassesDTO.Response response, String keyword) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+        if (normalizedKeyword.isBlank()) {
+            return true;
+        }
+
+        return safeLower(response.getName()).contains(normalizedKeyword)
+                || safeLower(response.getCourseName()).contains(normalizedKeyword);
+    }
+
+    // Chuẩn hóa từ khóa để các phép tìm kiếm đồng nhất hơn.
+    private String normalizeKeyword(String keyword) {
+        return keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+    }
+
+    // Hạ chữ thường an toàn cho các trường text có thể null.
+    private String safeLower(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT);
     }
 }

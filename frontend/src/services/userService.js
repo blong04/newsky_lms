@@ -2,7 +2,7 @@ import api from "../api/axios";
 import { unwrapData } from "../utils/http";
 
 export const userService = {
-  getAll: () => api.get("/users").then(unwrapData),
+  getAll: (params = {}) => api.get("/users", { params }).then(unwrapData),
   getById: (id) => api.get(`/users/${id}`).then(unwrapData),
   create: (data) => api.post("/users", data).then(unwrapData),
   update: (id, data) => api.put(`/users/${id}`, data).then(unwrapData),

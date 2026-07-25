@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -55,9 +56,13 @@ public class TestsService {
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
-    // Lấy toàn bộ bài test full form trong hệ thống.
-    public List<TestsDTO.Response> getAll() {
+    // Lấy toàn bộ bài test full form theo điều kiện tìm kiếm và loại chứng chỉ.
+    public List<TestsDTO.Response> getAll(String keyword, String type) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+
         return testsRepository.findAll().stream()
+                .filter(test -> matchesKeyword(test, normalizedKeyword))
+                .filter(test -> type == null || type.isBlank() || type.equalsIgnoreCase(test.getType()))
                 .map(this::toTestResponse)
                 .toList();
     }
@@ -617,5 +622,21 @@ public class TestsService {
         }
 
         throw new ForbiddenException("Bạn không có quyền xem kết quả của người dùng này");
+    }
+
+    // Chuẩn hóa từ khóa tìm kiếm để so khớp tiêu đề và mô tả ổn định hơn.
+    private String normalizeKeyword(String keyword) {
+        return keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+    }
+
+    // Kiểm tra bài thi thử có khớp từ khóa theo tiêu đề hoặc mô tả hay không.
+    private boolean matchesKeyword(Tests test, String normalizedKeyword) {
+        if (normalizedKeyword.isBlank()) {
+            return true;
+        }
+
+        String title = test.getTitle() == null ? "" : test.getTitle().toLowerCase(Locale.ROOT);
+        String description = test.getDescription() == null ? "" : test.getDescription().toLowerCase(Locale.ROOT);
+        return title.contains(normalizedKeyword) || description.contains(normalizedKeyword);
     }
 }

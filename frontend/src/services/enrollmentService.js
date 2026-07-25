@@ -3,7 +3,8 @@ import { unwrapData } from "../utils/http";
 
 export const enrollmentService = {
   getAll: () => api.get("/enrollments").then(unwrapData),
-  getAdminDetails: () => api.get("/admin/enrollments/details").then(unwrapData),
+  getAdminDetails: (params = {}) => api.get("/admin/enrollments/details", { params }).then(unwrapData),
+  getTeacherStudentsOverview: (params = {}) => api.get("/teacher/students", { params }).then(unwrapData),
   getStudentEnrollments: () => api.get("/student/enrollments").then(unwrapData),
   createStudentEnrollment: (payload) => api.post("/student/enroll", payload).then(unwrapData),
   approve: (id) => api.put(`/admin/enrollments/${id}/approve`).then(unwrapData),

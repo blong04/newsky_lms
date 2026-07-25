@@ -20,10 +20,14 @@ public class CoursesController {
 
     private final CoursesService courseService;
 
-    // Lấy danh sách toàn bộ khóa học.
+    // Lấy danh sách khóa học theo bộ lọc tìm kiếm từ frontend.
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CoursesDTO.Response>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.success(courseService.getAll()));
+    public ResponseEntity<ApiResponse<List<CoursesDTO.Response>>> getAll(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) com.newskyenglish.model.Courses.ExamType examType,
+            @RequestParam(required = false) com.newskyenglish.model.Courses.Level level,
+            @RequestParam(required = false) com.newskyenglish.model.Courses.Status status) {
+        return ResponseEntity.ok(ApiResponse.success(courseService.getAll(keyword, examType, level, status)));
     }
 
     // Lấy thông tin chi tiết của một khóa học.

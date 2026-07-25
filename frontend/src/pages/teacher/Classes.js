@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { classService } from "../../services/classService";
 import { CLASS_STATUS_BADGES, CLASS_STATUS_LABELS } from "../../constants/classes";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
@@ -17,11 +17,13 @@ export default function TeacherClasses() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const fetchAll = async () => {
+    const timer = window.setTimeout(async () => {
       setLoading(true);
 
       try {
-        const myClasses = await classService.getTeacherClasses();
+        const myClasses = await classService.getTeacherClasses({
+          keyword: search.trim() || undefined,
+        });
         setClasses(myClasses);
 
         const studentResponses = await Promise.all(
@@ -39,26 +41,25 @@ export default function TeacherClasses() {
       } finally {
         setLoading(false);
       }
-    };
+    }, 300);
 
-    fetchAll();
-  }, []);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  // Giữ trang hiện tại không vượt quá số trang sau khi backend lọc lớp học.
+  useEffect(() => {
+    const nextTotalPages = Math.max(1, Math.ceil(classes.length / DEFAULT_TABLE_PAGE_SIZE));
+    if (page > nextTotalPages) {
+      setPage(nextTotalPages);
+    }
+  }, [page, classes]);
 
   const getApprovedEnrollments = (classId) => (
     studentsByClass[classId] || []
   );
 
-  // Bảng lớp đã qua tìm kiếm theo tên lớp hoặc tên khóa học.
-  const filteredClasses = useMemo(() => (
-    classes.filter((classroom) => {
-      return !search
-        || classroom.name?.toLowerCase().includes(search.toLowerCase())
-        || classroom.courseName?.toLowerCase().includes(search.toLowerCase());
-    })
-  ), [classes, search]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredClasses.length / DEFAULT_TABLE_PAGE_SIZE));
-  const paginatedClasses = filteredClasses.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(classes.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedClasses = classes.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
   const selectedStudents = selected ? getApprovedEnrollments(selected.id) : [];
 
   return (
@@ -74,7 +75,7 @@ export default function TeacherClasses() {
         <div className="teacher-classes__hero-card">
           <span>Tổng lớp phụ trách</span>
           <strong>{classes.length}</strong>
-          <p>{filteredClasses.length} lớp đang hiển thị theo bộ lọc hiện tại.</p>
+          <p>{classes.length} lớp đang hiển thị theo bộ lọc hiện tại.</p>
         </div>
       </section>
 
@@ -88,7 +89,7 @@ export default function TeacherClasses() {
             setPage(1);
           }}
         />
-        <span className="teacher-classes__counter">{filteredClasses.length} lớp</span>
+        <span className="teacher-classes__counter">{classes.length} lớp</span>
       </div>
 
       {/* Bảng lớp chính; danh sách học viên sẽ mở bằng modal để giáo viên xem tập trung hơn. */}
@@ -166,10 +167,10 @@ export default function TeacherClasses() {
                 </tbody>
               </table>
 
-              {filteredClasses.length > DEFAULT_TABLE_PAGE_SIZE && (
+              {classes.length > DEFAULT_TABLE_PAGE_SIZE && (
                 <div className="pagination">
                   <span className="pagination-info">
-                    {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredClasses.length)} / {filteredClasses.length}
+                    {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, classes.length)} / {classes.length}
                   </span>
                   <div className="pagination-btns">
                     <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>

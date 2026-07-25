@@ -2,7 +2,7 @@ import api from "../api/axios";
 import { unwrapData } from "../utils/http";
 
 export const courseService = {
-  getAll: () => api.get("/courses").then(unwrapData),
+  getAll: (params = {}) => api.get("/courses", { params }).then(unwrapData),
   getById: (id) => api.get(`/courses/${id}`).then(unwrapData),
   getClasses: (id) => api.get(`/courses/${id}/classes`).then(unwrapData),
   create: (payload) => api.post("/courses", payload).then(unwrapData),

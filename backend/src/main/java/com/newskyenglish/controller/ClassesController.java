@@ -2,6 +2,7 @@ package com.newskyenglish.controller;
 
 import com.newskyenglish.dto.classes.ClassesDTO;
 import com.newskyenglish.dto.enrollments.EnrollmentsDTO;
+import com.newskyenglish.model.Classes;
 import com.newskyenglish.payload.ApiResponse;
 import com.newskyenglish.service.ClassesService;
 import jakarta.validation.Valid;
@@ -27,8 +28,10 @@ public class ClassesController {
 
     // Lấy toàn bộ lớp học để admin quản lý và phân công giáo viên.
     @GetMapping("/admin/classes")
-    public ResponseEntity<ApiResponse<List<ClassesDTO.Response>>> getAdminClasses() {
-        return ResponseEntity.ok(ApiResponse.success(classesService.getAllForAdmin()));
+    public ResponseEntity<ApiResponse<List<ClassesDTO.Response>>> getAdminClasses(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Classes.Status status) {
+        return ResponseEntity.ok(ApiResponse.success(classesService.getAllForAdmin(keyword, status)));
     }
 
     // Tạo một lớp học mới từ dữ liệu admin nhập vào.
@@ -65,8 +68,9 @@ public class ClassesController {
     // Lấy danh sách lớp do giáo viên hiện tại phụ trách.
     @GetMapping("/teacher/classes")
     public ResponseEntity<ApiResponse<List<ClassesDTO.Response>>> getTeacherClasses(
-            @RequestHeader("Authorization") String authorizationHeader) {
-        return ResponseEntity.ok(ApiResponse.success(classesService.getTeacherClasses(authorizationHeader)));
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(required = false) String keyword) {
+        return ResponseEntity.ok(ApiResponse.success(classesService.getTeacherClasses(authorizationHeader, keyword)));
     }
 
     // Lấy học viên thuộc một lớp cụ thể để giáo viên theo dõi.

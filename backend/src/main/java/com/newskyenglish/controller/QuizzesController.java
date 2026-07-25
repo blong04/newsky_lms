@@ -22,8 +22,9 @@ public class QuizzesController {
 
     // Lấy toàn bộ quiz để phục vụ màn quản trị hoặc thống kê.
     @GetMapping("/quizzes")
-    public ResponseEntity<ApiResponse<List<QuizzesDTO.Response>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.success(quizService.getAll()));
+    public ResponseEntity<ApiResponse<List<QuizzesDTO.Response>>> getAll(
+            @RequestParam(required = false) Quizzes.Type type) {
+        return ResponseEntity.ok(ApiResponse.success(quizService.getAll(type)));
     }
 
     // Lọc quiz theo lớp học để frontend lấy đúng bài kiểm tra của lớp đang chọn.

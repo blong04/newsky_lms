@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -24,9 +25,14 @@ public class UsersService {
     private final CurrentUserService currentUserService;
 
     @Transactional(readOnly = true)
-    // Lấy toàn bộ người dùng và chuyển sang DTO an toàn cho frontend.
-    public List<UsersDTO.Response> getAll() {
+    // Lấy danh sách người dùng theo bộ lọc tìm kiếm để frontend không phải tự lọc cục bộ.
+    public List<UsersDTO.Response> getAll(String keyword, Integer roleId, Users.Status status) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+
         return userRepository.findAll().stream()
+                .filter(user -> matchesKeyword(user, normalizedKeyword))
+                .filter(user -> roleId == null || roleId.equals(user.getRoleId()))
+                .filter(user -> status == null || status == user.getStatus())
                 .map(UsersDTO.Response::fromEntity)
                 .toList();
     }
@@ -172,6 +178,22 @@ public class UsersService {
     // Kiểm tra nhanh role admin từ JWT hiện tại.
     private boolean isAdmin(String authorizationHeader) {
         return Integer.valueOf(1).equals(currentUserService.extractRoleId(authorizationHeader));
+    }
+
+    // Chuẩn hóa từ khóa tìm kiếm để so khớp tên và email nhất quán.
+    private String normalizeKeyword(String keyword) {
+        return keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+    }
+
+    // Kiểm tra người dùng có khớp từ khóa theo tên hoặc email hay không.
+    private boolean matchesKeyword(Users user, String normalizedKeyword) {
+        if (normalizedKeyword.isBlank()) {
+            return true;
+        }
+
+        String name = user.getName() == null ? "" : user.getName().toLowerCase(Locale.ROOT);
+        String email = user.getEmail() == null ? "" : user.getEmail().toLowerCase(Locale.ROOT);
+        return name.contains(normalizedKeyword) || email.contains(normalizedKeyword);
     }
 
     // Mật khẩu mới/tạo tài khoản phải gồm đúng 4 chữ số.

@@ -46,37 +46,39 @@ export default function AdminTests() {
   const [expandedSectionKey, setExpandedSectionKey] = useState("listening-1");
   const [saving, setSaving] = useState(false);
 
-  // Load danh sách bài thi thử và lớp học để dùng cho list + editor.
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [testData, classData] = await Promise.all([
-        testService.getAll().catch(() => []),
-        classService.getAdminClasses().catch(() => []),
-      ]);
-      setTests(testData || []);
-      setClasses(classData || []);
-    } catch {
-      toast.error("Không thể tải dữ liệu bài thi thử");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load danh sách lớp một lần để dùng cho hiển thị tên lớp và editor.
   useEffect(() => {
-    fetchData();
+    const fetchClasses = async () => {
+      try {
+        const classData = await classService.getAdminClasses().catch(() => []);
+        setClasses(classData || []);
+      } catch {
+        toast.error("Không thể tải danh sách lớp học");
+      }
+    };
+
+    fetchClasses();
   }, []);
 
-  const filteredTests = useMemo(() => (
-    tests.filter((test) => {
-      const normalizedSearch = search.trim().toLowerCase();
-      const matchesSearch = !normalizedSearch
-        || test.title?.toLowerCase().includes(normalizedSearch)
-        || test.description?.toLowerCase().includes(normalizedSearch);
+  // Load danh sách bài thi thử theo tìm kiếm và loại chứng chỉ từ backend.
+  useEffect(() => {
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const testData = await testService.getAll({
+          keyword: search.trim() || undefined,
+          type: filterExamType || undefined,
+        });
+        setTests(testData || []);
+      } catch {
+        toast.error("Không thể tải dữ liệu bài thi thử");
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
 
-      return matchesSearch && (!filterExamType || test.type === filterExamType);
-    })
-  ), [tests, search, filterExamType]);
+    return () => window.clearTimeout(timer);
+  }, [search, filterExamType]);
 
   const totalQuestionCount = useMemo(() => (
     sections.reduce((total, section) => total + (section.questions?.length || 0), 0)
@@ -228,7 +230,11 @@ export default function AdminTests() {
       }
 
       resetEditor();
-      await fetchData();
+      const testData = await testService.getAll({
+        keyword: search.trim() || undefined,
+        type: filterExamType || undefined,
+      });
+      setTests(testData || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Không thể lưu bài thi thử");
     } finally {
@@ -244,7 +250,11 @@ export default function AdminTests() {
     try {
       await testService.delete(testId);
       toast.success("Đã xóa bài thi thử");
-      fetchData();
+      const testData = await testService.getAll({
+        keyword: search.trim() || undefined,
+        type: filterExamType || undefined,
+      });
+      setTests(testData || []);
     } catch {
       toast.error("Không thể xóa bài thi thử");
     }
@@ -648,7 +658,7 @@ export default function AdminTests() {
         <div className="admin-tests__hero-card">
           <span>Tổng bài thi</span>
           <strong>{tests.length}</strong>
-          <p>{filteredTests.length} bài đang hiển thị theo bộ lọc hiện tại.</p>
+          <p>{tests.length} bài đang hiển thị theo bộ lọc hiện tại.</p>
         </div>
       </section>
 
@@ -685,12 +695,12 @@ export default function AdminTests() {
               </tr>
             </thead>
             <tbody>
-              {filteredTests.length === 0 ? (
+              {tests.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="empty-state"><p>Chưa có bài thi thử nào</p></td>
                 </tr>
               ) : (
-                filteredTests.map((test) => (
+                tests.map((test) => (
                   <tr key={test.id}>
                     <td>
                       <p className="admin-tests__title">{test.title}</p>

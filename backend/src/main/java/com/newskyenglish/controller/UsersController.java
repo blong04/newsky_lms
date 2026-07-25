@@ -18,10 +18,13 @@ public class UsersController {
 
     private final UsersService userService;
 
-    // Lấy toàn bộ người dùng để hiển thị ở màn quản trị tài khoản.
+    // Lấy danh sách người dùng theo từ khóa, vai trò và trạng thái.
     @GetMapping("/users")
-    public ResponseEntity<ApiResponse<List<UsersDTO.Response>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.success(userService.getAll()));
+    public ResponseEntity<ApiResponse<List<UsersDTO.Response>>> getAll(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer roleId,
+            @RequestParam(required = false) com.newskyenglish.model.Users.Status status) {
+        return ResponseEntity.ok(ApiResponse.success(userService.getAll(keyword, roleId, status)));
     }
 
     // Lấy chi tiết một người dùng theo id.

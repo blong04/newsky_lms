@@ -65,30 +65,38 @@ export default function AdminQuizzes() {
   const [filterType, setFilterType] = useState("");
   const [viewModal, setViewModal] = useState(null);
 
-  // Load danh sách quiz cho màn quản trị.
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [quizData, classData] = await Promise.all([
-        quizService.getAll(),
-        classService.getAdminClasses().catch(() => []),
-      ]);
-      setQuizzes(quizData || []);
-      setClasses(classData || []);
-    } catch {
-      toast.error("Không thể tải dữ liệu bài kiểm tra");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load danh sách lớp một lần để dùng cho hiển thị tên lớp.
   useEffect(() => {
-    fetchData();
+    const fetchClasses = async () => {
+      try {
+        const classData = await classService.getAdminClasses().catch(() => []);
+        setClasses(classData || []);
+      } catch {
+        toast.error("Không thể tải danh sách lớp học");
+      }
+    };
+
+    fetchClasses();
   }, []);
 
-  const filteredQuizzes = useMemo(() => (
-    quizzes.filter((quiz) => !filterType || quiz.type === filterType)
-  ), [quizzes, filterType]);
+  // Load danh sách quiz theo loại chứng chỉ từ backend.
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      setLoading(true);
+      try {
+        const quizData = await quizService.getAll({
+          type: filterType || undefined,
+        });
+        setQuizzes(quizData || []);
+      } catch {
+        toast.error("Không thể tải dữ liệu bài kiểm tra");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuizzes();
+  }, [filterType]);
 
   const selectedPart = EXAM_STRUCTURE[quizForm.examType]?.parts.find((part) => part.key === quizForm.examPart);
   const selectedBlueprint = QUIZ_BLUEPRINTS[quizForm.examType]?.[quizForm.examPart];
@@ -237,7 +245,10 @@ export default function AdminQuizzes() {
       }
 
       resetEditor();
-      fetchData();
+      const quizData = await quizService.getAll({
+        type: filterType || undefined,
+      });
+      setQuizzes(quizData || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Lưu bài kiểm tra thất bại");
     } finally {
@@ -253,7 +264,10 @@ export default function AdminQuizzes() {
     try {
       await quizService.delete(id);
       toast.success("Đã xóa bài kiểm tra");
-      fetchData();
+      const quizData = await quizService.getAll({
+        type: filterType || undefined,
+      });
+      setQuizzes(quizData || []);
     } catch {
       toast.error("Không thể xóa bài kiểm tra");
     }
@@ -654,7 +668,7 @@ export default function AdminQuizzes() {
           </article>
           <article className="admin-quizzes__metric-card admin-quizzes__metric-card--accent">
             <span>Đang lọc</span>
-            <strong>{filteredQuizzes.length}</strong>
+            <strong>{quizzes.length}</strong>
           </article>
         </div>
       </section>
@@ -686,12 +700,12 @@ export default function AdminQuizzes() {
               </tr>
             </thead>
             <tbody>
-              {filteredQuizzes.length === 0 ? (
+              {quizzes.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="empty-state"><p>Chưa có bài kiểm tra nào</p></td>
                 </tr>
               ) : (
-                filteredQuizzes.map((quiz) => (
+                quizzes.map((quiz) => (
                   <tr key={quiz.id}>
                     <td className="admin-quizzes__title-cell">{quiz.title}</td>
                     <td>{getClassNames(getLinkedClassIds(quiz))}</td>

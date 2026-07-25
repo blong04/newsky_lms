@@ -1,8 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { classService } from "../../services/classService";
-import { courseService } from "../../services/courseService";
+import React, { useEffect, useState } from "react";
 import { enrollmentService } from "../../services/enrollmentService";
-import { userService } from "../../services/userService";
 import { ENROLLMENT_STATUS_BADGES, ENROLLMENT_STATUS_LABELS } from "../../constants/enrollments";
 import { getExamBadgeClass } from "../../constants/courses";
 import { PAYMENT_METHOD_LABELS } from "../../constants/payments";
@@ -13,9 +10,6 @@ import "./Enrollments.css";
 export default function AdminEnrollments() {
   // State dữ liệu gốc lấy từ backend.
   const [enrollments, setEnrollments] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // State điều khiển bộ lọc và phân trang.
@@ -23,56 +17,37 @@ export default function AdminEnrollments() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  // Load đồng thời nhiều nguồn để render bảng đã join dữ liệu.
-  const loadAll = async () => {
-    setLoading(true);
-    try {
-      const [enrollmentData, userData, courseData, classData] = await Promise.all([
-        enrollmentService.getAll(),
-        userService.getAll(),
-        courseService.getAll(),
-        classService.getAdminClasses(),
-      ]);
-
-      setEnrollments(enrollmentData || []);
-      setUsers(userData || []);
-      setCourses(courseData || []);
-      setClasses(classData || []);
-    } catch (error) {
-      console.error("Enrollment load error:", error);
-      toast.error("Không thể tải dữ liệu đăng ký");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load danh sách đăng ký đã join sẵn theo bộ lọc từ backend.
   useEffect(() => {
-    loadAll();
-  }, []);
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const enrollmentData = await enrollmentService.getAdminDetails({
+          keyword: search.trim() || undefined,
+          status: statusFilter || undefined,
+        });
+        setEnrollments(enrollmentData || []);
+      } catch (error) {
+        console.error("Enrollment load error:", error);
+        toast.error("Không thể tải dữ liệu đăng ký");
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
 
-  // Helpers tra cứu tên người dùng, khóa học và lớp học.
-  const getUser = (id) => users.find((user) => Number(user.id) === Number(id));
-  const getCourse = (id) => courses.find((course) => Number(course.id) === Number(id));
-  const getClass = (id) => classes.find((classroom) => Number(classroom.id) === Number(id));
+    return () => window.clearTimeout(timer);
+  }, [search, statusFilter]);
 
-  // Danh sách sau lọc giúp admin xử lý đúng nhóm enrollment quan tâm.
-  const filteredEnrollments = useMemo(() => (
-    enrollments.filter((enrollment) => {
-      const user = getUser(enrollment.userId);
-      const course = getCourse(enrollment.courseId);
+  // Giữ số trang luôn hợp lệ sau khi dữ liệu lọc từ backend thay đổi.
+  useEffect(() => {
+    const nextTotalPages = Math.max(1, Math.ceil(enrollments.length / DEFAULT_TABLE_PAGE_SIZE));
+    if (page > nextTotalPages) {
+      setPage(nextTotalPages);
+    }
+  }, [page, enrollments]);
 
-      const matchStatus = !statusFilter || enrollment.status === statusFilter;
-      const matchSearch = !search
-        || (user?.name || "").toLowerCase().includes(search.toLowerCase())
-        || (user?.email || "").toLowerCase().includes(search.toLowerCase())
-        || (course?.title || "").toLowerCase().includes(search.toLowerCase());
-
-      return matchStatus && matchSearch;
-    })
-  ), [enrollments, users, courses, statusFilter, search]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredEnrollments.length / DEFAULT_TABLE_PAGE_SIZE));
-  const paginatedEnrollments = filteredEnrollments.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(enrollments.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedEnrollments = enrollments.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
 
   const pendingCount = enrollments.filter((enrollment) => enrollment.status === "pending").length;
   const paidCount = enrollments.filter((enrollment) => enrollment.paid).length;
@@ -81,7 +56,11 @@ export default function AdminEnrollments() {
     try {
       await enrollmentService.approve(id);
       toast.success("Đã duyệt đăng ký");
-      loadAll();
+      const enrollmentData = await enrollmentService.getAdminDetails({
+        keyword: search.trim() || undefined,
+        status: statusFilter || undefined,
+      });
+      setEnrollments(enrollmentData || []);
     } catch {
       toast.error("Phê duyệt thất bại");
     }
@@ -95,7 +74,11 @@ export default function AdminEnrollments() {
     try {
       await enrollmentService.updateStatus(id, { status: "rejected" });
       toast.success("Đã từ chối đăng ký");
-      loadAll();
+      const enrollmentData = await enrollmentService.getAdminDetails({
+        keyword: search.trim() || undefined,
+        status: statusFilter || undefined,
+      });
+      setEnrollments(enrollmentData || []);
     } catch {
       toast.error("Từ chối thất bại");
     }
@@ -151,7 +134,7 @@ export default function AdminEnrollments() {
             <option value="cancelled">🚫 Đã hủy</option>
           </select>
         </div>
-        <span className="admin-enrollments__result-count">{filteredEnrollments.length} đăng ký</span>
+        <span className="admin-enrollments__result-count">{enrollments.length} đăng ký</span>
       </div>
 
       {/* Bảng join dữ liệu enrollment với user, course và class để xem một nơi. */}
@@ -179,31 +162,27 @@ export default function AdminEnrollments() {
                   </tr>
                 ) : (
                   paginatedEnrollments.map((enrollment) => {
-                    const user = getUser(enrollment.userId);
-                    const course = getCourse(enrollment.courseId);
-                    const classroom = getClass(enrollment.classId);
-
                     return (
                       <tr key={enrollment.id}>
                         <td>
                           <div className="admin-enrollments__identity">
-                            <div className="avatar">{(user?.name || "?").charAt(0).toUpperCase()}</div>
+                            <div className="avatar">{(enrollment.userName || "?").charAt(0).toUpperCase()}</div>
                             <div>
-                              <p className="admin-enrollments__name">{user?.name || `ID: ${enrollment.userId}`}</p>
-                              <p className="admin-enrollments__muted admin-enrollments__tiny">{user?.email || ""}</p>
+                              <p className="admin-enrollments__name">{enrollment.userName || `ID: ${enrollment.userId}`}</p>
+                              <p className="admin-enrollments__muted admin-enrollments__tiny">{enrollment.userEmail || ""}</p>
                             </div>
                           </div>
                         </td>
                         <td>
-                          <p className="admin-enrollments__name">{course?.title || `ID: ${enrollment.courseId}`}</p>
-                          {course && (
-                            <span className={`badge ${getExamBadgeClass(course.examType)}`}>
-                              {course.examType}
+                          <p className="admin-enrollments__name">{enrollment.courseName || `ID: ${enrollment.courseId}`}</p>
+                          {enrollment.examType && (
+                            <span className={`badge ${getExamBadgeClass(enrollment.examType)}`}>
+                              {enrollment.examType}
                             </span>
                           )}
                         </td>
                         <td className="admin-enrollments__class-cell">
-                          {classroom?.name || (enrollment.classId ? `ID: ${enrollment.classId}` : "—")}
+                          {enrollment.className || (enrollment.classId ? `ID: ${enrollment.classId}` : "—")}
                         </td>
                         <td className="admin-enrollments__muted admin-enrollments__tiny">
                           {enrollment.enrollDate ? new Date(enrollment.enrollDate).toLocaleDateString("vi-VN") : "—"}
@@ -253,10 +232,10 @@ export default function AdminEnrollments() {
               </tbody>
             </table>
 
-            {filteredEnrollments.length > DEFAULT_TABLE_PAGE_SIZE && (
+            {enrollments.length > DEFAULT_TABLE_PAGE_SIZE && (
               <div className="pagination">
                 <span className="pagination-info">
-                  {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredEnrollments.length)} / {filteredEnrollments.length}
+                  {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, enrollments.length)} / {enrollments.length}
                 </span>
                 <div className="pagination-btns">
                   <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>

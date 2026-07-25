@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { assignmentService } from "../../services/assignmentService";
 import { classService } from "../../services/classService";
+import { enrollmentService } from "../../services/enrollmentService";
 import { ENROLLMENT_STATUS_BADGES, ENROLLMENT_STATUS_LABELS } from "../../constants/enrollments";
 import { getExamBadgeClass } from "../../constants/courses";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
@@ -28,7 +29,7 @@ export default function TeacherStudents() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
-    const fetchAll = async () => {
+    const fetchStaticData = async () => {
       setLoading(true);
 
       try {
@@ -38,20 +39,10 @@ export default function TeacherStudents() {
           quizService.getTeacherQuizzes().catch(() => []),
           testService.getTeacherTests().catch(() => []),
         ]);
-        setClasses(myClasses);
+        setClasses(myClasses || []);
         setAssignmentCatalog(teacherAssignments || []);
         setQuizCatalog(teacherQuizzes || []);
         setTestCatalog(teacherTests || []);
-
-        const enrollmentResponses = await Promise.all(
-          myClasses.map((classroom) =>
-            classService.getTeacherClassStudents(classroom.id)
-              .then((response) => response || [])
-              .catch(() => [])
-          )
-        );
-
-        setEnrollments(enrollmentResponses.flat());
       } catch (error) {
         console.error(error);
         toast.error("Không thể tải dữ liệu học viên");
@@ -60,8 +51,29 @@ export default function TeacherStudents() {
       }
     };
 
-    fetchAll();
+    fetchStaticData();
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const teacherStudentData = await enrollmentService.getTeacherStudentsOverview({
+          keyword: search.trim() || undefined,
+          courseId: selectedCourse || undefined,
+          classId: selectedClass || undefined,
+        });
+        setEnrollments(teacherStudentData || []);
+      } catch (error) {
+        console.error(error);
+        toast.error("Không thể tải dữ liệu học viên");
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [search, selectedCourse, selectedClass]);
 
   const myCourses = useMemo(() => {
     const courseMap = new Map();
@@ -81,21 +93,8 @@ export default function TeacherStudents() {
     ? classes.filter((classroom) => Number(classroom.courseId) === Number(selectedCourse))
     : classes;
 
-  // Tập học viên cuối cùng sau khi đã áp dụng tìm kiếm và dropdown filters.
-  const filteredEnrollments = useMemo(() => (
-    enrollments.filter((enrollment) => {
-      const matchSearch = !search
-        || (enrollment.userName || "").toLowerCase().includes(search.toLowerCase())
-        || (enrollment.userEmail || "").toLowerCase().includes(search.toLowerCase());
-      const matchCourse = !selectedCourse || Number(enrollment.courseId) === Number(selectedCourse);
-      const matchClass = !selectedClass || Number(enrollment.classId) === Number(selectedClass);
-
-      return matchSearch && matchCourse && matchClass;
-    })
-  ), [enrollments, search, selectedCourse, selectedClass]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredEnrollments.length / DEFAULT_TABLE_PAGE_SIZE));
-  const paginatedEnrollments = filteredEnrollments.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(enrollments.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedEnrollments = enrollments.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
   const assignmentMap = useMemo(() => (
     Object.fromEntries((assignmentCatalog || []).map((assignment) => [Number(assignment.id), assignment]))
   ), [assignmentCatalog]);
@@ -105,6 +104,14 @@ export default function TeacherStudents() {
   const testMap = useMemo(() => (
     Object.fromEntries((testCatalog || []).map((test) => [Number(test.id), test]))
   ), [testCatalog]);
+
+  // Tránh giữ lại trang cũ khi bộ lọc backend trả về ít học viên hơn.
+  useEffect(() => {
+    const nextTotalPages = Math.max(1, Math.ceil(enrollments.length / DEFAULT_TABLE_PAGE_SIZE));
+    if (page > nextTotalPages) {
+      setPage(nextTotalPages);
+    }
+  }, [page, enrollments]);
 
   const openStudentDetail = async (enrollment) => {
     setDetailLoading(true);
@@ -172,7 +179,7 @@ export default function TeacherStudents() {
         </div>
         <div className="teacher-students__hero-card">
           <span>Đang hiển thị</span>
-          <strong>{filteredEnrollments.length} học viên</strong>
+          <strong>{enrollments.length} học viên</strong>
           <p>{classes.length} lớp đang được dùng làm nguồn lọc dữ liệu.</p>
         </div>
       </section>
@@ -216,7 +223,7 @@ export default function TeacherStudents() {
             ))}
           </select>
         </div>
-        <span className="teacher-students__counter">{filteredEnrollments.length} học viên</span>
+        <span className="teacher-students__counter">{enrollments.length} học viên</span>
       </div>
 
       {/* Bảng danh sách học viên ghép thông tin user, class, course và progress. */}
@@ -287,10 +294,10 @@ export default function TeacherStudents() {
               </tbody>
             </table>
 
-            {filteredEnrollments.length > DEFAULT_TABLE_PAGE_SIZE && (
+            {enrollments.length > DEFAULT_TABLE_PAGE_SIZE && (
               <div className="pagination">
                 <span className="pagination-info">
-                  {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredEnrollments.length)} / {filteredEnrollments.length}
+                  {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, enrollments.length)} / {enrollments.length}
                 </span>
                 <div className="pagination-btns">
                   <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>

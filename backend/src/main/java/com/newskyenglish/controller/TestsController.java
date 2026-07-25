@@ -21,8 +21,10 @@ public class TestsController {
 
     // Lấy toàn bộ full test hiện có.
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TestsDTO.Response>>> getAll() {
-        return ResponseEntity.ok(ApiResponse.success(testsService.getAll()));
+    public ResponseEntity<ApiResponse<List<TestsDTO.Response>>> getAll(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String type) {
+        return ResponseEntity.ok(ApiResponse.success(testsService.getAll(keyword, type)));
     }
 
     // Lấy chi tiết một bài test.

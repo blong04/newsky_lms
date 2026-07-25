@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,9 +27,19 @@ public class CoursesService {
     private final EnrollmentsRepository enrollmentRepository;
 
     @Transactional(readOnly = true)
-    // Lấy toàn bộ khóa học và chuyển sang response DTO thống nhất cho API.
-    public List<CoursesDTO.Response> getAll() {
+    // Lấy danh sách khóa học theo bộ lọc tìm kiếm để frontend không phải tự lọc cục bộ.
+    public List<CoursesDTO.Response> getAll(
+            String keyword,
+            Courses.ExamType examType,
+            Courses.Level level,
+            Courses.Status status) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+
         return courseRepository.findAll().stream()
+                .filter(course -> matchesKeyword(course, normalizedKeyword))
+                .filter(course -> examType == null || course.getExamType() == examType)
+                .filter(course -> level == null || course.getLevel() == level)
+                .filter(course -> status == null || course.getStatus() == status)
                 .map(CoursesDTO.Response::fromEntity)
                 .toList();
     }
@@ -109,6 +120,22 @@ public class CoursesService {
                         enrollment -> enrollment.getClassId(),
                         Collectors.collectingAndThen(Collectors.counting(), Long::intValue)
                 ));
+    }
+
+    // Chuẩn hóa từ khóa để các phép so khớp tên/mô tả thống nhất hơn.
+    private String normalizeKeyword(String keyword) {
+        return keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+    }
+
+    // Kiểm tra một khóa học có khớp từ khóa theo tên hoặc mô tả hay không.
+    private boolean matchesKeyword(Courses course, String normalizedKeyword) {
+        if (normalizedKeyword.isBlank()) {
+            return true;
+        }
+
+        String title = course.getTitle() == null ? "" : course.getTitle().toLowerCase(Locale.ROOT);
+        String description = course.getDescription() == null ? "" : course.getDescription().toLowerCase(Locale.ROOT);
+        return title.contains(normalizedKeyword) || description.contains(normalizedKeyword);
     }
 }
 

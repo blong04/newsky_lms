@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -112,8 +113,8 @@ public class EnrollmentsService {
     }
 
     @Transactional(readOnly = true)
-    // Lấy danh sách enrollment đã enrich user, course và class cho admin.
-    public List<EnrollmentsDTO.AdminDetailResponse> getAdminDetails() {
+    // Lấy danh sách enrollment đã enrich user, course và class cho admin theo bộ lọc tìm kiếm.
+    public List<EnrollmentsDTO.AdminDetailResponse> getAdminDetails(String keyword, Enrollments.Status status) {
         List<Enrollments> enrollments = enrollmentsRepository.findAll();
         Map<Long, Classes> classesById = buildClassMap(enrollments.stream()
                 .map(Enrollments::getClassId)
@@ -142,6 +143,55 @@ public class EnrollmentsService {
                         resolvePaymentMethod(enrollment, paymentsByEnrollmentId)
                     );
                 })
+                .filter(response -> matchesAdminDetailKeyword(response, keyword))
+                .filter(response -> status == null || status == response.getStatus())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    // Lấy toàn bộ học viên thuộc các lớp giáo viên đang phụ trách theo bộ lọc khóa, lớp và từ khóa.
+    public List<EnrollmentsDTO.TeacherStudentResponse> getTeacherStudentsOverview(
+            String authorizationHeader,
+            String keyword,
+            Long courseId,
+            Long classId) {
+        Long teacherId = currentUserService.extractUserId(authorizationHeader);
+        List<Classes> teacherClasses = classesRepository.findByTeacherId(teacherId);
+        Map<Long, Classes> classesById = teacherClasses.stream()
+                .collect(Collectors.toMap(Classes::getId, Function.identity()));
+        Map<Long, Courses> coursesById = buildCourseMap(teacherClasses.stream()
+                .map(Classes::getCourseId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
+
+        List<Enrollments> enrollments = enrollmentsRepository.findByClassIdIn(teacherClasses.stream()
+                .map(Classes::getId)
+                .toList());
+        Map<Long, Users> usersById = buildUserMap(enrollments.stream()
+                .map(Enrollments::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
+        Map<Long, Payments> paymentsByEnrollmentId = buildPaymentMap(enrollments);
+
+        return enrollments.stream()
+                .filter(enrollment -> enrollment.getStatus() == Enrollments.Status.approved
+                        || enrollment.getStatus() == Enrollments.Status.completed)
+                .map(enrollment -> {
+                    Classes classRoom = classesById.get(enrollment.getClassId());
+                    Long resolvedCourseId = classRoom != null ? classRoom.getCourseId() : null;
+                    return EnrollmentsDTO.TeacherStudentResponse.fromEntity(
+                            enrollment,
+                            usersById.get(enrollment.getUserId()),
+                            resolvedCourseId != null ? coursesById.get(resolvedCourseId) : null,
+                            classRoom,
+                            isEnrollmentPaid(enrollment, classesById, coursesById, paymentsByEnrollmentId),
+                            resolvePaymentStatus(enrollment, classesById, coursesById, paymentsByEnrollmentId),
+                            resolvePaymentMethod(enrollment, paymentsByEnrollmentId)
+                    );
+                })
+                .filter(response -> matchesTeacherStudentKeyword(response, keyword))
+                .filter(response -> courseId == null || courseId.equals(response.getCourseId()))
+                .filter(response -> classId == null || classId.equals(response.getClassId()))
                 .toList();
     }
 
@@ -514,5 +564,38 @@ public class EnrollmentsService {
     private Enrollments findEnrollment(Long id) {
         return enrollmentsRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đăng ký"));
+    }
+
+    // Kiểm tra bản ghi đăng ký đã enrich có khớp từ khóa admin theo user hoặc khóa học hay không.
+    private boolean matchesAdminDetailKeyword(EnrollmentsDTO.AdminDetailResponse response, String keyword) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+        if (normalizedKeyword.isBlank()) {
+            return true;
+        }
+
+        return safeLower(response.getUserName()).contains(normalizedKeyword)
+                || safeLower(response.getUserEmail()).contains(normalizedKeyword)
+                || safeLower(response.getCourseName()).contains(normalizedKeyword);
+    }
+
+    // Kiểm tra danh sách học viên của giáo viên có khớp tên hoặc email hay không.
+    private boolean matchesTeacherStudentKeyword(EnrollmentsDTO.TeacherStudentResponse response, String keyword) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+        if (normalizedKeyword.isBlank()) {
+            return true;
+        }
+
+        return safeLower(response.getUserName()).contains(normalizedKeyword)
+                || safeLower(response.getUserEmail()).contains(normalizedKeyword);
+    }
+
+    // Chuẩn hóa từ khóa để logic tìm kiếm ở backend đồng nhất hơn.
+    private String normalizeKeyword(String keyword) {
+        return keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+    }
+
+    // Hạ chữ thường an toàn cho chuỗi có thể null.
+    private String safeLower(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT);
     }
 }

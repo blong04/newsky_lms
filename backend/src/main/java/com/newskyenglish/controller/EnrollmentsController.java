@@ -58,8 +58,22 @@ public class EnrollmentsController {
 
     // Trả về dữ liệu enrollment đã join sẵn để frontend quản trị hiển thị.
     @GetMapping("/admin/enrollments/details")
-    public ResponseEntity<ApiResponse<List<EnrollmentsDTO.AdminDetailResponse>>> getAdminDetails() {
-        return ResponseEntity.ok(ApiResponse.success(enrollmentsService.getAdminDetails()));
+    public ResponseEntity<ApiResponse<List<EnrollmentsDTO.AdminDetailResponse>>> getAdminDetails(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) com.newskyenglish.model.Enrollments.Status status) {
+        return ResponseEntity.ok(ApiResponse.success(enrollmentsService.getAdminDetails(keyword, status)));
+    }
+
+    // Trả về danh sách học viên của toàn bộ lớp giáo viên đang phụ trách theo bộ lọc hiện tại.
+    @GetMapping("/teacher/students")
+    public ResponseEntity<ApiResponse<List<EnrollmentsDTO.TeacherStudentResponse>>> getTeacherStudentsOverview(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long courseId,
+            @RequestParam(required = false) Long classId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                enrollmentsService.getTeacherStudentsOverview(authorizationHeader, keyword, courseId, classId)
+        ));
     }
 
     // Duyệt một yêu cầu đăng ký học.

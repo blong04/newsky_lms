@@ -31,59 +31,51 @@ export default function AdminCourses() {
   const [courseClasses, setCourseClasses] = useState([]);
   const [classesLoading, setClassesLoading] = useState(false);
 
-  // Tải danh sách khóa học và giáo viên để dùng cho bảng tổng quan lẫn modal chi tiết.
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [courseData, userData] = await Promise.all([
-        courseService.getAll(),
-        userService.getAll(),
-      ]);
-
-      setCourses(courseData || []);
-      setTeachers(
-        (userData || []).filter(
-          (user) => user.roleId === 2
-        )
-      );
-    } catch {
-      toast.error("Không thể tải dữ liệu khóa học");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Tải danh sách giáo viên một lần để hiển thị ở modal chi tiết khóa học.
   useEffect(() => {
-    fetchData();
+    const fetchTeachers = async () => {
+      try {
+        const userData = await userService.getAll();
+        setTeachers((userData || []).filter((user) => user.roleId === 2));
+      } catch {
+        toast.error("Không thể tải dữ liệu giáo viên");
+      }
+    };
+
+    fetchTeachers();
   }, []);
+
+  // Tải danh sách khóa học theo điều kiện tìm kiếm và bộ lọc từ backend.
+  useEffect(() => {
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const courseData = await courseService.getAll({
+          keyword: search.trim() || undefined,
+          examType: examFilter || undefined,
+          status: statusFilter || undefined,
+        });
+        setCourses(courseData || []);
+      } catch {
+        toast.error("Không thể tải dữ liệu khóa học");
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [search, examFilter, statusFilter]);
 
   // Giữ trang hiện tại hợp lệ khi bộ lọc làm thay đổi số lượng kết quả.
   useEffect(() => {
-    const nextTotalPages = Math.max(
-      1,
-      Math.ceil(filteredCourses.length / DEFAULT_TABLE_PAGE_SIZE)
-    );
+    const nextTotalPages = Math.max(1, Math.ceil(courses.length / DEFAULT_TABLE_PAGE_SIZE));
     if (page > nextTotalPages) {
       setPage(nextTotalPages);
     }
-  }, [page, search, examFilter, statusFilter, courses]);
+  }, [page, courses]);
 
-  const filteredCourses = courses.filter((course) => {
-    const normalizedSearch = search.trim().toLowerCase();
-    const matchesSearch =
-      !normalizedSearch ||
-      course.title?.toLowerCase().includes(normalizedSearch) ||
-      course.description?.toLowerCase().includes(normalizedSearch);
-
-    return (
-      matchesSearch &&
-      (!examFilter || course.examType === examFilter) &&
-      (!statusFilter || course.status === statusFilter)
-    );
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / DEFAULT_TABLE_PAGE_SIZE));
-  const paginatedCourses = filteredCourses.slice(
+  const totalPages = Math.max(1, Math.ceil(courses.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedCourses = courses.slice(
     (page - 1) * DEFAULT_TABLE_PAGE_SIZE,
     page * DEFAULT_TABLE_PAGE_SIZE
   );
@@ -158,7 +150,12 @@ export default function AdminCourses() {
       }
 
       setModal(null);
-      fetchData();
+      const refreshedCourses = await courseService.getAll({
+        keyword: search.trim() || undefined,
+        examType: examFilter || undefined,
+        status: statusFilter || undefined,
+      });
+      setCourses(refreshedCourses || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Không thể lưu khóa học");
     }
@@ -172,16 +169,21 @@ export default function AdminCourses() {
     try {
       await courseService.delete(courseId);
       toast.success("Đã xóa khóa học");
-      fetchData();
+      const refreshedCourses = await courseService.getAll({
+        keyword: search.trim() || undefined,
+        examType: examFilter || undefined,
+        status: statusFilter || undefined,
+      });
+      setCourses(refreshedCourses || []);
     } catch {
       toast.error("Không thể xóa vì khóa học đang liên kết dữ liệu khác");
     }
   };
 
   const filteredSummaryLabel =
-    filteredCourses.length === totalCourses
+    courses.length === totalCourses
       ? "Đang hiển thị toàn bộ danh mục đào tạo"
-      : `Đang hiển thị ${filteredCourses.length}/${totalCourses} khóa học theo bộ lọc`;
+      : `Đang hiển thị ${courses.length}/${totalCourses} khóa học theo bộ lọc`;
 
   return (
     <div className="admin-page fade-in courses-page">
@@ -197,7 +199,7 @@ export default function AdminCourses() {
 
         <div className="courses-hero__panel">
           <span className="courses-hero__panel-label">Tổng quan nhanh</span>
-          <strong>{filteredCourses.length}</strong>
+          <strong>{courses.length}</strong>
           <p>{filteredSummaryLabel}</p>
           <div className="courses-hero__chips">
             <span className="courses-chip">IELTS {courses.filter((item) => item.examType === "IELTS").length}</span>
@@ -389,9 +391,9 @@ export default function AdminCourses() {
             {totalPages > 1 && (
               <div className="pagination">
                 <span className="pagination-info">
-                  {Math.min((page - 1) * DEFAULT_TABLE_PAGE_SIZE + 1, filteredCourses.length)}–
-                  {Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredCourses.length)} /{" "}
-                  {filteredCourses.length}
+                  {Math.min((page - 1) * DEFAULT_TABLE_PAGE_SIZE + 1, courses.length)}–
+                  {Math.min(page * DEFAULT_TABLE_PAGE_SIZE, courses.length)} /{" "}
+                  {courses.length}
                 </span>
                 <div className="pagination-btns">
                   <button

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { classService } from "../../services/classService";
 import { courseService } from "../../services/courseService";
 import { enrollmentService } from "../../services/enrollmentService";
@@ -16,7 +16,8 @@ export default function StudentCourses() {
   const [courses, setCourses] = useState([]);
   const [classes, setClasses] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [supportLoading, setSupportLoading] = useState(true);
 
   // State bộ lọc và phân trang danh sách khóa học.
   const [search, setSearch] = useState("");
@@ -35,28 +36,50 @@ export default function StudentCourses() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
 
-  // Load toàn bộ dữ liệu cần cho màn catalog khóa học.
+  // Load danh mục khóa học theo bộ lọc tìm kiếm từ backend.
   useEffect(() => {
-    const fetchAll = async () => {
-      setLoading(true);
+    const timer = window.setTimeout(async () => {
+      setCoursesLoading(true);
       try {
-        const [courseData, enrollmentData, classData] = await Promise.all([
-          courseService.getAll(),
+        const courseData = await courseService.getAll({
+          keyword: search.trim() || undefined,
+          examType: examFilter || undefined,
+          level: levelFilter || undefined,
+          status: "active",
+        });
+        setCourses(courseData || []);
+      } catch (error) {
+        console.error(error);
+        toast.error("Không thể tải dữ liệu");
+      } finally {
+        setCoursesLoading(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [search, examFilter, levelFilter]);
+
+  // Load enrollment và danh sách lớp công khai phục vụ trạng thái đăng ký.
+  useEffect(() => {
+    const fetchSupportData = async () => {
+      setSupportLoading(true);
+      try {
+        const [enrollmentData, classData] = await Promise.all([
           enrollmentService.getStudentEnrollments(),
           classService.getPublicClasses(),
         ]);
 
-        setCourses((courseData || []).filter((course) => course.status === "active"));
         setEnrollments(enrollmentData || []);
         setClasses(classData || []);
       } catch (error) {
         console.error(error);
         toast.error("Không thể tải dữ liệu");
       } finally {
-        setLoading(false);
+        setSupportLoading(false);
       }
     };
-    fetchAll();
+
+    fetchSupportData();
   }, []);
 
   // Chỉ xem enrollment còn hiệu lực là đã đăng ký; trạng thái cancelled/rejected được xem như có thể đăng ký lại.
@@ -74,21 +97,24 @@ export default function StudentCourses() {
 
   const getCourseClasses = (courseId) => classes.filter((item) => Number(item.courseId) === Number(courseId));
 
-  const filteredCourses = useMemo(() => (
-    courses.filter((course) => {
-        const enrollment = getEnrollment(course.id);
-      const matchSearch = !search || course.title?.toLowerCase().includes(search.toLowerCase()) || course.description?.toLowerCase().includes(search.toLowerCase());
-      const matchExam = !examFilter || course.examType === examFilter;
-      const matchLevel = !levelFilter || course.level === levelFilter;
-      const matchEnroll = !enrollFilter
-        || (enrollFilter === "enrolled" && enrollment)
-        || (enrollFilter === "not_enrolled" && !enrollment);
-      return matchSearch && matchExam && matchLevel && matchEnroll;
-    })
-  ), [courses, search, examFilter, levelFilter, enrollFilter, enrollments]);
+  const visibleCourses = courses.filter((course) => {
+    const enrollment = getEnrollment(course.id);
+    return !enrollFilter
+      || (enrollFilter === "enrolled" && enrollment)
+      || (enrollFilter === "not_enrolled" && !enrollment);
+  });
 
-  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / STUDENT_COURSE_PAGE_SIZE));
-  const paginatedCourses = filteredCourses.slice((page - 1) * STUDENT_COURSE_PAGE_SIZE, page * STUDENT_COURSE_PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(visibleCourses.length / STUDENT_COURSE_PAGE_SIZE));
+  const paginatedCourses = visibleCourses.slice((page - 1) * STUDENT_COURSE_PAGE_SIZE, page * STUDENT_COURSE_PAGE_SIZE);
+  const loading = coursesLoading || supportLoading;
+
+  // Đảm bảo page không vượt quá số trang sau khi lọc khóa học hoặc trạng thái đăng ký.
+  useEffect(() => {
+    const nextTotalPages = Math.max(1, Math.ceil(visibleCourses.length / STUDENT_COURSE_PAGE_SIZE));
+    if (page > nextTotalPages) {
+      setPage(nextTotalPages);
+    }
+  }, [page, visibleCourses.length]);
 
   const refreshEnrollments = async () => {
     const response = await enrollmentService.getStudentEnrollments();
@@ -207,7 +233,7 @@ export default function StudentCourses() {
       <div className="courses-sticky-bar student-courses__sticky-bar">
         <div className="courses-sticky-inner student-courses__sticky-inner">
           <h2 className="student-courses__heading">
-            Khóa học <span className="student-courses__heading-count">({filteredCourses.length})</span>
+            Khóa học <span className="student-courses__heading-count">({visibleCourses.length})</span>
           </h2>
           <div className="student-courses__filters">
             <input
@@ -305,7 +331,7 @@ export default function StudentCourses() {
 
       {totalPages > 1 && (
         <div className="pagination student-courses__pagination">
-          <span className="pagination-info">Trang {page}/{totalPages} — {filteredCourses.length} khóa học</span>
+          <span className="pagination-info">Trang {page}/{totalPages} — {visibleCourses.length} khóa học</span>
           <div className="pagination-btns">
             <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>
             {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {

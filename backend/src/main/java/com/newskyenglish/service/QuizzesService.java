@@ -56,9 +56,10 @@ public class QuizzesService {
     private final ObjectMapper objectMapper;
 
     @Transactional(readOnly = true)
-    // Lấy toàn bộ quiz để hiển thị ở admin và student.
-    public List<QuizzesDTO.Response> getAll() {
+    // Lấy toàn bộ quiz theo điều kiện lọc loại chứng chỉ.
+    public List<QuizzesDTO.Response> getAll(Quizzes.Type type) {
         return quizRepository.findAll().stream()
+                .filter(quiz -> type == null || type == quiz.getType())
                 .map(this::toQuizResponse)
                 .toList();
     }

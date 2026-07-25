@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { userService } from "../../services/userService";
 import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import { ROLE_BADGES, ROLE_NAMES } from "../../constants/roles";
@@ -20,36 +20,37 @@ export default function AdminUsers() {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", password: "", roleId: 3 });
 
-  // Load danh sách người dùng cho màn quản trị tài khoản.
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const userResponse = await userService.getAll();
-      setUsers(userResponse || []);
-    } catch {
-      toast.error("Không thể tải dữ liệu người dùng");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Load danh sách người dùng theo điều kiện tìm kiếm từ backend.
   useEffect(() => {
-    fetchData();
-  }, []);
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const userResponse = await userService.getAll({
+          keyword: search.trim() || undefined,
+          roleId: roleFilter || undefined,
+          status: statusFilter || undefined,
+        });
+        setUsers(userResponse || []);
+      } catch {
+        toast.error("Không thể tải dữ liệu người dùng");
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
 
-  // Tập dữ liệu sau khi áp dụng tìm kiếm và bộ lọc trạng thái.
-  const filteredUsers = useMemo(() => (
-    users.filter((user) =>
-      (!search
-        || user.name?.toLowerCase().includes(search.toLowerCase())
-        || user.email?.toLowerCase().includes(search.toLowerCase()))
-      && (!roleFilter || user.roleId === Number(roleFilter))
-      && (!statusFilter || user.status === statusFilter)
-    )
-  ), [users, search, roleFilter, statusFilter]);
+    return () => window.clearTimeout(timer);
+  }, [search, roleFilter, statusFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / DEFAULT_TABLE_PAGE_SIZE));
-  const paginatedUsers = filteredUsers.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
+  // Đồng bộ phân trang khi số lượng user thay đổi theo bộ lọc backend.
+  useEffect(() => {
+    const nextTotalPages = Math.max(1, Math.ceil(users.length / DEFAULT_TABLE_PAGE_SIZE));
+    if (page > nextTotalPages) {
+      setPage(nextTotalPages);
+    }
+  }, [page, users]);
+
+  const totalPages = Math.max(1, Math.ceil(users.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedUsers = users.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
 
   // Chuyển đổi trạng thái hiển thị sang badge dễ đọc.
   const getStatusBadge = (user) => {
@@ -74,7 +75,12 @@ export default function AdminUsers() {
     try {
       await userService.update(user.id, { status: nextStatus });
       toast.success(nextStatus === "suspended" ? "Đã khóa tài khoản" : "Đã mở khóa tài khoản");
-      fetchData();
+      const userResponse = await userService.getAll({
+        keyword: search.trim() || undefined,
+        roleId: roleFilter || undefined,
+        status: statusFilter || undefined,
+      });
+      setUsers(userResponse || []);
     } catch {
       toast.error("Cập nhật trạng thái thất bại");
     }
@@ -88,7 +94,12 @@ export default function AdminUsers() {
     try {
       await userService.delete(id);
       toast.success("Đã xóa người dùng");
-      fetchData();
+      const userResponse = await userService.getAll({
+        keyword: search.trim() || undefined,
+        roleId: roleFilter || undefined,
+        status: statusFilter || undefined,
+      });
+      setUsers(userResponse || []);
     } catch {
       toast.error("Xóa người dùng thất bại");
     }
@@ -108,7 +119,12 @@ export default function AdminUsers() {
       await userService.create({ ...form, roleId: Number(form.roleId) });
       toast.success("Thêm người dùng thành công");
       setModal(null);
-      fetchData();
+      const userResponse = await userService.getAll({
+        keyword: search.trim() || undefined,
+        roleId: roleFilter || undefined,
+        status: statusFilter || undefined,
+      });
+      setUsers(userResponse || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Thêm người dùng thất bại");
     }
@@ -243,10 +259,10 @@ export default function AdminUsers() {
               </tbody>
             </table>
 
-            {filteredUsers.length > DEFAULT_TABLE_PAGE_SIZE && (
+            {users.length > DEFAULT_TABLE_PAGE_SIZE && (
               <div className="pagination">
                 <span className="pagination-info">
-                  Hiển thị {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredUsers.length)} / {filteredUsers.length}
+                  Hiển thị {((page - 1) * DEFAULT_TABLE_PAGE_SIZE) + 1}–{Math.min(page * DEFAULT_TABLE_PAGE_SIZE, users.length)} / {users.length}
                 </span>
                 <div className="pagination-btns">
                   <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>

@@ -34,45 +34,47 @@ export default function AdminClasses() {
   const [detailModal, setDetailModal] = useState(null);
   const [form, setForm] = useState(INIT_FORM);
 
-  // Tập trung tải dữ liệu quản trị trong một chỗ để giảm request lặp lại.
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [classData, courseData, userData, enrollmentData] = await Promise.all([
-        classService.getAdminClasses(),
-        courseService.getAll(),
-        userService.getAll(),
-        enrollmentService.getAdminDetails().catch(() => []),
-      ]);
-
-      const allUsers = userData || [];
-      setClasses(classData || []);
-      setCourses(courseData || []);
-      setTeachers(
-        allUsers.filter((user) => user.roleId === 2)
-      );
-      setEnrollments(enrollmentData || []);
-    } catch {
-      toast.error("Không thể tải dữ liệu lớp học");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Tải dữ liệu phụ trợ một lần để hiển thị course, teacher và enrollment trong modal/bảng.
   useEffect(() => {
-    fetchData();
+    const fetchSupportData = async () => {
+      try {
+        const [courseData, userData, enrollmentData] = await Promise.all([
+          courseService.getAll(),
+          userService.getAll(),
+          enrollmentService.getAdminDetails().catch(() => []),
+        ]);
+
+        const allUsers = userData || [];
+        setCourses(courseData || []);
+        setTeachers(allUsers.filter((user) => user.roleId === 2));
+        setEnrollments(enrollmentData || []);
+      } catch {
+        toast.error("Không thể tải dữ liệu phụ trợ của lớp học");
+      }
+    };
+
+    fetchSupportData();
   }, []);
 
-  // Tránh để phân trang trỏ sang trang không còn tồn tại khi thay đổi bộ lọc.
+  // Tải danh sách lớp học theo điều kiện tìm kiếm và trạng thái từ backend.
   useEffect(() => {
-    const nextTotalPages = Math.max(
-      1,
-      Math.ceil(filteredClasses.length / DEFAULT_TABLE_PAGE_SIZE)
-    );
-    if (page > nextTotalPages) {
-      setPage(nextTotalPages);
-    }
-  }, [page, search, statusFilter, classes, courses, teachers, enrollments]);
+    const timer = window.setTimeout(async () => {
+      setLoading(true);
+      try {
+        const classData = await classService.getAdminClasses({
+          keyword: search.trim() || undefined,
+          status: statusFilter || undefined,
+        });
+        setClasses(classData || []);
+      } catch {
+        toast.error("Không thể tải dữ liệu lớp học");
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [search, statusFilter]);
 
   const getCourse = (courseId) =>
     courses.find((course) => course.id === Number(courseId));
@@ -88,21 +90,16 @@ export default function AdminClasses() {
       ["approved", "completed"].includes(enrollment.status)
     ).length;
 
-  const filteredClasses = classes.filter((classItem) => {
-    const course = getCourse(classItem.courseId);
-    const teacher = getTeacher(classItem.teacherId);
-    const normalizedSearch = search.trim().toLowerCase();
-    const matchesSearch =
-      !normalizedSearch ||
-      classItem.name?.toLowerCase().includes(normalizedSearch) ||
-      course?.title?.toLowerCase().includes(normalizedSearch) ||
-      teacher?.name?.toLowerCase().includes(normalizedSearch);
+  // Tránh để phân trang trỏ sang trang không còn tồn tại khi thay đổi bộ lọc.
+  useEffect(() => {
+    const nextTotalPages = Math.max(1, Math.ceil(classes.length / DEFAULT_TABLE_PAGE_SIZE));
+    if (page > nextTotalPages) {
+      setPage(nextTotalPages);
+    }
+  }, [page, classes]);
 
-    return matchesSearch && (!statusFilter || classItem.status === statusFilter);
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filteredClasses.length / DEFAULT_TABLE_PAGE_SIZE));
-  const paginatedClasses = filteredClasses.slice(
+  const totalPages = Math.max(1, Math.ceil(classes.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedClasses = classes.slice(
     (page - 1) * DEFAULT_TABLE_PAGE_SIZE,
     page * DEFAULT_TABLE_PAGE_SIZE
   );
@@ -164,7 +161,11 @@ export default function AdminClasses() {
 
       toast.success("Lưu lớp học thành công");
       setModal(null);
-      fetchData();
+      const classData = await classService.getAdminClasses({
+        keyword: search.trim() || undefined,
+        status: statusFilter || undefined,
+      });
+      setClasses(classData || []);
     } catch (error) {
       toast.error(error.response?.data?.message || "Không thể lưu lớp học");
     }
@@ -178,7 +179,11 @@ export default function AdminClasses() {
     try {
       await classService.deleteAdminClass(classId);
       toast.success("Đã xóa lớp học");
-      fetchData();
+      const classData = await classService.getAdminClasses({
+        keyword: search.trim() || undefined,
+        status: statusFilter || undefined,
+      });
+      setClasses(classData || []);
     } catch {
       toast.error("Không thể xóa lớp học");
     }
@@ -394,9 +399,9 @@ export default function AdminClasses() {
             {totalPages > 1 && (
               <div className="pagination">
                 <span className="pagination-info">
-                  {Math.min((page - 1) * DEFAULT_TABLE_PAGE_SIZE + 1, filteredClasses.length)}–
-                  {Math.min(page * DEFAULT_TABLE_PAGE_SIZE, filteredClasses.length)} /{" "}
-                  {filteredClasses.length}
+                  {Math.min((page - 1) * DEFAULT_TABLE_PAGE_SIZE + 1, classes.length)}–
+                  {Math.min(page * DEFAULT_TABLE_PAGE_SIZE, classes.length)} /{" "}
+                  {classes.length}
                 </span>
                 <div className="pagination-btns">
                   <button

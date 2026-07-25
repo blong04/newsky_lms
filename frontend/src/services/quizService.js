@@ -2,7 +2,7 @@ import api from "../api/axios";
 import { unwrapData } from "../utils/http";
 
 export const quizService = {
-  getAll: () => api.get("/quizzes").then(unwrapData),
+  getAll: (params = {}) => api.get("/quizzes", { params }).then(unwrapData),
   getByClass: (classId) => api.get(`/quizzes/class/${classId}`).then(unwrapData),
   getFullQuiz: (quizId) => api.get(`/quizzes/${quizId}/full`).then(unwrapData),
   getTeacherQuizzes: () => api.get("/teacher/quizzes").then(unwrapData),
