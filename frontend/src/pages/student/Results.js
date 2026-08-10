@@ -9,6 +9,7 @@ import { hasAnyLinkedClass } from "../../utils/assessment";
 import { ACTIVE_ENROLLMENT_STATUSES } from "../../constants/enrollments";
 import { parseAnswerMap } from "../../utils/quiz";
 import { getAnswerReviewClass } from "../../utils/review";
+import { normalizeQuestionType } from "../../utils/questionType";
 import toast from "react-hot-toast";
 import "./Results.css";
 
@@ -513,11 +514,12 @@ export default function StudentResults() {
                   )}
                   {section.questions.map((question, index) => {
                     const answer = reviewModal.answerMap[String(question.id)] ?? reviewModal.answerMap[question.id];
+                    const questionType = normalizeQuestionType(question.questionType);
                     return (
                       <article key={question.id} className="student-results__question-review">
                         <p className="student-results__question-title">{previousQuestionCount + index + 1}. {question.content}</p>
                         {question.imageUrl && <img className="student-results__question-image" src={question.imageUrl} alt="Question" />}
-                        {question.questionType === "mcq" && (
+                        {questionType === "mcq" && (
                           <div className="student-results__answer-list">
                             {["A", "B", "C", "D"].map((option) => {
                               const value = question[`option${option}`];
@@ -538,12 +540,12 @@ export default function StudentResults() {
                             })}
                           </div>
                         )}
-                        {question.questionType !== "mcq" && (
+                        {questionType !== "mcq" && (
                           <div className="student-results__review-box">
                             Câu trả lời của bạn: {answer || "Chưa trả lời"}
                           </div>
                         )}
-                        {question.correctAnswer && question.questionType !== "writing" && (
+                        {question.correctAnswer && questionType !== "writing" && (
                           <p className="student-results__tiny student-results__muted">
                             Đáp án đúng: <strong>{question.correctAnswer}</strong>
                           </p>
@@ -595,10 +597,11 @@ export default function StudentResults() {
                     )}
                     {section.questions.map((question, index) => {
                       const answer = reviewModal.answerMap[String(question.id)] ?? reviewModal.answerMap[question.id];
+                      const questionType = normalizeQuestionType(question.questionType);
                       return (
                         <article key={question.id} className="student-results__question-review">
                           <p className="student-results__question-title">{previousQuestionCount + index + 1}. {question.content}</p>
-                          {question.questionType === "mcq" && (
+                          {questionType === "mcq" && (
                             <div className="student-results__answer-list">
                               {["A", "B", "C", "D"].map((option) => {
                                 const value = question[`option${option}`];
@@ -622,12 +625,12 @@ export default function StudentResults() {
                               })}
                             </div>
                           )}
-                          {question.questionType !== "mcq" && (
+                          {questionType !== "mcq" && (
                             <div className="student-results__review-box">
                               Câu trả lời của bạn: {answer || "Chưa trả lời"}
                             </div>
                           )}
-                          {question.correctAnswer && (
+                          {question.correctAnswer && questionType !== "writing" && (
                             <p className="student-results__tiny student-results__muted">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
                           )}
                           {question.explanation && <p className="student-results__review-explanation">{question.explanation}</p>}

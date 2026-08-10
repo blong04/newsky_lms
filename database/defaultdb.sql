@@ -1838,7 +1838,6 @@ INSERT INTO `users` (`user_id`, `full_name`, `email`, `password`, `phone`, `addr
 (139, 'Lý Thành Lập', 'abcd@gmail.com', '$2y$12$CReDyoeRWL1LtVkaVaBzwOT9CR7wtk8pPttelfcHvVeJRKjHKhHWm', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-21 23:37:05', '2025-11-21 23:37:05', 1, 'active', NULL, NULL),
 (141, 'Hoàng Nhật Trường', 'zayluon@gmail.com', '$2y$12$t3rMzddW81tjOy86UQMWbu5CMDw.HP91XQJcmY7OUN072UXHN57Um', NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-12-01 00:14:45', '2025-12-01 00:15:32', 1, 'active', NULL, NULL),
 (144, 'Quang Nè', 'dh52201675@student.stu.edu.vn', '$2y$12$KT19VIARHCwJMZL5/TyIA.GYlkjB1yZcOCWLYmibJyf0TAdea80u.', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-12-02 10:57:03', '2025-12-02 10:57:03', 1, 'active', NULL, NULL),
-(145, 'Hoàng Nhật Trường', 'long0961511354@gmail.com', '$2y$12$Hcs3tHM8Rfg/RnYNOEChGuAu0FHbA4bbrcneGwf7mTP.eMJYsAheq', NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '2025-12-05 23:13:26', '2025-12-05 23:14:02', 1, 'active', NULL, NULL),
 (147, 'A ha ha', 'asda@gmail.com', '$2a$10$L1ZUwZJeMGhnPtqEWfbztenaMsyDTjwpiqKNk25gOOwBl5C3JNhh.', NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '2026-07-17 22:07:59', '2026-07-17 22:07:59', 0, 'active', NULL, NULL);
 
 --

@@ -4,6 +4,7 @@ import { testService } from "../../services/testService";
 import { QUESTION_TYPE_LABELS } from "../../constants/quizzes";
 import { getLinkedClassIds, normalizeClassIdsPayload } from "../../utils/assessment";
 import { buildTestSectionsForDisplay } from "../../utils/assessmentSections";
+import { normalizeQuestionType } from "../../utils/questionType";
 import {
   TEST_BLUEPRINTS,
   applyBlueprintDefaults,
@@ -791,7 +792,7 @@ export default function AdminTests() {
                         {question.imageUrl && (
                           <p className="admin-tests__muted">Ảnh: {question.imageUrl}</p>
                         )}
-                        {question.questionType === "mcq" && (
+                        {normalizeQuestionType(question.questionType) === "mcq" && (
                           <div className="admin-tests__option-list">
                             {["A", "B", "C", "D"].map((option) => question[`option${option}`] ? (
                               <div key={option} className={`admin-tests__option-item ${question.correctAnswer === option ? "admin-tests__option-item--correct" : ""}`}>
@@ -800,7 +801,7 @@ export default function AdminTests() {
                             ) : null)}
                           </div>
                         )}
-                        {question.questionType !== "mcq" && question.correctAnswer && (
+                        {normalizeQuestionType(question.questionType) !== "mcq" && question.correctAnswer && (
                           <p className="admin-tests__muted">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
                         )}
                       </article>

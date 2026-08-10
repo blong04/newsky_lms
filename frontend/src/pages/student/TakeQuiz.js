@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { quizService } from "../../services/quizService";
 import { buildQuizSectionsForDisplay } from "../../utils/assessmentSections";
 import { formatCountdown } from "../../utils/format";
+import { normalizeQuestionType } from "../../utils/questionType";
 import toast from "react-hot-toast";
 import "./TakeQuiz.css";
 
@@ -214,24 +215,4 @@ function QuestionItem({ q, index, answers, onAnswer }) {
       )}
     </div>
   );
-}
-
-// Gom các biến thể tên kiểu câu hỏi về nhóm render chuẩn để frontend không bị trắng vì lệch dữ liệu.
-function normalizeQuestionType(rawType) {
-  const normalizedType = String(rawType || "").trim().toLowerCase();
-
-  if (["mcq", "multiple_choice"].includes(normalizedType)) {
-    return "mcq";
-  }
-  if (["fill_blank", "fill-in-blank", "short_answer", "text"].includes(normalizedType)) {
-    return "fill_blank";
-  }
-  if (["matching", "ordering"].includes(normalizedType)) {
-    return "matching";
-  }
-  if (["writing", "essay"].includes(normalizedType)) {
-    return "writing";
-  }
-
-  return "writing";
 }

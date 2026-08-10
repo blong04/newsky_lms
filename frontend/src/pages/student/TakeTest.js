@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { testService } from "../../services/testService";
 import { buildTestSectionsForDisplay } from "../../utils/assessmentSections";
 import { formatCountdown } from "../../utils/format";
+import { normalizeQuestionType } from "../../utils/questionType";
 import toast from "react-hot-toast";
 import "./TakeTest.css";
 
@@ -295,24 +296,4 @@ function QuestionItem({ question, index, answers, onAnswer }) {
       )}
     </div>
   );
-}
-
-// Chuẩn hóa tên kiểu câu hỏi để đề thi vẫn render được khi dữ liệu dùng tên khác nhẹ.
-function normalizeQuestionType(rawType) {
-  const normalizedType = String(rawType || "").trim().toLowerCase();
-
-  if (["mcq", "multiple_choice"].includes(normalizedType)) {
-    return "mcq";
-  }
-  if (["fill_blank", "fill-in-blank", "short_answer", "text"].includes(normalizedType)) {
-    return "fill_blank";
-  }
-  if (["matching", "ordering"].includes(normalizedType)) {
-    return "matching";
-  }
-  if (["writing", "essay"].includes(normalizedType)) {
-    return "writing";
-  }
-
-  return "writing";
 }

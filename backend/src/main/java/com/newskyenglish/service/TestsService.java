@@ -710,13 +710,19 @@ public class TestsService {
         }
 
         if (Integer.valueOf(3).equals(currentRoleId)) {
-            ensureStudentHasTestAccess(test, currentUserId);
             boolean hasSubmitted = !testSubmissionsRepository
                     .findByMockTestIdAndUserIdOrderByAttemptNumberDesc(test.getId(), currentUserId)
                     .isEmpty();
             if (!hasSubmitted) {
                 throw new ForbiddenException("Bạn chỉ có thể xem lại bài thi thử sau khi đã nộp bài");
             }
+
+            // Placement test không gắn lớp nên học viên đã nộp bài vẫn phải xem lại được.
+            if (Boolean.TRUE.equals(test.getPlacementPool())) {
+                return;
+            }
+
+            ensureStudentHasTestAccess(test, currentUserId);
             return;
         }
 

@@ -4,6 +4,7 @@ import { QUESTION_TYPE_LABELS } from "../../constants/quizzes";
 import { quizService } from "../../services/quizService";
 import { buildQuizSectionsForDisplay } from "../../utils/assessmentSections";
 import { getLinkedClassIds, normalizeClassIdsPayload } from "../../utils/assessment";
+import { normalizeQuestionType } from "../../utils/questionType";
 import {
   QUIZ_BLUEPRINTS,
   applyQuizBlueprintDefaults,
@@ -786,7 +787,7 @@ export default function AdminQuizzes() {
                             <p className="admin-quizzes__value admin-quizzes__value--strong">{previousQuestionCount + index + 1}. {question.content}</p>
                             <p className="admin-quizzes__text-block">{QUESTION_TYPE_LABELS[question.questionType] || question.questionType}</p>
                             {question.imageUrl && <img src={question.imageUrl} alt="Question" />}
-                            {question.questionType === "mcq" && (
+                            {normalizeQuestionType(question.questionType) === "mcq" && (
                               <div className="admin-quizzes__option-list">
                                 {["A", "B", "C", "D"].map((option) => question[`option${option}`] ? (
                                   <div key={option} className={`admin-quizzes__option-item ${question.correctAnswer === option ? "admin-quizzes__option-item--correct" : ""}`}>
@@ -795,7 +796,7 @@ export default function AdminQuizzes() {
                                 ) : null)}
                               </div>
                             )}
-                            {question.questionType !== "mcq" && question.correctAnswer && (
+                            {normalizeQuestionType(question.questionType) !== "mcq" && question.correctAnswer && (
                               <p className="admin-quizzes__text-block">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
                             )}
                           </article>

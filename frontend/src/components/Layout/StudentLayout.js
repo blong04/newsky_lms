@@ -39,10 +39,17 @@ export default function StudentLayout() {
     if (!user || user.roleId !== 3) {
       return;
     }
-    if (!user.placementCompletedAt && location.pathname !== "/student/placement") {
+
+    // Cho phép học viên đi qua toàn bộ luồng placement, gồm cả màn chọn đề và màn làm bài.
+    const isPlacementRoute = location.pathname === "/student/placement";
+    const isPlacementTestRoute =
+      location.pathname.startsWith("/student/test/")
+      && new URLSearchParams(location.search).get("mode") === "placement";
+
+    if (!user.placementCompletedAt && !isPlacementRoute && !isPlacementTestRoute) {
       navigate("/student/placement", { replace: true });
     }
-  }, [location.pathname, navigate, user]);
+  }, [location.pathname, location.search, navigate, user]);
 
   const handleLogout = () => {
     logout();

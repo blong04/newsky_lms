@@ -1,3 +1,7 @@
+.filter-tabs {
+  margin-bottom: 18px;
+}
+
 .student-exercises__stack {
   display: flex;
   flex-direction: column;

@@ -27,6 +27,9 @@ public class RegistrationEmailService {
     @Value("${spring.mail.username:}")
     private String mailUsername;
 
+    @Value("${spring.mail.password:}")
+    private String mailPassword;
+
     @Value("${app.mail.brand-name:NewSky English}")
     private String brandName;
 
@@ -37,6 +40,7 @@ public class RegistrationEmailService {
         }
 
         try {
+            ensureSmtpConfigured();
             String resolvedFromAddress = resolveFromAddress();
             if (resolvedFromAddress.isBlank()) {
                 return false;
@@ -64,6 +68,7 @@ public class RegistrationEmailService {
 
         try {
             String resolvedFromAddress = resolveFromAddress();
+            ensureSmtpConfigured();
             if (resolvedFromAddress.isBlank()) {
                 throw new BadRequestException("Hệ thống chưa cấu hình email gửi OTP");
             }
@@ -78,8 +83,18 @@ public class RegistrationEmailService {
         } catch (BadRequestException exception) {
             throw exception;
         } catch (Exception exception) {
-            log.warn("Khong the gui OTP dang ky toi {}", email, exception);
-            throw new BadRequestException("Không thể gửi OTP tới email này. Vui lòng kiểm tra lại email hoặc cấu hình SMTP.");
+            log.warn("Khong the gui OTP dang ky toi {}. Root cause: {}", email, extractRootCauseMessage(exception), exception);
+            throw new BadRequestException("Không thể gửi OTP. Vui lòng kiểm tra SMTP, đặc biệt với Gmail hãy dùng App Password thay vì mật khẩu đăng nhập thông thường.");
+        }
+    }
+
+    // Kiểm tra nhanh cấu hình SMTP quan trọng trước khi cố gắng gửi mail.
+    private void ensureSmtpConfigured() {
+        if (mailUsername == null || mailUsername.isBlank()) {
+            throw new BadRequestException("Hệ thống chưa cấu hình spring.mail.username");
+        }
+        if (mailPassword == null || mailPassword.isBlank()) {
+            throw new BadRequestException("Hệ thống chưa cấu hình spring.mail.password");
         }
     }
 
@@ -132,5 +147,14 @@ public class RegistrationEmailService {
             return mailUsername.trim();
         }
         return "";
+    }
+
+    // Gom thông điệp lỗi gốc để log dễ đọc hơn khi SMTP trả lỗi xác thực.
+    private String extractRootCauseMessage(Throwable throwable) {
+        Throwable current = throwable;
+        while (current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current.getMessage() != null ? current.getMessage() : current.getClass().getSimpleName();
     }
 }

@@ -9,6 +9,7 @@ import { buildQuizSectionsForDisplay, buildTestSectionsForDisplay } from "../../
 import { TEACHER_ASSIGNMENT_PAGE_SIZE } from "../../constants/pagination";
 import { parseAnswerMap } from "../../utils/quiz";
 import { getAnswerReviewClass } from "../../utils/review";
+import { normalizeQuestionType } from "../../utils/questionType";
 import toast from "react-hot-toast";
 import "./Assignments.css";
 
@@ -846,11 +847,12 @@ export default function TeacherAssignments() {
                   )}
                   {section.questions.map((question, index) => {
                     const answer = quizReviewModal.answerMap[String(question.id)] ?? quizReviewModal.answerMap[question.id];
+                    const questionType = normalizeQuestionType(question.questionType);
                     return (
                       <article key={question.id} className="teacher-assignments__question-review">
                         <p className="teacher-assignments__title teacher-assignments__title--compact">{previousQuestionCount + index + 1}. {question.content}</p>
                         {question.imageUrl && <img src={question.imageUrl} alt="Question" className="question-image" />}
-                        {question.questionType === "mcq" ? (
+                        {questionType === "mcq" ? (
                           <div className="teacher-assignments__answer-list">
                             {["A", "B", "C", "D"].map((option) => {
                               const value = question[`option${option}`];
@@ -882,7 +884,7 @@ export default function TeacherAssignments() {
                             {answer || "Chưa trả lời"}
                           </div>
                         )}
-                        {question.correctAnswer && question.questionType !== "writing" && (
+                        {question.correctAnswer && questionType !== "writing" && (
                           <p className="teacher-assignments__tiny teacher-assignments__muted">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
                         )}
                       </article>
@@ -1018,10 +1020,11 @@ export default function TeacherAssignments() {
                     )}
                     {section.questions.map((question, index) => {
                       const answer = testReviewModal.answerMap[String(question.id)] ?? testReviewModal.answerMap[question.id];
+                      const questionType = normalizeQuestionType(question.questionType);
                       return (
                         <article key={question.id} className="teacher-assignments__question-review">
                           <p className="teacher-assignments__title teacher-assignments__title--compact">{previousQuestionCount + index + 1}. {question.content}</p>
-                          {question.questionType === "mcq" ? (
+                          {questionType === "mcq" ? (
                             <div className="teacher-assignments__answer-list">
                               {["A", "B", "C", "D"].map((option) => {
                                 const value = question[`option${option}`];
@@ -1053,7 +1056,7 @@ export default function TeacherAssignments() {
                               Câu trả lời của học viên: {answer || "Chưa trả lời"}
                             </div>
                           )}
-                          {question.correctAnswer && (
+                          {question.correctAnswer && questionType !== "writing" && (
                             <p className="teacher-assignments__tiny teacher-assignments__muted">Đáp án đúng: <strong>{question.correctAnswer}</strong></p>
                           )}
                         </article>
