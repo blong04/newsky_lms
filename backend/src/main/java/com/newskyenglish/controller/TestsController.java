@@ -27,6 +27,25 @@ public class TestsController {
         return ResponseEntity.ok(ApiResponse.success(testsService.getAll(keyword, type)));
     }
 
+    // Lấy trạng thái placement hiện tại của học viên.
+    @GetMapping("/placement/status")
+    public ResponseEntity<ApiResponse<TestsDTO.PlacementStatusResponse>> getPlacementStatus(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.getPlacementStatus(authorizationHeader)
+        ));
+    }
+
+    // Chọn ngẫu nhiên một đề placement TOEIC hoặc IELTS từ pool đã cấu hình.
+    @GetMapping("/placement/random")
+    public ResponseEntity<ApiResponse<TestsDTO.Response>> getRandomPlacementTest(
+            @RequestParam String type,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.getRandomPlacementTest(type, authorizationHeader)
+        ));
+    }
+
     // Lấy chi tiết một bài test.
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TestsDTO.Response>> getById(@PathVariable Long id) {
@@ -62,6 +81,16 @@ public class TestsController {
             @RequestHeader("Authorization") String authorizationHeader) {
         return ResponseEntity.ok(ApiResponse.success(
                 testsService.getStudentTest(id, authorizationHeader)
+        ));
+    }
+
+    // Lấy dữ liệu đề placement cho học viên làm bài xếp lớp lần đầu.
+    @GetMapping("/placement/{id}")
+    public ResponseEntity<ApiResponse<TestsDTO.StudentTestResponse>> getPlacementTest(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.getPlacementTest(id, authorizationHeader)
         ));
     }
 
@@ -135,6 +164,18 @@ public class TestsController {
         return ResponseEntity.ok(ApiResponse.success(
                 testsService.submitStudentTest(id, request, authorizationHeader),
                 "Nộp bài thi thử thành công"
+        ));
+    }
+
+    // Học viên nộp bài placement và nhận gợi ý khóa học phù hợp ngay sau khi chấm.
+    @PostMapping("/placement/{id}/submit")
+    public ResponseEntity<ApiResponse<TestsDTO.PlacementSubmitResponse>> submitPlacementTest(
+            @PathVariable Long id,
+            @RequestBody @Valid TestsDTO.SubmitRequest request,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                testsService.submitPlacementTest(id, request, authorizationHeader),
+                "Đã hoàn thành bài thi xếp lớp"
         ));
     }
 

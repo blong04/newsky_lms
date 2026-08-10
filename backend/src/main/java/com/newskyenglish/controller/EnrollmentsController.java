@@ -104,4 +104,16 @@ public class EnrollmentsController {
                 "Đã hủy đăng ký"
         ));
     }
+
+    // Học viên gửi yêu cầu học lại miễn phí cho một enrollment gốc nếu đủ điều kiện.
+    @PostMapping("/student/enrollments/{sourceEnrollmentId}/request-free-retake")
+    public ResponseEntity<ApiResponse<EnrollmentsDTO.StudentResponse>> requestFreeRetake(
+            @PathVariable Long sourceEnrollmentId,
+            @RequestBody @Valid EnrollmentsDTO.FreeRetakeRequest request,
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                enrollmentsService.requestFreeRetake(sourceEnrollmentId, request, authorizationHeader),
+                "Đã gửi yêu cầu học lại miễn phí"
+        ));
+    }
 }

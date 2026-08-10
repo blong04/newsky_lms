@@ -49,8 +49,9 @@ export default function RegisterPage() {
     const normalizedEmail = normalizeEmail(form.email);
 
     if (form.password !== form.confirm) { toast.error("Mật khẩu xác nhận không khớp"); return; }
-    if (!/^\d{4}$/.test(form.password)) { toast.error("Mật khẩu phải gồm đúng 4 chữ số"); return; }
+    if (form.password.length < 6) { toast.error("Mật khẩu phải có ít nhất 6 ký tự"); return; }
     if (!form.name.trim()) { toast.error("Vui lòng nhập họ và tên"); return; }
+    if (form.name.trim().length < 2) { toast.error("Họ và tên phải có ít nhất 2 ký tự"); return; }
     if (!hasValidEmailFormat(normalizedEmail)) { toast.error("Email chưa đúng định dạng"); return; }
 
     const emailAvailable = await checkEmailAvailability(normalizedEmail);
@@ -69,7 +70,11 @@ export default function RegisterPage() {
       toast.success(res.message);
       setOtpRequested(true);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Không thể gửi OTP");
+      const fieldErrors = err.response?.data?.data;
+      const firstFieldError = fieldErrors && typeof fieldErrors === "object"
+        ? Object.values(fieldErrors)[0]
+        : null;
+      toast.error(firstFieldError || err.response?.data?.message || "Không thể gửi OTP");
     } finally {
       setLoading(false);
     }
@@ -155,12 +160,12 @@ export default function RegisterPage() {
             </div>
             <div className="form-group">
               <label>Mật khẩu</label>
-              <input type="password" placeholder="Gồm đúng 4 chữ số"
+              <input type="password" placeholder="Tối thiểu 6 ký tự"
                 value={form.password}
                 onChange={e => setForm({ ...form, password: e.target.value })}
                 disabled={otpRequested}
                 required />
-              <p className="note-text">Mật khẩu phải gồm đúng 4 chữ số.</p>
+              <p className="note-text note-text--muted">Mật khẩu phải có ít nhất 6 ký tự.</p>
             </div>
             <div className="form-group">
               <label>Xác nhận mật khẩu</label>
@@ -177,7 +182,7 @@ export default function RegisterPage() {
                   👨‍🎓 Học viên
                 </button>
               </div>
-              <p className="note-text">Tài khoản giáo viên sẽ do admin tạo trực tiếp trong hệ thống.</p>
+              
               <p className="note-text note-text--muted">Đăng ký dùng OTP qua email, nên chỉ email nhận được mã mới tạo tài khoản thành công.</p>
             </div>
 

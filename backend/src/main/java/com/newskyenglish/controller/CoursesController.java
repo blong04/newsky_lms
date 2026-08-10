@@ -30,6 +30,15 @@ public class CoursesController {
         return ResponseEntity.ok(ApiResponse.success(courseService.getAll(keyword, examType, level, status)));
     }
 
+    // Lấy danh sách khóa học gợi ý riêng cho học viên đã có kết quả placement.
+    @GetMapping("/recommended/me")
+    public ResponseEntity<ApiResponse<CoursesDTO.RecommendationBundleResponse>> getRecommendedCourses(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ResponseEntity.ok(ApiResponse.success(
+                courseService.getRecommendedForCurrentStudent(authorizationHeader)
+        ));
+    }
+
     // Lấy thông tin chi tiết của một khóa học.
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<CoursesDTO.Response>> getById(@PathVariable Long id) {

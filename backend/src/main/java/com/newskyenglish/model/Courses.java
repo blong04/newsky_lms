@@ -35,6 +35,23 @@ public class Courses {
     @Column(name = "course_type")
     private ExamType examType;
 
+    @Column(name = "level_rank")
+    @Builder.Default
+    private Integer levelRank = 1;
+
+    @Column(name = "recommended_score_min", precision = 6, scale = 2)
+    private BigDecimal recommendedScoreMin;
+
+    @Column(name = "recommended_score_max", precision = 6, scale = 2)
+    private BigDecimal recommendedScoreMax;
+
+    @Column(name = "target_score", precision = 6, scale = 2)
+    private BigDecimal targetScore;
+
+    @Column(name = "free_retake_months")
+    @Builder.Default
+    private Integer freeRetakeMonths = 6;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     @Builder.Default

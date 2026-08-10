@@ -3,6 +3,7 @@ import { unwrapData } from "../utils/http";
 
 export const courseService = {
   getAll: (params = {}) => api.get("/courses", { params }).then(unwrapData),
+  getRecommended: () => api.get("/courses/recommended/me").then(unwrapData),
   getById: (id) => api.get(`/courses/${id}`).then(unwrapData),
   getClasses: (id) => api.get(`/courses/${id}/classes`).then(unwrapData),
   create: (payload) => api.post("/courses", payload).then(unwrapData),

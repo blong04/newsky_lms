@@ -21,6 +21,9 @@ public class Enrollments {
     @Column(name = "class_id")
     private Long classId;
 
+    @Column(name = "source_enroll_id")
+    private Long sourceEnrollId;
+
     @Column(name = "enrolled_at")
     private LocalDateTime enrollDate;
 
@@ -35,6 +38,16 @@ public class Enrollments {
     @Builder.Default
     private Status status = Status.pending;
 
+    @Column(name = "is_free_retake")
+    @Builder.Default
+    private Boolean freeRetake = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "retake_status")
+    @Builder.Default
+    private RetakeStatus retakeStatus = RetakeStatus.none;
+
     public enum Status { pending, approved, rejected, cancelled, completed }
+    public enum RetakeStatus { none, requested, approved, rejected }
 }
 

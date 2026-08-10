@@ -13,6 +13,7 @@ import com.newskyenglish.model.Questions;
 import com.newskyenglish.model.TestClasses;
 import com.newskyenglish.model.TestSubmissions;
 import com.newskyenglish.model.Tests;
+import com.newskyenglish.model.Users;
 import com.newskyenglish.repository.ClassesRepository;
 import com.newskyenglish.repository.EnrollmentsRepository;
 import com.newskyenglish.repository.QuestionGroupsRepository;
@@ -20,6 +21,7 @@ import com.newskyenglish.repository.QuestionsRepository;
 import com.newskyenglish.repository.TestClassesRepository;
 import com.newskyenglish.repository.TestSubmissionsRepository;
 import com.newskyenglish.repository.TestsRepository;
+import com.newskyenglish.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +39,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -54,6 +57,8 @@ public class TestsService {
     private final EnrollmentsRepository enrollmentsRepository;
     private final CurrentUserService currentUserService;
     private final ObjectMapper objectMapper;
+    private final UsersRepository usersRepository;
+    private final CoursesService coursesService;
 
     @Transactional(readOnly = true)
     // Lấy toàn bộ bài test full form theo điều kiện tìm kiếm và loại chứng chỉ.
@@ -74,6 +79,38 @@ public class TestsService {
         List<QuestionGroups> groups = getTestGroups(id);
         List<Questions> questions = getQuestionsByGroups(groups);
         return toTestResponse(test, groups, questions);
+    }
+
+    @Transactional(readOnly = true)
+    // Trả về trạng thái placement hiện tại của học viên để frontend quyết định có cần chặn luồng không.
+    public TestsDTO.PlacementStatusResponse getPlacementStatus(String authorizationHeader) {
+        Long userId = currentUserService.extractUserId(authorizationHeader);
+        Users user = findUser(userId);
+
+        return TestsDTO.PlacementStatusResponse.builder()
+                .placementExamType(user.getPlacementExamType())
+                .placementScore(user.getPlacementScore())
+                .placementTestSubmissionId(user.getPlacementTestSubmissionId())
+                .placementCompletedAt(user.getPlacementCompletedAt())
+                .placementCompleted(user.getPlacementCompletedAt() != null)
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    // Chọn ngẫu nhiên một đề placement cùng loại chứng chỉ cho học viên mới.
+    public TestsDTO.Response getRandomPlacementTest(String type, String authorizationHeader) {
+        Long userId = currentUserService.extractUserId(authorizationHeader);
+        Users user = findUser(userId);
+        ensurePlacementNotCompleted(user);
+
+        List<Tests> availablePlacementTests = testsRepository
+                .findByTypeIgnoreCaseAndStatusIgnoreCaseAndPlacementPoolTrue(type, "active");
+        if (availablePlacementTests.isEmpty()) {
+            throw new ResourceNotFoundException("Chưa có bài thi xếp lớp phù hợp");
+        }
+
+        int selectedIndex = ThreadLocalRandom.current().nextInt(availablePlacementTests.size());
+        return toTestResponse(availablePlacementTests.get(selectedIndex));
     }
 
     @Transactional(readOnly = true)
@@ -117,6 +154,24 @@ public class TestsService {
         Tests test = findTest(testId);
         Long userId = currentUserService.extractUserId(authorizationHeader);
         ensureStudentHasTestAccess(test, userId);
+
+        List<QuestionGroups> groups = getTestGroups(testId);
+        List<Questions> questions = getQuestionsByGroups(groups);
+
+        return TestsDTO.StudentTestResponse.builder()
+                .test(toTestResponse(test, groups, questions))
+                .groups(groups.stream().map(TestsDTO.GroupResponse::fromEntity).toList())
+                .questions(questions.stream().map(TestsDTO.QuestionResponse::fromEntity).toList())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    // Lấy đề placement cho học viên làm bài mà không cần phụ thuộc class enrollment.
+    public TestsDTO.StudentTestResponse getPlacementTest(Long testId, String authorizationHeader) {
+        Long userId = currentUserService.extractUserId(authorizationHeader);
+        Users user = findUser(userId);
+        Tests test = findPlacementPoolTest(testId);
+        ensurePlacementNotCompleted(user);
 
         List<QuestionGroups> groups = getTestGroups(testId);
         List<Questions> questions = getQuestionsByGroups(groups);
@@ -197,6 +252,7 @@ public class TestsService {
                 .totalScore(request.getTotalScore())
                 .attemptsAllowed(request.getAttemptsAllowed())
                 .status(request.getStatus() != null ? request.getStatus() : "active")
+                .placementPool(Boolean.TRUE.equals(request.getPlacementPool()))
                 .build();
         Tests savedTest = testsRepository.save(test);
         syncTestClasses(savedTest.getId(), resolveRequestedClassIds(request.getClassIds(), request.getClassId()));
@@ -221,6 +277,7 @@ public class TestsService {
         if (request.getTotalScore() != null) test.setTotalScore(request.getTotalScore());
         if (request.getAttemptsAllowed() != null) test.setAttemptsAllowed(request.getAttemptsAllowed());
         if (request.getStatus() != null) test.setStatus(request.getStatus());
+        if (request.getPlacementPool() != null) test.setPlacementPool(request.getPlacementPool());
         Tests savedTest = testsRepository.save(test);
 
         if (request.getClassIds() != null || request.getClassId() != null) {
@@ -251,66 +308,35 @@ public class TestsService {
         Long userId = currentUserService.extractUserId(authorizationHeader);
         Tests test = findTest(testId);
         ensureStudentHasTestAccess(test, userId);
+        return createSubmissionResult(test, userId, request);
+    }
 
-        List<TestSubmissions> previousSubmissions = testSubmissionsRepository
-                .findByMockTestIdAndUserIdOrderByAttemptNumberDesc(testId, userId);
-        int nextAttemptNumber = previousSubmissions.isEmpty() ? 1 : previousSubmissions.get(0).getAttemptNumber() + 1;
-        if (test.getAttemptsAllowed() != null && nextAttemptNumber > test.getAttemptsAllowed()) {
-            throw new BadRequestException("Bạn đã dùng hết số lần làm bài cho bài thi thử này");
-        }
+    @Transactional
+    // Nộp bài placement và cập nhật hồ sơ đầu vào của học viên ngay sau khi chấm.
+    public TestsDTO.PlacementSubmitResponse submitPlacementTest(Long testId,
+                                                                TestsDTO.SubmitRequest request,
+                                                                String authorizationHeader) {
+        Long userId = currentUserService.extractUserId(authorizationHeader);
+        Users user = findUser(userId);
+        Tests test = findPlacementPoolTest(testId);
+        ensurePlacementNotCompleted(user);
 
-        Map<String, Object> submittedAnswers = request.getAnswers() != null ? request.getAnswers() : Map.of();
-        List<Questions> questions = getQuestionsByGroups(getTestGroups(testId));
-        int correctCount = 0;
-        int autoGradableQuestionCount = 0;
-        Map<String, Object> normalizedAnswers = new LinkedHashMap<>();
+        TestsDTO.SubmitResultResponse result = createSubmissionResult(test, userId, request);
+        Users.PlacementExamType placementExamType = resolvePlacementExamType(test.getType());
 
-        for (Questions question : questions) {
-            Object answer = submittedAnswers.get(String.valueOf(question.getId()));
-            if (answer == null) {
-                answer = submittedAnswers.get(question.getId());
-            }
-            String normalizedAnswer = answer != null ? answer.toString().trim() : "";
-            normalizedAnswers.put(String.valueOf(question.getId()), normalizedAnswer);
+        user.setPlacementExamType(placementExamType);
+        user.setPlacementScore(result.getScore());
+        user.setPlacementTestSubmissionId(result.getSubmissionId());
+        user.setPlacementCompletedAt(LocalDateTime.now());
+        Users savedUser = usersRepository.save(user);
 
-            if (isManualGradeQuestion(question)) {
-                continue;
-            }
-
-            autoGradableQuestionCount++;
-            String correctAnswer = question.getCorrectAnswer() != null ? question.getCorrectAnswer().trim() : "";
-            if (normalizedAnswer.equalsIgnoreCase(correctAnswer)) {
-                correctCount++;
-            }
-        }
-
-        BigDecimal maxScore = test.getTotalScore() != null ? test.getTotalScore() : BigDecimal.valueOf(100);
-        BigDecimal score = autoGradableQuestionCount > 0
-                ? maxScore
-                .multiply(BigDecimal.valueOf(correctCount))
-                .divide(BigDecimal.valueOf(autoGradableQuestionCount), 2, RoundingMode.HALF_UP)
-                : BigDecimal.ZERO;
-
-        TestSubmissions submission = TestSubmissions.builder()
-                .mockTestId(test.getId())
-                .userId(userId)
-                .answersJson(writeAnswersAsJson(normalizedAnswers))
-                .startedAt(request.getDuration() != null ? LocalDateTime.now().minusSeconds(request.getDuration()) : null)
-                .submittedAt(LocalDateTime.now())
-                .duration(request.getDuration())
-                .totalScore(score)
-                .correctAnswers(correctCount)
-                .totalQuestions(autoGradableQuestionCount)
-                .attemptNumber(nextAttemptNumber)
-                .status("submitted")
-                .build();
-        TestSubmissions savedSubmission = testSubmissionsRepository.save(submission);
-
-        return TestsDTO.SubmitResultResponse.builder()
-                .submissionId(savedSubmission.getId())
-                .correct(correctCount)
-                .total(autoGradableQuestionCount)
-                .score(score)
+        return TestsDTO.PlacementSubmitResponse.builder()
+                .result(result)
+                .user(com.newskyenglish.dto.users.UsersDTO.Response.fromEntity(savedUser))
+                .recommendations(coursesService.getRecommendationsForPlacement(
+                        savedUser.getPlacementExamType(),
+                        savedUser.getPlacementScore()
+                ))
                 .build();
     }
 
@@ -347,6 +373,21 @@ public class TestsService {
     private Tests findTest(Long id) {
         return testsRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy bài test"));
+    }
+
+    // Tìm user hiện tại phục vụ update placement hoặc validate quyền.
+    private Users findUser(Long id) {
+        return usersRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng"));
+    }
+
+    // Placement chỉ chấp nhận các mock test được đánh dấu trong pool xếp lớp.
+    private Tests findPlacementPoolTest(Long id) {
+        Tests test = findTest(id);
+        if (!Boolean.TRUE.equals(test.getPlacementPool())) {
+            throw new ForbiddenException("Đây không phải bài thi xếp lớp");
+        }
+        return test;
     }
 
     // Lấy group của một mock test theo đúng thứ tự đã lưu.
@@ -410,6 +451,72 @@ public class TestsService {
         }
 
         return groupIdMap;
+    }
+
+    // Dùng chung logic chấm tự động và lưu submission cho cả test thường lẫn placement.
+    private TestsDTO.SubmitResultResponse createSubmissionResult(Tests test,
+                                                                 Long userId,
+                                                                 TestsDTO.SubmitRequest request) {
+        List<TestSubmissions> previousSubmissions = testSubmissionsRepository
+                .findByMockTestIdAndUserIdOrderByAttemptNumberDesc(test.getId(), userId);
+        int nextAttemptNumber = previousSubmissions.isEmpty() ? 1 : previousSubmissions.get(0).getAttemptNumber() + 1;
+        if (test.getAttemptsAllowed() != null && nextAttemptNumber > test.getAttemptsAllowed()) {
+            throw new BadRequestException("Bạn đã dùng hết số lần làm bài cho bài thi thử này");
+        }
+
+        Map<String, Object> submittedAnswers = request.getAnswers() != null ? request.getAnswers() : Map.of();
+        List<Questions> questions = getQuestionsByGroups(getTestGroups(test.getId()));
+        int correctCount = 0;
+        int autoGradableQuestionCount = 0;
+        Map<String, Object> normalizedAnswers = new LinkedHashMap<>();
+
+        for (Questions question : questions) {
+            Object answer = submittedAnswers.get(String.valueOf(question.getId()));
+            if (answer == null) {
+                answer = submittedAnswers.get(question.getId());
+            }
+            String normalizedAnswer = answer != null ? answer.toString().trim() : "";
+            normalizedAnswers.put(String.valueOf(question.getId()), normalizedAnswer);
+
+            if (isManualGradeQuestion(question)) {
+                continue;
+            }
+
+            autoGradableQuestionCount++;
+            String correctAnswer = question.getCorrectAnswer() != null ? question.getCorrectAnswer().trim() : "";
+            if (normalizedAnswer.equalsIgnoreCase(correctAnswer)) {
+                correctCount++;
+            }
+        }
+
+        BigDecimal maxScore = test.getTotalScore() != null ? test.getTotalScore() : BigDecimal.valueOf(100);
+        BigDecimal score = autoGradableQuestionCount > 0
+                ? maxScore
+                .multiply(BigDecimal.valueOf(correctCount))
+                .divide(BigDecimal.valueOf(autoGradableQuestionCount), 2, RoundingMode.HALF_UP)
+                : BigDecimal.ZERO;
+
+        TestSubmissions submission = TestSubmissions.builder()
+                .mockTestId(test.getId())
+                .userId(userId)
+                .answersJson(writeAnswersAsJson(normalizedAnswers))
+                .startedAt(request.getDuration() != null ? LocalDateTime.now().minusSeconds(request.getDuration()) : null)
+                .submittedAt(LocalDateTime.now())
+                .duration(request.getDuration())
+                .totalScore(score)
+                .correctAnswers(correctCount)
+                .totalQuestions(autoGradableQuestionCount)
+                .attemptNumber(nextAttemptNumber)
+                .status("submitted")
+                .build();
+        TestSubmissions savedSubmission = testSubmissionsRepository.save(submission);
+
+        return TestsDTO.SubmitResultResponse.builder()
+                .submissionId(savedSubmission.getId())
+                .correct(correctCount)
+                .total(autoGradableQuestionCount)
+                .score(score)
+                .build();
     }
 
     // Tạo lại toàn bộ câu hỏi của mock test sau khi group đã được lưu xong.
@@ -581,6 +688,13 @@ public class TestsService {
         }
     }
 
+    // Placement chỉ làm một lần, sau đó phải đi theo luồng gợi ý khóa học.
+    private void ensurePlacementNotCompleted(Users user) {
+        if (user.getPlacementCompletedAt() != null) {
+            throw new BadRequestException("Bạn đã hoàn thành bài thi xếp lớp");
+        }
+    }
+
     // Full test chỉ cho admin, giáo viên sở hữu lớp hoặc học viên đã nộp bài xem lại.
     private void ensureFullTestAccess(Tests test, String authorizationHeader) {
         Integer currentRoleId = currentUserService.extractRoleId(authorizationHeader);
@@ -638,5 +752,15 @@ public class TestsService {
         String title = test.getTitle() == null ? "" : test.getTitle().toLowerCase(Locale.ROOT);
         String description = test.getDescription() == null ? "" : test.getDescription().toLowerCase(Locale.ROOT);
         return title.contains(normalizedKeyword) || description.contains(normalizedKeyword);
+    }
+
+    // Đồng bộ type của mock test sang enum placement lưu trong users.
+    private Users.PlacementExamType resolvePlacementExamType(String rawType) {
+        String normalizedType = rawType == null ? "" : rawType.trim().toUpperCase(Locale.ROOT);
+        return switch (normalizedType) {
+            case "IELTS" -> Users.PlacementExamType.IELTS;
+            case "TOEIC" -> Users.PlacementExamType.TOEIC;
+            default -> throw new BadRequestException("Bài thi xếp lớp phải thuộc TOEIC hoặc IELTS");
+        };
     }
 }

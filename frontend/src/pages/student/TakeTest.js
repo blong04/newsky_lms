@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import { testService } from "../../services/testService";
 import { buildTestSectionsForDisplay } from "../../utils/assessmentSections";
 import { formatCountdown } from "../../utils/format";
@@ -9,6 +10,9 @@ import "./TakeTest.css";
 export default function TakeTest() {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { updateUser } = useAuth();
+  const isPlacementMode = searchParams.get("mode") === "placement";
 
   const [test, setTest] = useState(null);
   const [groups, setGroups] = useState([]);
@@ -17,12 +21,15 @@ export default function TakeTest() {
   const [timeLeft, setTimeLeft] = useState(null);
   const [submitted, setSubmitted] = useState(false);
   const [result, setResult] = useState(null);
+  const [placementSummary, setPlacementSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const timerRef = useRef(null);
 
   useEffect(() => {
-    testService.getStudentTest(testId)
+    const fetchTest = isPlacementMode ? testService.getPlacementTest : testService.getStudentTest;
+
+    fetchTest(testId)
       .then((response) => {
         const { test: testData, groups: groupData, questions: questionData } = response;
         setTest(testData);
@@ -33,11 +40,11 @@ export default function TakeTest() {
         }
       })
       .catch((error) => {
-        toast.error(error.response?.data?.message || "Không thể tải bài thi thử");
-        navigate("/student/tests");
+        toast.error(error.response?.data?.message || `Không thể tải ${isPlacementMode ? "bài thi xếp lớp" : "bài thi thử"}`);
+        navigate(isPlacementMode ? "/student/placement" : "/student/tests");
       })
       .finally(() => setLoading(false));
-  }, [testId, navigate]);
+  }, [isPlacementMode, navigate, testId]);
 
   useEffect(() => {
     if (timeLeft === null || submitted) {
@@ -63,15 +70,27 @@ export default function TakeTest() {
     clearTimeout(timerRef.current);
     setSubmitting(true);
     try {
-      const response = await testService.submitStudentTest(testId, {
+      const submitRequest = {
         answers,
         duration: test?.timeLimit && timeLeft != null ? (test.timeLimit * 60) - timeLeft : null,
-      });
-      setResult(response);
+      };
+      const response = isPlacementMode
+        ? await testService.submitPlacementTest(testId, submitRequest)
+        : await testService.submitStudentTest(testId, submitRequest);
+
+      if (isPlacementMode) {
+        setResult(response.result);
+        setPlacementSummary(response);
+        if (response.user) {
+          updateUser(response.user);
+        }
+      } else {
+        setResult(response);
+      }
       setSubmitted(true);
-      toast.success("Đã nộp bài thi thử");
+      toast.success(isPlacementMode ? "Đã hoàn thành bài thi xếp lớp" : "Đã nộp bài thi thử");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể nộp bài thi thử");
+      toast.error(error.response?.data?.message || `Không thể nộp ${isPlacementMode ? "bài thi xếp lớp" : "bài thi thử"}`);
     } finally {
       setSubmitting(false);
     }
@@ -86,6 +105,64 @@ export default function TakeTest() {
   }
 
   if (submitted && result) {
+    if (isPlacementMode) {
+      const recommendations = placementSummary?.recommendations?.recommendedCourses || [];
+      const nextLevelCourses = placementSummary?.recommendations?.nextLevelCourses || [];
+
+      return (
+        <div className="quiz-result fade-in">
+          <div className="result-card">
+            <div className="result-icon">🎯</div>
+            <h2>Kết quả bài thi xếp lớp</h2>
+            <h3>{test.title}</h3>
+            <div className="result-score">
+              <span className="score-big">{Number(result.score).toFixed(1)}</span>
+              <span className="score-label">/{test.totalScore || 100}</span>
+            </div>
+            <p>{result.correct}/{result.total} câu đúng</p>
+            <div className="result-band">
+              {test.type === "IELTS" && <p>Band ước tính: <strong>{((Number(result.score) / Number(test.totalScore || 100)) * 9).toFixed(1)}</strong></p>}
+              {test.type === "TOEIC" && <p>Score ước tính: <strong>{Math.round((Number(result.score) / Number(test.totalScore || 100)) * 990)}</strong>/990</p>}
+            </div>
+
+            {(recommendations.length > 0 || nextLevelCourses.length > 0) && (
+              <div className="take-test__placement-recommendations">
+                {recommendations.length > 0 && (
+                  <div className="take-test__placement-block">
+                    <p className="take-test__placement-title">Khóa học phù hợp hiện tại</p>
+                    <ul className="take-test__placement-list">
+                      {recommendations.map((course) => (
+                        <li key={course.id}>
+                          <strong>{course.title}</strong>
+                          <span>{course.recommendationReason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {nextLevelCourses.length > 0 && (
+                  <div className="take-test__placement-block">
+                    <p className="take-test__placement-title">Lộ trình cao hơn sau khi đạt mục tiêu</p>
+                    <ul className="take-test__placement-list">
+                      {nextLevelCourses.map((course) => (
+                        <li key={course.id}>
+                          <strong>{course.title}</strong>
+                          <span>{course.recommendationReason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button className="btn btn-primary" onClick={() => navigate("/student/courses")}>Xem khóa học gợi ý</button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="quiz-result fade-in">
         <div className="result-card">
@@ -113,14 +190,14 @@ export default function TakeTest() {
         <div className="quiz-info">
           <span className={`badge ${test.type === "IELTS" ? "badge-blue" : test.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>{test.type}</span>
           <h2>{test.title}</h2>
-          <p>{test.part || "Full test"}</p>
+          <p>{isPlacementMode ? "Placement test" : (test.part || "Full test")}</p>
         </div>
         <div className={`quiz-timer ${timeLeft !== null && timeLeft < 300 ? "take-test__timer--danger" : ""}`}>
           {timeLeft !== null && <><span>⏱</span><span className="timer-display">{formatCountdown(timeLeft)}</span></>}
         </div>
       </div>
 
-      {test.description && <div className="quiz-instructions"><strong>📋 Mô tả:</strong> {test.description}</div>}
+      {test.description && <div className="quiz-instructions"><strong>{isPlacementMode ? "🎯 Mục tiêu:" : "📋 Mô tả:"}</strong> {test.description}</div>}
 
       <div className="questions-section">
         {questions.length === 0 && (
@@ -157,7 +234,7 @@ export default function TakeTest() {
       <div className="quiz-footer">
         <p className="take-test__answered-count">Đã trả lời: {Object.keys(answers).length}/{questions.length} câu</p>
         <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
-          {submitting ? <span className="spinner" /> : "Nộp bài ✅"}
+          {submitting ? <span className="spinner" /> : isPlacementMode ? "Hoàn thành bài xếp lớp ✅" : "Nộp bài ✅"}
         </button>
       </div>
     </div>

@@ -31,7 +31,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/classes", "/courses/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/courses/recommended/me").hasAnyRole("ADMIN", "STUDENT")
+                .requestMatchers(HttpMethod.GET, "/classes", "/courses", "/courses/*", "/courses/*/classes").permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/teacher/**").hasAnyRole("ADMIN", "TEACHER")
                 .requestMatchers(HttpMethod.GET, "/student/**").hasAnyRole("ADMIN", "STUDENT")
@@ -68,6 +69,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/notifications/*/read", "/notifications/read-all").authenticated()
                 .requestMatchers(HttpMethod.POST, "/notifications/send").hasRole("ADMIN")
 
+                .requestMatchers(HttpMethod.GET, "/tests/placement/status", "/tests/placement/random", "/tests/placement/*").hasAnyRole("ADMIN", "STUDENT")
+                .requestMatchers(HttpMethod.POST, "/tests/placement/*/submit").hasAnyRole("ADMIN", "STUDENT")
                 .requestMatchers(HttpMethod.GET, "/tests/student/*", "/tests/*/full").authenticated()
                 .requestMatchers(HttpMethod.POST, "/tests/student/*/submit").hasAnyRole("ADMIN", "STUDENT")
                 .requestMatchers(HttpMethod.GET, "/tests/teacher", "/tests/teacher/*/submissions").hasAnyRole("ADMIN", "TEACHER")

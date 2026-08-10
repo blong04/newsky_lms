@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Máy chủ: 127.0.0.1:3306
--- Thời gian đã tạo: Th7 17, 2026 lúc 03:18 PM
+-- Thời gian đã tạo: Th8 08, 2026 lúc 07:29 AM
 -- Phiên bản máy phục vụ: 9.1.0
 -- Phiên bản PHP: 8.3.14
 
@@ -167,6 +167,11 @@ CREATE TABLE IF NOT EXISTS `courses` (
   `price` decimal(10,2) DEFAULT '0.00',
   `level` enum('beginner','intermediate','advanced') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `course_type` enum('IELTS','TOEIC','OTHER') CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `level_rank` tinyint UNSIGNED NOT NULL DEFAULT '1',
+  `recommended_score_min` decimal(6,2) DEFAULT NULL,
+  `recommended_score_max` decimal(6,2) DEFAULT NULL,
+  `target_score` decimal(6,2) DEFAULT NULL,
+  `free_retake_months` tinyint UNSIGNED NOT NULL DEFAULT '6',
   `status` enum('active','inactive','archived') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'active',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -177,27 +182,27 @@ CREATE TABLE IF NOT EXISTS `courses` (
 -- Đang đổ dữ liệu cho bảng `courses`
 --
 
-INSERT INTO `courses` (`course_id`, `title`, `description`, `price`, `level`, `course_type`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'IELTS Foundation', 'Khoá nền tảng IELTS cho người mới bắt đầu.', 2800000.00, 'beginner', 'IELTS', 'active', '2026-07-01 08:00:00', '2026-07-01 08:00:00'),
-(2, 'IELTS Pre-Intermediate', 'Củng cố ngữ pháp và từ vựng để lên band 5.0.', 3000000.00, 'beginner', 'IELTS', 'active', '2026-07-01 08:05:00', '2026-07-01 08:05:00'),
-(3, 'IELTS Reading Skills', 'Luyện scanning, skimming và các dạng câu hỏi đọc hiểu.', 3200000.00, 'intermediate', 'IELTS', 'active', '2026-07-01 08:10:00', '2026-07-01 08:10:00'),
-(4, 'IELTS Listening Focus', 'Chuyên đề nghe IELTS theo section.', 3200000.00, 'intermediate', 'IELTS', 'active', '2026-07-01 08:15:00', '2026-07-01 08:15:00'),
-(5, 'IELTS Writing Intensive', 'Luyện Task 1 va Task 2 theo tiêu chí band descriptor.', 3500000.00, 'advanced', 'IELTS', 'active', '2026-07-01 08:20:00', '2026-07-01 08:20:00'),
-(6, 'IELTS Speaking Workshop', 'Rèn phản xạ và phát triển ý cho speaking.', 3300000.00, 'intermediate', 'IELTS', 'active', '2026-07-01 08:25:00', '2026-07-01 08:25:00'),
-(7, 'IELTS Mock Test Bootcamp', 'Luyện đề mô phỏng toàn bộ bài thi IELTS.', 3600000.00, 'advanced', 'IELTS', 'active', '2026-07-01 08:30:00', '2026-07-01 08:30:00'),
-(8, 'IELTS Band 6.5+', 'Khoá tăng tốc cho học viên mục tiêu band 6.5 trở lên.', 3900000.00, 'advanced', 'IELTS', 'active', '2026-07-01 08:35:00', '2026-07-01 08:35:00'),
-(9, 'TOEIC Starter 450+', 'Khoá TOEIC cơ bản cho người mất gốc.', 2200000.00, 'beginner', 'TOEIC', 'active', '2026-07-01 08:40:00', '2026-07-01 08:40:00'),
-(10, 'TOEIC 600+', 'Luyện TOEIC mốc 600 với ngữ pháp và từ vựng cốt lõi.', 2600000.00, 'intermediate', 'TOEIC', 'active', '2026-07-01 08:45:00', '2026-07-01 08:45:00'),
-(11, 'TOEIC 650+ Grammar', 'Chuyên đề Part 5 va Part 6.', 2700000.00, 'intermediate', 'TOEIC', 'active', '2026-07-01 08:50:00', '2026-07-01 08:50:00'),
-(12, 'TOEIC Listening Mastery', 'Chinh phục Part 1-4 với chiến lược nghe từ khóa.', 2900000.00, 'intermediate', 'TOEIC', 'active', '2026-07-01 08:55:00', '2026-07-01 08:55:00'),
-(13, 'TOEIC Reading Speed', 'Luyện tăng tốc độ đọc Part 7.', 3000000.00, 'advanced', 'TOEIC', 'active', '2026-07-01 09:00:00', '2026-07-01 09:00:00'),
-(14, 'TOEIC 750+', 'Khoá luyện điểm TOEIC 750+.', 3300000.00, 'advanced', 'TOEIC', 'active', '2026-07-01 09:05:00', '2026-07-01 09:05:00'),
-(15, 'TOEIC Mock Test Lab', 'Làm đề TOEIC mô phỏng và chữa chi tiết.', 3400000.00, 'advanced', 'TOEIC', 'active', '2026-07-01 09:10:00', '2026-07-01 09:10:00'),
-(16, 'TOEIC 900 Sprint', 'Khoá tăng tốc cho mục tiêu điểm cao TOEIC.', 3800000.00, 'advanced', 'TOEIC', 'active', '2026-07-01 09:15:00', '2026-07-01 09:15:00'),
-(17, 'English Communication Basic', 'Giao tiếp hằng ngày cho người mới học.', 1800000.00, 'beginner', 'OTHER', 'active', '2026-07-01 09:20:00', '2026-07-01 09:20:00'),
-(18, 'English Communication Intermediate', 'Giao tiếp tình huống thực tế cho người đi làm.', 2100000.00, 'intermediate', 'OTHER', 'active', '2026-07-01 09:25:00', '2026-07-01 09:25:00'),
-(19, 'Business English Writing', 'Viết email, báo cáo và tin nhắn công việc bằng tiếng Anh.', 2600000.00, 'intermediate', 'OTHER', 'active', '2026-07-01 09:30:00', '2026-07-01 09:30:00'),
-(20, 'Pronunciation Clinic', 'Cải thiện phát âm và trọng âm theo IPA.', 1900000.00, 'beginner', 'OTHER', 'active', '2026-07-01 09:35:00', '2026-07-01 09:35:00');
+INSERT INTO `courses` (`course_id`, `title`, `description`, `price`, `level`, `course_type`, `level_rank`, `recommended_score_min`, `recommended_score_max`, `target_score`, `free_retake_months`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'IELTS Foundation', 'Khoá nền tảng IELTS cho người mới bắt đầu.', 2800000.00, 'beginner', 'IELTS', 1, 0.00, 3.50, 4.00, 6, 'active', '2026-07-01 08:00:00', '2026-08-08 14:29:39'),
+(2, 'IELTS Pre-Intermediate', 'Củng cố ngữ pháp và từ vựng để lên band 5.0.', 3000000.00, 'beginner', 'IELTS', 2, 4.00, 4.50, 5.00, 6, 'active', '2026-07-01 08:05:00', '2026-08-08 14:29:39'),
+(3, 'IELTS Reading Skills', 'Luyện scanning, skimming và các dạng câu hỏi đọc hiểu.', 3200000.00, 'intermediate', 'IELTS', 3, 5.00, 5.50, 6.00, 6, 'active', '2026-07-01 08:10:00', '2026-08-08 14:29:39'),
+(4, 'IELTS Listening Focus', 'Chuyên đề nghe IELTS theo section.', 3200000.00, 'intermediate', 'IELTS', 3, 5.00, 5.50, 6.00, 6, 'active', '2026-07-01 08:15:00', '2026-08-08 14:29:39'),
+(5, 'IELTS Writing Intensive', 'Luyện Task 1 va Task 2 theo tiêu chí band descriptor.', 3500000.00, 'advanced', 'IELTS', 4, 6.00, 6.50, 6.50, 6, 'active', '2026-07-01 08:20:00', '2026-08-08 14:29:39'),
+(6, 'IELTS Speaking Workshop', 'Rèn phản xạ và phát triển ý cho speaking.', 3300000.00, 'intermediate', 'IELTS', 3, 5.00, 5.50, 6.00, 6, 'active', '2026-07-01 08:25:00', '2026-08-08 14:29:39'),
+(7, 'IELTS Mock Test Bootcamp', 'Luyện đề mô phỏng toàn bộ bài thi IELTS.', 3600000.00, 'advanced', 'IELTS', 4, 6.00, 6.50, 6.50, 6, 'active', '2026-07-01 08:30:00', '2026-08-08 14:29:39'),
+(8, 'IELTS Band 6.5+', 'Khoá tăng tốc cho học viên mục tiêu band 6.5 trở lên.', 3900000.00, 'advanced', 'IELTS', 5, 6.50, 9.00, 7.00, 6, 'active', '2026-07-01 08:35:00', '2026-08-08 14:29:39'),
+(9, 'TOEIC Starter 450+', 'Khoá TOEIC cơ bản cho người mất gốc.', 2200000.00, 'beginner', 'TOEIC', 1, 0.00, 400.00, 450.00, 6, 'active', '2026-07-01 08:40:00', '2026-08-08 14:29:39'),
+(10, 'TOEIC 600+', 'Luyện TOEIC mốc 600 với ngữ pháp và từ vựng cốt lõi.', 2600000.00, 'intermediate', 'TOEIC', 2, 401.00, 550.00, 600.00, 6, 'active', '2026-07-01 08:45:00', '2026-08-08 14:29:39'),
+(11, 'TOEIC 650+ Grammar', 'Chuyên đề Part 5 va Part 6.', 2700000.00, 'intermediate', 'TOEIC', 3, 551.00, 650.00, 650.00, 6, 'active', '2026-07-01 08:50:00', '2026-08-08 14:29:39'),
+(12, 'TOEIC Listening Mastery', 'Chinh phục Part 1-4 với chiến lược nghe từ khóa.', 2900000.00, 'intermediate', 'TOEIC', 3, 551.00, 650.00, 650.00, 6, 'active', '2026-07-01 08:55:00', '2026-08-08 14:29:39'),
+(13, 'TOEIC Reading Speed', 'Luyện tăng tốc độ đọc Part 7.', 3000000.00, 'advanced', 'TOEIC', 4, 651.00, 750.00, 750.00, 6, 'active', '2026-07-01 09:00:00', '2026-08-08 14:29:39'),
+(14, 'TOEIC 750+', 'Khoá luyện điểm TOEIC 750+.', 3300000.00, 'advanced', 'TOEIC', 5, 751.00, 850.00, 850.00, 6, 'active', '2026-07-01 09:05:00', '2026-08-08 14:29:39'),
+(15, 'TOEIC Mock Test Lab', 'Làm đề TOEIC mô phỏng và chữa chi tiết.', 3400000.00, 'advanced', 'TOEIC', 4, 651.00, 750.00, 750.00, 6, 'active', '2026-07-01 09:10:00', '2026-08-08 14:29:39'),
+(16, 'TOEIC 900 Sprint', 'Khoá tăng tốc cho mục tiêu điểm cao TOEIC.', 3800000.00, 'advanced', 'TOEIC', 6, 851.00, 990.00, 900.00, 6, 'active', '2026-07-01 09:15:00', '2026-08-08 14:29:39'),
+(17, 'English Communication Basic', 'Giao tiếp hằng ngày cho người mới học.', 1800000.00, 'beginner', 'OTHER', 1, NULL, NULL, NULL, 6, 'active', '2026-07-01 09:20:00', '2026-07-01 09:20:00'),
+(18, 'English Communication Intermediate', 'Giao tiếp tình huống thực tế cho người đi làm.', 2100000.00, 'intermediate', 'OTHER', 1, NULL, NULL, NULL, 6, 'active', '2026-07-01 09:25:00', '2026-07-01 09:25:00'),
+(19, 'Business English Writing', 'Viết email, báo cáo và tin nhắn công việc bằng tiếng Anh.', 2600000.00, 'intermediate', 'OTHER', 1, NULL, NULL, NULL, 6, 'active', '2026-07-01 09:30:00', '2026-07-01 09:30:00'),
+(20, 'Pronunciation Clinic', 'Cải thiện phát âm và trọng âm theo IPA.', 1900000.00, 'beginner', 'OTHER', 1, NULL, NULL, NULL, 6, 'active', '2026-07-01 09:35:00', '2026-07-01 09:35:00');
 
 -- --------------------------------------------------------
 
@@ -210,49 +215,53 @@ CREATE TABLE IF NOT EXISTS `enrollments` (
   `enroll_id` int NOT NULL AUTO_INCREMENT,
   `user_id` int DEFAULT NULL,
   `class_id` int DEFAULT NULL,
+  `source_enroll_id` int DEFAULT NULL,
   `enrolled_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `approved_at` datetime DEFAULT NULL,
   `approved_by` int DEFAULT NULL,
   `approval_status` enum('pending','approved','rejected','cancelled','completed') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'pending',
+  `is_free_retake` tinyint(1) NOT NULL DEFAULT '0',
+  `retake_status` enum('none','requested','approved','rejected') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'none',
   PRIMARY KEY (`enroll_id`),
   KEY `fk_enrollments_user` (`user_id`),
   KEY `fk_enrollments_class` (`class_id`),
-  KEY `fk_enrollments_approver` (`approved_by`)
+  KEY `fk_enrollments_approver` (`approved_by`),
+  KEY `fk_enrollments_source_enroll` (`source_enroll_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Đang đổ dữ liệu cho bảng `enrollments`
 --
 
-INSERT INTO `enrollments` (`enroll_id`, `user_id`, `class_id`, `enrolled_at`, `approved_at`, `approved_by`, `approval_status`) VALUES
-(1, 1, 1, '2026-06-11 08:00:00', '2026-06-11 10:00:00', 2, 'approved'),
-(2, 1, 2, '2026-06-12 08:15:00', '2026-06-12 10:00:00', 2, 'pending'),
-(3, 1, 5, '2026-06-15 09:00:00', '2026-06-15 11:00:00', 2, 'approved'),
-(4, 1, 7, '2026-06-18 09:10:00', '2026-06-18 11:00:00', 2, 'approved'),
-(5, 1, 8, '2026-06-20 08:40:00', '2026-06-20 10:30:00', 2, 'pending'),
-(6, 1, 15, '2026-04-03 09:00:00', '2026-04-03 11:00:00', 2, 'completed'),
-(7, 1, 21, '2026-07-02 08:25:00', '2026-07-02 10:10:00', 2, 'approved'),
-(8, 1, 22, '2026-07-03 08:35:00', '2026-07-03 10:15:00', 2, 'approved'),
-(9, 1, 24, '2026-07-04 08:20:00', '2026-07-04 10:00:00', 2, 'pending'),
-(10, 9, 1, '2026-06-16 08:30:00', '2026-06-16 10:15:00', 2, 'approved'),
-(11, 9, 3, '2026-06-17 08:45:00', '2026-06-17 10:20:00', 2, 'pending'),
-(12, 9, 21, '2026-07-05 08:40:00', NULL, NULL, 'pending'),
-(13, 10, 4, '2026-06-19 08:30:00', '2026-06-19 10:15:00', 2, 'approved'),
-(14, 10, 5, '2026-06-20 08:35:00', '2026-06-20 10:20:00', 2, 'pending'),
-(15, 10, 15, '2026-04-04 08:45:00', '2026-04-04 10:30:00', 2, 'completed'),
-(16, 10, 16, '2026-04-06 09:10:00', '2026-04-06 10:50:00', 2, 'completed'),
-(17, 11, 7, '2026-06-23 08:30:00', '2026-06-23 10:15:00', 2, 'pending'),
-(18, 11, 8, '2026-06-24 08:30:00', '2026-06-24 10:15:00', 2, 'approved'),
-(19, 12, 22, '2026-07-01 09:00:00', NULL, NULL, 'pending'),
-(20, 12, 10, '2026-06-28 08:45:00', NULL, NULL, 'pending'),
-(21, 13, 13, '2026-07-01 08:30:00', NULL, NULL, 'pending'),
-(22, 13, 14, '2026-07-02 08:45:00', NULL, NULL, 'pending'),
-(23, 14, 17, '2026-04-12 08:30:00', '2026-04-12 10:00:00', 2, 'completed'),
-(24, 14, 18, '2026-04-15 08:30:00', '2026-04-15 10:00:00', 2, 'completed'),
-(25, 15, 19, '2026-04-18 08:30:00', '2026-04-18 10:00:00', 2, 'completed'),
-(26, 15, 24, '2026-07-06 08:20:00', '2026-07-06 10:00:00', 2, 'approved'),
-(27, 16, 22, '2026-07-07 08:15:00', '2026-07-07 10:05:00', 2, 'approved'),
-(28, 16, 23, '2026-07-07 08:50:00', NULL, NULL, 'pending');
+INSERT INTO `enrollments` (`enroll_id`, `user_id`, `class_id`, `source_enroll_id`, `enrolled_at`, `approved_at`, `approved_by`, `approval_status`, `is_free_retake`, `retake_status`) VALUES
+(1, 1, 1, NULL, '2026-06-11 08:00:00', '2026-06-11 10:00:00', 2, 'approved', 0, 'none'),
+(2, 1, 2, NULL, '2026-06-12 08:15:00', '2026-06-12 10:00:00', 2, 'pending', 0, 'none'),
+(3, 1, 5, NULL, '2026-06-15 09:00:00', '2026-06-15 11:00:00', 2, 'approved', 0, 'none'),
+(4, 1, 7, NULL, '2026-06-18 09:10:00', '2026-06-18 11:00:00', 2, 'approved', 0, 'none'),
+(5, 1, 8, NULL, '2026-06-20 08:40:00', '2026-06-20 10:30:00', 2, 'pending', 0, 'none'),
+(6, 1, 15, NULL, '2026-04-03 09:00:00', '2026-04-03 11:00:00', 2, 'completed', 0, 'none'),
+(7, 1, 21, NULL, '2026-07-02 08:25:00', '2026-07-02 10:10:00', 2, 'approved', 0, 'none'),
+(8, 1, 22, NULL, '2026-07-03 08:35:00', '2026-07-03 10:15:00', 2, 'approved', 0, 'none'),
+(9, 1, 24, NULL, '2026-07-04 08:20:00', '2026-07-04 10:00:00', 2, 'pending', 0, 'none'),
+(10, 9, 1, NULL, '2026-06-16 08:30:00', '2026-06-16 10:15:00', 2, 'approved', 0, 'none'),
+(11, 9, 3, NULL, '2026-06-17 08:45:00', '2026-06-17 10:20:00', 2, 'pending', 0, 'none'),
+(12, 9, 21, NULL, '2026-07-05 08:40:00', NULL, NULL, 'pending', 0, 'none'),
+(13, 10, 4, NULL, '2026-06-19 08:30:00', '2026-06-19 10:15:00', 2, 'approved', 0, 'none'),
+(14, 10, 5, NULL, '2026-06-20 08:35:00', '2026-06-20 10:20:00', 2, 'pending', 0, 'none'),
+(15, 10, 15, NULL, '2026-04-04 08:45:00', '2026-04-04 10:30:00', 2, 'completed', 0, 'none'),
+(16, 10, 16, NULL, '2026-04-06 09:10:00', '2026-04-06 10:50:00', 2, 'completed', 0, 'none'),
+(17, 11, 7, NULL, '2026-06-23 08:30:00', '2026-06-23 10:15:00', 2, 'pending', 0, 'none'),
+(18, 11, 8, NULL, '2026-06-24 08:30:00', '2026-06-24 10:15:00', 2, 'approved', 0, 'none'),
+(19, 12, 22, NULL, '2026-07-01 09:00:00', NULL, NULL, 'pending', 0, 'none'),
+(20, 12, 10, NULL, '2026-06-28 08:45:00', NULL, NULL, 'pending', 0, 'none'),
+(21, 13, 13, NULL, '2026-07-01 08:30:00', NULL, NULL, 'pending', 0, 'none'),
+(22, 13, 14, NULL, '2026-07-02 08:45:00', NULL, NULL, 'pending', 0, 'none'),
+(23, 14, 17, NULL, '2026-04-12 08:30:00', '2026-04-12 10:00:00', 2, 'completed', 0, 'none'),
+(24, 14, 18, NULL, '2026-04-15 08:30:00', '2026-04-15 10:00:00', 2, 'completed', 0, 'none'),
+(25, 15, 19, NULL, '2026-04-18 08:30:00', '2026-04-18 10:00:00', 2, 'completed', 0, 'none'),
+(26, 15, 24, NULL, '2026-07-06 08:20:00', '2026-07-06 10:00:00', 2, 'approved', 0, 'none'),
+(27, 16, 22, NULL, '2026-07-07 08:15:00', '2026-07-07 10:05:00', 2, 'approved', 0, 'none'),
+(28, 16, 23, NULL, '2026-07-07 08:50:00', NULL, NULL, 'pending', 0, 'none');
 
 -- --------------------------------------------------------
 
@@ -271,6 +280,7 @@ CREATE TABLE IF NOT EXISTS `mock_tests` (
   `total_score` decimal(5,2) DEFAULT '100.00',
   `attempts_allowed` int DEFAULT '1',
   `status` enum('draft','active','inactive','closed') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'draft',
+  `is_placement_pool` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`test_id`),
@@ -282,12 +292,12 @@ CREATE TABLE IF NOT EXISTS `mock_tests` (
 -- Đang đổ dữ liệu cho bảng `mock_tests`
 --
 
-INSERT INTO `mock_tests` (`test_id`, `title`, `description`, `type`, `part`, `time_limit`, `total_score`, `attempts_allowed`, `status`, `created_at`, `updated_at`) VALUES
-(1, 'IELTS Academic Mock 01 - Education and Cities', 'A full mock test used in the foundation and pre-intermediate IELTS streams. The passages focus on school meals, public parks, and recycled water systems.', 'IELTS', 'Full Test', 165, 9.00, 1, 'active', '2026-07-12 09:00:00', '2026-07-12 09:00:00'),
-(2, 'IELTS Academic Mock 02 - Health and Environment', 'A second academic full mock with listening notes on health campaigns, research passages on sleep, plastic reduction, and museum learning, plus two writing tasks.', 'IELTS', 'Full Test', 165, 9.00, 1, 'active', '2026-07-15 09:00:00', '2026-07-15 09:00:00'),
-(3, 'TOEIC Full Mock 01 - Workplace Communication Benchmark', 'A complete TOEIC-style paper covering office photos, customer calls, branch conversations, short talks, grammar review, text completion, and operational reading.', 'TOEIC', 'Full Test', 120, 990.00, 1, 'active', '2026-07-16 09:00:00', '2026-07-16 09:00:00'),
-(4, 'TOEIC Full Mock 02 - Office Operations Practice Set', 'A second full TOEIC-style paper with warehouse and recruitment themes, training talks, HR grammar, policy completion, and procurement reading.', 'TOEIC', 'Full Test', 120, 990.00, 2, 'active', '2026-07-17 09:00:00', '2026-07-17 09:00:00'),
-(5, 'IELTS Band 6.5 Weekend Simulation', 'A weekend simulation for the band 6.5 class with a balanced full test and writing topics on energy use and screen time in daily life.', 'IELTS', 'Full Test', 165, 9.00, 1, 'active', '2026-07-18 09:00:00', '2026-07-18 09:00:00');
+INSERT INTO `mock_tests` (`test_id`, `title`, `description`, `type`, `part`, `time_limit`, `total_score`, `attempts_allowed`, `status`, `is_placement_pool`, `created_at`, `updated_at`) VALUES
+(1, 'IELTS Academic Mock 01 - Education and Cities', 'A full mock test used in the foundation and pre-intermediate IELTS streams. The passages focus on school meals, public parks, and recycled water systems.', 'IELTS', 'Full Test', 165, 9.00, 1, 'active', 1, '2026-07-12 09:00:00', '2026-07-12 09:00:00'),
+(2, 'IELTS Academic Mock 02 - Health and Environment', 'A second academic full mock with listening notes on health campaigns, research passages on sleep, plastic reduction, and museum learning, plus two writing tasks.', 'IELTS', 'Full Test', 165, 9.00, 1, 'active', 1, '2026-07-15 09:00:00', '2026-07-15 09:00:00'),
+(3, 'TOEIC Full Mock 01 - Workplace Communication Benchmark', 'A complete TOEIC-style paper covering office photos, customer calls, branch conversations, short talks, grammar review, text completion, and operational reading.', 'TOEIC', 'Full Test', 120, 990.00, 1, 'active', 1, '2026-07-16 09:00:00', '2026-07-16 09:00:00'),
+(4, 'TOEIC Full Mock 02 - Office Operations Practice Set', 'A second full TOEIC-style paper with warehouse and recruitment themes, training talks, HR grammar, policy completion, and procurement reading.', 'TOEIC', 'Full Test', 120, 990.00, 2, 'active', 1, '2026-07-17 09:00:00', '2026-07-17 09:00:00'),
+(5, 'IELTS Band 6.5 Weekend Simulation', 'A weekend simulation for the band 6.5 class with a balanced full test and writing topics on energy use and screen time in daily life.', 'IELTS', 'Full Test', 165, 9.00, 1, 'active', 1, '2026-07-18 09:00:00', '2026-07-18 09:00:00');
 
 -- --------------------------------------------------------
 
@@ -390,6 +400,31 @@ INSERT INTO `notification_receivers` (`receiver_id`, `notification_id`, `user_id
 (9, 5, 1, 0, NULL),
 (10, 6, 1, 0, NULL),
 (11, 6, 11, 0, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Cấu trúc bảng cho bảng `official_exam_results`
+--
+
+DROP TABLE IF EXISTS `official_exam_results`;
+CREATE TABLE IF NOT EXISTS `official_exam_results` (
+  `official_result_id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `course_id` int NOT NULL,
+  `exam_type` enum('IELTS','TOEIC','OTHER') COLLATE utf8mb4_general_ci NOT NULL,
+  `score` decimal(6,2) NOT NULL,
+  `exam_date` date NOT NULL,
+  `certificate_url` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `note` text COLLATE utf8mb4_general_ci,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`official_result_id`),
+  KEY `idx_official_results_user` (`user_id`),
+  KEY `idx_official_results_course` (`course_id`),
+  KEY `idx_official_results_exam_type` (`exam_type`),
+  KEY `idx_official_results_exam_date` (`exam_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1612,6 +1647,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   `phone` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `address` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci,
   `role_id` int NOT NULL,
+  `placement_exam_type` enum('IELTS','TOEIC') COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `placement_score` decimal(6,2) DEFAULT NULL,
+  `placement_test_submission_id` int DEFAULT NULL,
+  `placement_completed_at` datetime DEFAULT NULL,
   `avata_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1621,37 +1660,38 @@ CREATE TABLE IF NOT EXISTS `users` (
   `education` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   UNIQUE KEY `Email` (`email`),
-  KEY `fk_users_roles` (`role_id`)
+  KEY `fk_users_roles` (`role_id`),
+  KEY `fk_users_placement_submission` (`placement_test_submission_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=153 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Đang đổ dữ liệu cho bảng `users`
 --
 
-INSERT INTO `users` (`user_id`, `full_name`, `email`, `password`, `phone`, `address`, `role_id`, `avata_url`, `created_at`, `updated_at`, `is_approved`, `status`, `experience`, `education`) VALUES
-(1, 'Lâm Huỳnh Ngọc Khánh', 'abc@gmail.com', '$2y$10$8ErG5FIU9k.QF7SfrW.MiOxmybCts.XV/fS3266jyFz7DmRW9StU6', NULL, NULL, 3, 'uploads/avatars/avatar_8_1762242848.jpg', '2025-11-04 14:53:27', '2026-03-22 20:08:28', 1, 'active', NULL, NULL),
-(2, 'Trần Bảo Long', 'admin@gmail.com', '$2y$10$2jGDQuXiI2XRk3.8WrFJau3AbXwnBdn2K5AwUGrZxATDcm6pFfUbS', NULL, NULL, 1, NULL, '2025-11-04 14:01:59', '2026-03-22 20:08:57', 1, 'active', NULL, NULL),
-(3, 'Văn Khắc Hải Toàn', 'abc1@gmail.com', '$2y$10$zeF8gflEbmei5EiOW.I0duVCVyOUJV2hDWEho0KJprfsobw5/Hpqy', NULL, NULL, 2, NULL, '2025-11-04 14:12:55', '2026-03-28 21:24:44', 1, 'active', NULL, NULL),
-(9, 'Nguyễn Minh Tân', 'minhtan1@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(10, 'Trần Hữu Khang', 'khangt2@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(11, 'Phạm Thị Mỹ Hạnh', 'myhanh3@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(12, 'Lê Nhật Nam', 'nhatnam4@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(13, 'Võ Phúc Thịnh', 'phucthinh5@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(14, 'Đặng Gia Huy', 'giahuy6@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(15, 'Huỳnh Diệu Ly', 'dieuly7@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(16, 'Ngô Thảo Nhi', 'thaonhi8@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(17, 'Đoàn Khánh Toàn', 'khanhtoan9@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(18, 'Hồ Hữu Đạt', 'huudat10@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(19, 'Nguyễn Văn Kiệt', 'vankiet11@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(20, 'Bùi Thị Trúc Mai', 'trucmai12@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
-(29, 'Nguyễn Thị Thu Hà', 'eng.teacher1@example.com', '$2y$10$eW9J8D3uQp6BzYtHh1mO2O06pZxN8pCkYq8yE4T2kHcV9FgR7xUuu', NULL, NULL, 2, 'uploads/avatars/eng1.jpg', '2025-11-20 22:52:59', '2025-11-20 22:52:59', 1, 'active', '7', 'Thạc sĩ Ngôn ngữ Anh'),
-(30, 'Trần Minh Hằng', 'eng.teacher2@example.com', '$2y$10$Gd4Ue8KpRf0La2TsWb3Xv1FgQn7OyHjSu3MpXl0Ht2Aq9PwJm5T1K', NULL, NULL, 2, 'uploads/avatars/eng2.jpg', '2025-11-20 22:52:59', '2025-11-20 22:52:59', 1, 'active', '6', 'Cử nhân Ngôn ngữ Anh'),
-(31, 'Phạm Bảo Long', 'eng.teacher3@example.com', '$2y$10$Qo3Ld9PwTg7Na5JkZu8Qw1NhCx3TyHoBu6RkGf3Am2Ye0QpCx9KLa', NULL, NULL, 2, 'uploads/avatars/eng3.jpg', '2025-11-20 22:52:59', '2025-11-20 22:52:59', 1, 'active', '10', 'Thạc sĩ TESOL'),
-(139, 'Lý Thành Lập', 'abcd@gmail.com', '$2y$12$CReDyoeRWL1LtVkaVaBzwOT9CR7wtk8pPttelfcHvVeJRKjHKhHWm', NULL, NULL, 3, NULL, '2025-11-21 23:37:05', '2025-11-21 23:37:05', 1, 'active', NULL, NULL),
-(141, 'Hoàng Nhật Trường', 'zayluon@gmail.com', '$2y$12$t3rMzddW81tjOy86UQMWbu5CMDw.HP91XQJcmY7OUN072UXHN57Um', NULL, NULL, 1, NULL, '2025-12-01 00:14:45', '2025-12-01 00:15:32', 1, 'active', NULL, NULL),
-(144, 'Quang Nè', 'dh52201675@student.stu.edu.vn', '$2y$12$KT19VIARHCwJMZL5/TyIA.GYlkjB1yZcOCWLYmibJyf0TAdea80u.', NULL, NULL, 3, NULL, '2025-12-02 10:57:03', '2025-12-02 10:57:03', 1, 'active', NULL, NULL),
-(145, 'Hoàng Nhật Trường', 'long0961511354@gmail.com', '$2y$12$Hcs3tHM8Rfg/RnYNOEChGuAu0FHbA4bbrcneGwf7mTP.eMJYsAheq', NULL, NULL, 2, NULL, '2025-12-05 23:13:26', '2025-12-05 23:14:02', 1, 'active', NULL, NULL),
-(147, 'A ha ha', 'asda@gmail.com', '$2a$10$L1ZUwZJeMGhnPtqEWfbztenaMsyDTjwpiqKNk25gOOwBl5C3JNhh.', NULL, NULL, 2, NULL, '2026-07-17 22:07:59', '2026-07-17 22:07:59', 0, 'active', NULL, NULL);
+INSERT INTO `users` (`user_id`, `full_name`, `email`, `password`, `phone`, `address`, `role_id`, `placement_exam_type`, `placement_score`, `placement_test_submission_id`, `placement_completed_at`, `avata_url`, `created_at`, `updated_at`, `is_approved`, `status`, `experience`, `education`) VALUES
+(1, 'Lâm Huỳnh Ngọc Khánh', 'abc@gmail.com', '$2y$10$8ErG5FIU9k.QF7SfrW.MiOxmybCts.XV/fS3266jyFz7DmRW9StU6', NULL, NULL, 3, NULL, NULL, NULL, NULL, 'uploads/avatars/avatar_8_1762242848.jpg', '2025-11-04 14:53:27', '2026-03-22 20:08:28', 1, 'active', NULL, NULL),
+(2, 'Trần Bảo Long', 'admin@gmail.com', '$2y$10$2jGDQuXiI2XRk3.8WrFJau3AbXwnBdn2K5AwUGrZxATDcm6pFfUbS', NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-11-04 14:01:59', '2026-03-22 20:08:57', 1, 'active', NULL, NULL),
+(3, 'Văn Khắc Hải Toàn', 'abc1@gmail.com', '$2y$10$zeF8gflEbmei5EiOW.I0duVCVyOUJV2hDWEho0KJprfsobw5/Hpqy', NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '2025-11-04 14:12:55', '2026-03-28 21:24:44', 1, 'active', NULL, NULL),
+(9, 'Nguyễn Minh Tân', 'minhtan1@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(10, 'Trần Hữu Khang', 'khangt2@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(11, 'Phạm Thị Mỹ Hạnh', 'myhanh3@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(12, 'Lê Nhật Nam', 'nhatnam4@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(13, 'Võ Phúc Thịnh', 'phucthinh5@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(14, 'Đặng Gia Huy', 'giahuy6@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(15, 'Huỳnh Diệu Ly', 'dieuly7@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(16, 'Ngô Thảo Nhi', 'thaonhi8@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(17, 'Đoàn Khánh Toàn', 'khanhtoan9@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(18, 'Hồ Hữu Đạt', 'huudat10@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(19, 'Nguyễn Văn Kiệt', 'vankiet11@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(20, 'Bùi Thị Trúc Mai', 'trucmai12@gmail.com', '$2y$10$abc123456789abcdefghijklmno1234567890pqrs', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-20 22:50:09', '2025-11-20 22:50:09', 1, 'active', NULL, NULL),
+(29, 'Nguyễn Thị Thu Hà', 'eng.teacher1@example.com', '$2y$10$eW9J8D3uQp6BzYtHh1mO2O06pZxN8pCkYq8yE4T2kHcV9FgR7xUuu', NULL, NULL, 2, NULL, NULL, NULL, NULL, 'uploads/avatars/eng1.jpg', '2025-11-20 22:52:59', '2025-11-20 22:52:59', 1, 'active', '7', 'Thạc sĩ Ngôn ngữ Anh'),
+(30, 'Trần Minh Hằng', 'eng.teacher2@example.com', '$2y$10$Gd4Ue8KpRf0La2TsWb3Xv1FgQn7OyHjSu3MpXl0Ht2Aq9PwJm5T1K', NULL, NULL, 2, NULL, NULL, NULL, NULL, 'uploads/avatars/eng2.jpg', '2025-11-20 22:52:59', '2025-11-20 22:52:59', 1, 'active', '6', 'Cử nhân Ngôn ngữ Anh'),
+(31, 'Phạm Bảo Long', 'eng.teacher3@example.com', '$2y$10$Qo3Ld9PwTg7Na5JkZu8Qw1NhCx3TyHoBu6RkGf3Am2Ye0QpCx9KLa', NULL, NULL, 2, NULL, NULL, NULL, NULL, 'uploads/avatars/eng3.jpg', '2025-11-20 22:52:59', '2025-11-20 22:52:59', 1, 'active', '10', 'Thạc sĩ TESOL'),
+(139, 'Lý Thành Lập', 'abcd@gmail.com', '$2y$12$CReDyoeRWL1LtVkaVaBzwOT9CR7wtk8pPttelfcHvVeJRKjHKhHWm', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-11-21 23:37:05', '2025-11-21 23:37:05', 1, 'active', NULL, NULL),
+(141, 'Hoàng Nhật Trường', 'zayluon@gmail.com', '$2y$12$t3rMzddW81tjOy86UQMWbu5CMDw.HP91XQJcmY7OUN072UXHN57Um', NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, '2025-12-01 00:14:45', '2025-12-01 00:15:32', 1, 'active', NULL, NULL),
+(144, 'Quang Nè', 'dh52201675@student.stu.edu.vn', '$2y$12$KT19VIARHCwJMZL5/TyIA.GYlkjB1yZcOCWLYmibJyf0TAdea80u.', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-12-02 10:57:03', '2025-12-02 10:57:03', 1, 'active', NULL, NULL),
+(145, 'Hoàng Nhật Trường', 'long0961511354@gmail.com', '$2y$12$Hcs3tHM8Rfg/RnYNOEChGuAu0FHbA4bbrcneGwf7mTP.eMJYsAheq', NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '2025-12-05 23:13:26', '2025-12-05 23:14:02', 1, 'active', NULL, NULL),
+(147, 'A ha ha', 'asda@gmail.com', '$2a$10$L1ZUwZJeMGhnPtqEWfbztenaMsyDTjwpiqKNk25gOOwBl5C3JNhh.', NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '2026-07-17 22:07:59', '2026-07-17 22:07:59', 0, 'active', NULL, NULL);
 
 --
 -- Các ràng buộc cho các bảng đã đổ
@@ -1683,6 +1723,7 @@ ALTER TABLE `classes`
 ALTER TABLE `enrollments`
   ADD CONSTRAINT `fk_enrollments_approver` FOREIGN KEY (`approved_by`) REFERENCES `users` (`user_id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_enrollments_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`class_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_enrollments_source_enroll` FOREIGN KEY (`source_enroll_id`) REFERENCES `enrollments` (`enroll_id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_enrollments_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
@@ -1704,6 +1745,13 @@ ALTER TABLE `notifications`
 ALTER TABLE `notification_receivers`
   ADD CONSTRAINT `fk_notification_receivers_notification` FOREIGN KEY (`notification_id`) REFERENCES `notifications` (`notification_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_notification_receivers_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Các ràng buộc cho bảng `official_exam_results`
+--
+ALTER TABLE `official_exam_results`
+  ADD CONSTRAINT `fk_official_exam_results_course` FOREIGN KEY (`course_id`) REFERENCES `courses` (`course_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_official_exam_results_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Các ràng buộc cho bảng `payments`
@@ -1756,6 +1804,7 @@ ALTER TABLE `test_classes`
 -- Các ràng buộc cho bảng `users`
 --
 ALTER TABLE `users`
+  ADD CONSTRAINT `fk_users_placement_submission` FOREIGN KEY (`placement_test_submission_id`) REFERENCES `mock_test_submissions` (`test_submission_id`) ON DELETE SET NULL ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_users_roles` FOREIGN KEY (`role_id`) REFERENCES `roles` (`role_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 COMMIT;
 

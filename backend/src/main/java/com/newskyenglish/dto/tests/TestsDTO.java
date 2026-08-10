@@ -1,9 +1,12 @@
 package com.newskyenglish.dto.tests;
 
+import com.newskyenglish.dto.courses.CoursesDTO;
+import com.newskyenglish.dto.users.UsersDTO;
 import com.newskyenglish.model.TestSubmissions;
 import com.newskyenglish.model.QuestionGroups;
 import com.newskyenglish.model.Questions;
 import com.newskyenglish.model.Tests;
+import com.newskyenglish.model.Users;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -40,6 +43,7 @@ public class TestsDTO {
         private BigDecimal totalScore;
         private Integer attemptsAllowed;
         private String status;
+        private Boolean placementPool;
         private List<GroupRequest> groups;
         private List<QuestionRequest> questions;
     }
@@ -59,6 +63,7 @@ public class TestsDTO {
         private BigDecimal totalScore;
         private Integer attemptsAllowed;
         private String status;
+        private Boolean placementPool;
         private List<GroupRequest> groups;
         private List<QuestionRequest> questions;
     }
@@ -113,6 +118,7 @@ public class TestsDTO {
         private BigDecimal totalScore;
         private Integer attemptsAllowed;
         private String status;
+        private Boolean placementPool;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
@@ -130,6 +136,7 @@ public class TestsDTO {
                     .totalScore(test.getTotalScore())
                     .attemptsAllowed(test.getAttemptsAllowed())
                     .status(test.getStatus())
+                    .placementPool(Boolean.TRUE.equals(test.getPlacementPool()))
                     .createdAt(test.getCreatedAt())
                     .updatedAt(test.getUpdatedAt())
                     .build();
@@ -314,6 +321,28 @@ public class TestsDTO {
         private Integer correct;
         private Integer total;
         private BigDecimal score;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PlacementStatusResponse {
+        private Users.PlacementExamType placementExamType;
+        private BigDecimal placementScore;
+        private Long placementTestSubmissionId;
+        private LocalDateTime placementCompletedAt;
+        private boolean placementCompleted;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class PlacementSubmitResponse {
+        private SubmitResultResponse result;
+        private UsersDTO.Response user;
+        private CoursesDTO.RecommendationBundleResponse recommendations;
     }
 
     @Data

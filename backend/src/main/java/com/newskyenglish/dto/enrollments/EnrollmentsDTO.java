@@ -39,6 +39,15 @@ public class EnrollmentsDTO {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    public static class FreeRetakeRequest {
+        @NotNull(message = "Thiếu classId")
+        private Long classId;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
     public static class UpdateStatusRequest {
         @NotBlank(message = "Thiếu trạng thái enrollment")
         private String status;
@@ -56,10 +65,13 @@ public class EnrollmentsDTO {
         private LocalDateTime enrollDate;
         private LocalDateTime approvedDate;
         private Long approvedBy;
+        private Long sourceEnrollId;
         private Boolean paid;
         private String paymentStatus;
         private String paymentMethod;
         private Enrollments.Status status;
+        private Boolean freeRetake;
+        private Enrollments.RetakeStatus retakeStatus;
 
         // Dùng cho các endpoint enrollment cơ bản chưa cần join thêm dữ liệu.
         public static Response fromEntity(Enrollments enrollment,
@@ -75,10 +87,13 @@ public class EnrollmentsDTO {
                     .enrollDate(enrollment.getEnrollDate())
                     .approvedDate(enrollment.getApprovedDate())
                     .approvedBy(enrollment.getApprovedBy())
+                    .sourceEnrollId(enrollment.getSourceEnrollId())
                     .paid(paid)
                     .paymentStatus(paymentStatus)
                     .paymentMethod(paymentMethod)
                     .status(enrollment.getStatus())
+                    .freeRetake(Boolean.TRUE.equals(enrollment.getFreeRetake()))
+                    .retakeStatus(enrollment.getRetakeStatus())
                     .build();
         }
     }
@@ -98,6 +113,9 @@ public class EnrollmentsDTO {
         private Boolean paid;
         private String paymentStatus;
         private String paymentMethod;
+        private Long sourceEnrollId;
+        private Boolean freeRetake;
+        private Enrollments.RetakeStatus retakeStatus;
         private String userName;
         private String userEmail;
         private String courseName;
@@ -123,6 +141,9 @@ public class EnrollmentsDTO {
                     .paid(paid)
                     .paymentStatus(paymentStatus)
                     .paymentMethod(paymentMethod)
+                    .sourceEnrollId(enrollment.getSourceEnrollId())
+                    .freeRetake(Boolean.TRUE.equals(enrollment.getFreeRetake()))
+                    .retakeStatus(enrollment.getRetakeStatus())
                     .userName(user != null ? user.getName() : null)
                     .userEmail(user != null ? user.getEmail() : null)
                     .courseName(course != null ? course.getTitle() : null)
@@ -147,6 +168,9 @@ public class EnrollmentsDTO {
         private Boolean paid;
         private String paymentStatus;
         private String paymentMethod;
+        private Long sourceEnrollId;
+        private Boolean freeRetake;
+        private Enrollments.RetakeStatus retakeStatus;
         private String courseName;
         private Courses.ExamType examType;
         private String className;
@@ -154,6 +178,8 @@ public class EnrollmentsDTO {
         private LocalDate endDate;
         private Integer maxStudents;
         private Integer currentStudents;
+        private java.math.BigDecimal courseTargetScore;
+        private Integer freeRetakeMonths;
 
         // Dùng cho dashboard và catalog của học viên với thông tin course/class đã enrich.
         public static StudentResponse fromEntity(Enrollments enrollment,
@@ -174,6 +200,9 @@ public class EnrollmentsDTO {
                     .paid(paid)
                     .paymentStatus(paymentStatus)
                     .paymentMethod(paymentMethod)
+                    .sourceEnrollId(enrollment.getSourceEnrollId())
+                    .freeRetake(Boolean.TRUE.equals(enrollment.getFreeRetake()))
+                    .retakeStatus(enrollment.getRetakeStatus())
                     .courseName(course != null ? course.getTitle() : null)
                     .examType(course != null ? course.getExamType() : null)
                     .className(classRoom != null ? classRoom.getName() : null)
@@ -181,6 +210,8 @@ public class EnrollmentsDTO {
                     .endDate(classRoom != null ? classRoom.getEndDate() : null)
                     .maxStudents(classRoom != null ? classRoom.getMaxStudents() : null)
                     .currentStudents(currentStudents)
+                    .courseTargetScore(course != null ? course.getTargetScore() : null)
+                    .freeRetakeMonths(course != null ? course.getFreeRetakeMonths() : null)
                     .build();
         }
     }
@@ -198,6 +229,9 @@ public class EnrollmentsDTO {
         private Boolean paid;
         private String paymentStatus;
         private String paymentMethod;
+        private Long sourceEnrollId;
+        private Boolean freeRetake;
+        private Enrollments.RetakeStatus retakeStatus;
         private LocalDateTime enrollDate;
         private String userName;
         private String userEmail;
@@ -222,6 +256,9 @@ public class EnrollmentsDTO {
                     .paid(paid)
                     .paymentStatus(paymentStatus)
                     .paymentMethod(paymentMethod)
+                    .sourceEnrollId(enrollment.getSourceEnrollId())
+                    .freeRetake(Boolean.TRUE.equals(enrollment.getFreeRetake()))
+                    .retakeStatus(enrollment.getRetakeStatus())
                     .enrollDate(enrollment.getEnrollDate())
                     .userName(user != null ? user.getName() : null)
                     .userEmail(user != null ? user.getEmail() : null)

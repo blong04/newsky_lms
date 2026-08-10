@@ -5,6 +5,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "users")
@@ -35,6 +36,19 @@ public class Users {
     @Column(name = "role_id")
     private Integer roleId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "placement_exam_type")
+    private PlacementExamType placementExamType;
+
+    @Column(name = "placement_score", precision = 6, scale = 2)
+    private BigDecimal placementScore;
+
+    @Column(name = "placement_test_submission_id")
+    private Long placementTestSubmissionId;
+
+    @Column(name = "placement_completed_at")
+    private LocalDateTime placementCompletedAt;
+
     @Column(name = "avata_url", length = 255)
     private String avatarUrl;
 
@@ -62,6 +76,7 @@ public class Users {
     private String education;
 
     public enum Status { active, inactive, suspended }
+    public enum PlacementExamType { IELTS, TOEIC }
 
     // Chủ động gán thời gian mặc định để response sau khi tạo mới luôn có mốc tạo/cập nhật.
     @PrePersist

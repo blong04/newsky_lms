@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Outlet, NavLink, useNavigate } from "react-router-dom";
+import { Outlet, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import ProfileModal from "../shared/ProfileModal";
 import toast from "react-hot-toast";
@@ -18,6 +18,7 @@ const navItems = [
 export default function StudentLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [profileTab, setProfileTab] = useState("info");
@@ -32,6 +33,16 @@ export default function StudentLayout() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  useEffect(() => {
+    // Học viên mới phải hoàn thành placement trước khi vào các màn chức năng khác.
+    if (!user || user.roleId !== 3) {
+      return;
+    }
+    if (!user.placementCompletedAt && location.pathname !== "/student/placement") {
+      navigate("/student/placement", { replace: true });
+    }
+  }, [location.pathname, navigate, user]);
 
   const handleLogout = () => {
     logout();

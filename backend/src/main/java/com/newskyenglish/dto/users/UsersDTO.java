@@ -3,13 +3,13 @@ package com.newskyenglish.dto.users;
 import com.newskyenglish.model.Users;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 // Gom request/response liên quan đến người dùng và hồ sơ cá nhân.
@@ -36,8 +36,7 @@ public class UsersDTO {
         private Integer roleId;
         private String experience;
         private String education;
-        @Size(min = 4, max = 4, message = "Mật khẩu phải đúng 4 ký tự")
-        @Pattern(regexp = "\\d{4}", message = "Mật khẩu phải gồm đúng 4 chữ số")
+        @Size(min = 6, message = "Mật khẩu phải có ít nhất 6 ký tự")
         private String password;
     }
 
@@ -73,8 +72,7 @@ public class UsersDTO {
         private String currentPassword;
 
         @NotBlank(message = "Thiếu mật khẩu mới")
-        @Size(min = 4, max = 4, message = "Mật khẩu mới phải đúng 4 ký tự")
-        @Pattern(regexp = "\\d{4}", message = "Mật khẩu mới phải gồm đúng 4 chữ số")
+        @Size(min = 6, message = "Mật khẩu mới phải có ít nhất 6 ký tự")
         private String newPassword;
     }
 
@@ -95,6 +93,10 @@ public class UsersDTO {
         private Boolean approved;
         private String experience;
         private String education;
+        private Users.PlacementExamType placementExamType;
+        private BigDecimal placementScore;
+        private Long placementTestSubmissionId;
+        private LocalDateTime placementCompletedAt;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
 
@@ -118,6 +120,10 @@ public class UsersDTO {
                     .approved(user.getApproved())
                     .experience(user.getExperience())
                     .education(user.getEducation())
+                    .placementExamType(user.getPlacementExamType())
+                    .placementScore(user.getPlacementScore())
+                    .placementTestSubmissionId(user.getPlacementTestSubmissionId())
+                    .placementCompletedAt(user.getPlacementCompletedAt())
                     .createdAt(user.getCreatedAt())
                     .updatedAt(user.getUpdatedAt())
                     .build();

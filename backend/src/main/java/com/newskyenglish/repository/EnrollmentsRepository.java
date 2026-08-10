@@ -12,5 +12,6 @@ public interface EnrollmentsRepository extends JpaRepository<Enrollments, Long> 
     List<Enrollments> findByClassId(Long classId);
     List<Enrollments> findByClassIdIn(List<Long> classIds);
     List<Enrollments> findByStatus(Enrollments.Status status);
+    List<Enrollments> findBySourceEnrollId(Long sourceEnrollId);
 }
 

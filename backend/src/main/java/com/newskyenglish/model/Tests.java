@@ -44,6 +44,10 @@ public class Tests {
     @Column(name = "status", length = 50, nullable = false)
     private String status;
 
+    @Column(name = "is_placement_pool")
+    @Builder.Default
+    private Boolean placementPool = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -64,7 +64,7 @@ public class AuthService {
     // Bước 1: nhận thông tin đăng ký và gửi OTP tới email người dùng.
     public String requestRegistrationOtp(RegisterOtpRequest request) {
         String normalizedEmail = normalizeEmail(request.getEmail());
-        validateNumericPassword(request.getPassword());
+        validatePassword(request.getPassword());
         if (normalizedEmail.isBlank()) {
             throw new BadRequestException("Email không được để trống");
         }
@@ -114,10 +114,10 @@ public class AuthService {
                 : "Đăng ký thành công! Tài khoản đã được tạo nhưng hệ thống chưa gửi được email thông báo.";
     }
 
-    // Đảm bảo mật khẩu đăng ký chỉ gồm đúng 4 chữ số.
-    private void validateNumericPassword(String password) {
-        if (password == null || !password.matches("\\d{4}")) {
-            throw new BadRequestException("Mật khẩu phải gồm đúng 4 chữ số");
+    // Đảm bảo mật khẩu đăng ký đủ tối thiểu 6 ký tự để tránh quá ngắn.
+    private void validatePassword(String password) {
+        if (password == null || password.length() < 6) {
+            throw new BadRequestException("Mật khẩu phải có ít nhất 6 ký tự");
         }
     }
 

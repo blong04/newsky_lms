@@ -63,8 +63,8 @@ export default function ProfileModal({ onClose, initialTab = "info" }) {
       toast.error("Mật khẩu xác nhận không khớp");
       return;
     }
-    if (!/^\d{4}$/.test(pwForm.newPassword)) {
-      toast.error("Mật khẩu mới phải gồm đúng 4 chữ số");
+    if (pwForm.newPassword.length < 6) {
+      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự");
       return;
     }
     setLoading(true);
@@ -203,7 +203,7 @@ export default function ProfileModal({ onClose, initialTab = "info" }) {
                 type="password"
                 value={pwForm.newPassword}
                 onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })}
-                placeholder="Gồm đúng 4 chữ số"
+                placeholder="Tối thiểu 6 ký tự"
               />
             </div>
             <div className="pform-group">

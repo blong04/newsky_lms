@@ -3,6 +3,10 @@ import { unwrapData } from "../utils/http";
 
 export const testService = {
   getAll: (params = {}) => api.get("/tests", { params }).then(unwrapData),
+  getPlacementStatus: () => api.get("/tests/placement/status").then(unwrapData),
+  getRandomPlacementTest: (type) => api.get("/tests/placement/random", { params: { type } }).then(unwrapData),
+  getPlacementTest: (testId) => api.get(`/tests/placement/${testId}`).then(unwrapData),
+  submitPlacementTest: (testId, payload) => api.post(`/tests/placement/${testId}/submit`, payload).then(unwrapData),
   getByClass: (classId) => api.get(`/tests/class/${classId}`).then(unwrapData),
   getById: (testId) => api.get(`/tests/${testId}`).then(unwrapData),
   getFullTest: (testId) => api.get(`/tests/${testId}/full`).then(unwrapData),

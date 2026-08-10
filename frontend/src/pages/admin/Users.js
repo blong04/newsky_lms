@@ -110,8 +110,8 @@ export default function AdminUsers() {
       toast.error("Vui lòng nhập họ tên và email");
       return;
     }
-    if (form.password && !/^\d{4}$/.test(form.password)) {
-      toast.error("Mật khẩu phải gồm đúng 4 chữ số");
+    if (form.password && form.password.length < 6) {
+      toast.error("Mật khẩu phải có ít nhất 6 ký tự");
       return;
     }
 
@@ -303,7 +303,7 @@ export default function AdminUsers() {
               <div className="form-group">
                 <label>Mật khẩu</label>
                 <input type="password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
-                <p className="admin-users__tiny admin-users__muted">Để trống để backend dùng mật khẩu mặc định 1234, hoặc nhập đúng 4 chữ số.</p>
+                <p className="admin-users__tiny admin-users__muted">Để trống để backend dùng mật khẩu mặc định 123456, hoặc nhập mật khẩu có ít nhất 6 ký tự.</p>
               </div>
               <div className="form-group">
                 <label>Vai trò</label>

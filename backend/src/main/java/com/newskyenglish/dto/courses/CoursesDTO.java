@@ -1,5 +1,6 @@
 package com.newskyenglish.dto.courses;
 
+import com.newskyenglish.model.Users;
 import com.newskyenglish.model.Courses;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 // Gom request/response cho khóa học.
 public class CoursesDTO {
@@ -28,6 +30,11 @@ public class CoursesDTO {
         private BigDecimal price;
         private Courses.Level level;
         private Courses.ExamType examType;
+        private Integer levelRank;
+        private BigDecimal recommendedScoreMin;
+        private BigDecimal recommendedScoreMax;
+        private BigDecimal targetScore;
+        private Integer freeRetakeMonths;
         private Courses.Status status;
     }
 
@@ -43,6 +50,11 @@ public class CoursesDTO {
         private BigDecimal price;
         private Courses.Level level;
         private Courses.ExamType examType;
+        private Integer levelRank;
+        private BigDecimal recommendedScoreMin;
+        private BigDecimal recommendedScoreMax;
+        private BigDecimal targetScore;
+        private Integer freeRetakeMonths;
         private Courses.Status status;
     }
 
@@ -57,6 +69,11 @@ public class CoursesDTO {
         private BigDecimal price;
         private Courses.Level level;
         private Courses.ExamType examType;
+        private Integer levelRank;
+        private BigDecimal recommendedScoreMin;
+        private BigDecimal recommendedScoreMax;
+        private BigDecimal targetScore;
+        private Integer freeRetakeMonths;
         private Courses.Status status;
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
@@ -70,11 +87,64 @@ public class CoursesDTO {
                     .price(course.getPrice())
                     .level(course.getLevel())
                     .examType(course.getExamType())
+                    .levelRank(course.getLevelRank())
+                    .recommendedScoreMin(course.getRecommendedScoreMin())
+                    .recommendedScoreMax(course.getRecommendedScoreMax())
+                    .targetScore(course.getTargetScore())
+                    .freeRetakeMonths(course.getFreeRetakeMonths())
                     .status(course.getStatus())
                     .createdAt(course.getCreatedAt())
                     .updatedAt(course.getUpdatedAt())
                     .build();
         }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RecommendationItem {
+        private Long id;
+        private String title;
+        private String description;
+        private BigDecimal price;
+        private Courses.Level level;
+        private Courses.ExamType examType;
+        private Integer levelRank;
+        private BigDecimal recommendedScoreMin;
+        private BigDecimal recommendedScoreMax;
+        private BigDecimal targetScore;
+        private Integer freeRetakeMonths;
+        private String recommendationReason;
+
+        public static RecommendationItem fromEntity(Courses course, String recommendationReason) {
+            return RecommendationItem.builder()
+                    .id(course.getId())
+                    .title(course.getTitle())
+                    .description(course.getDescription())
+                    .price(course.getPrice())
+                    .level(course.getLevel())
+                    .examType(course.getExamType())
+                    .levelRank(course.getLevelRank())
+                    .recommendedScoreMin(course.getRecommendedScoreMin())
+                    .recommendedScoreMax(course.getRecommendedScoreMax())
+                    .targetScore(course.getTargetScore())
+                    .freeRetakeMonths(course.getFreeRetakeMonths())
+                    .recommendationReason(recommendationReason)
+                    .build();
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class RecommendationBundleResponse {
+        private Users.PlacementExamType placementExamType;
+        private BigDecimal placementScore;
+        private boolean placementCompleted;
+        private List<RecommendationItem> recommendedCourses;
+        private List<RecommendationItem> nextLevelCourses;
     }
 }
 

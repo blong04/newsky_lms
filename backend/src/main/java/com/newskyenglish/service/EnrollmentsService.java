@@ -7,11 +7,13 @@ import com.newskyenglish.exception.ResourceNotFoundException;
 import com.newskyenglish.model.Classes;
 import com.newskyenglish.model.Courses;
 import com.newskyenglish.model.Enrollments;
+import com.newskyenglish.model.OfficialExamResults;
 import com.newskyenglish.model.Payments;
 import com.newskyenglish.model.Users;
 import com.newskyenglish.repository.ClassesRepository;
 import com.newskyenglish.repository.CoursesRepository;
 import com.newskyenglish.repository.EnrollmentsRepository;
+import com.newskyenglish.repository.OfficialExamResultsRepository;
 import com.newskyenglish.repository.PaymentsRepository;
 import com.newskyenglish.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ public class EnrollmentsService {
     private final PaymentsRepository paymentsRepository;
     private final CurrentUserService currentUserService;
     private final PaymentsService paymentsService;
+    private final OfficialExamResultsRepository officialExamResultsRepository;
 
     @Transactional(readOnly = true)
     // Lấy danh sách toàn bộ đăng ký học.
@@ -355,6 +358,76 @@ public class EnrollmentsService {
         );
     }
 
+    @Transactional
+    // Tạo yêu cầu học lại miễn phí dựa trên enrollment gốc và kết quả thi chính thức mới nhất.
+    public EnrollmentsDTO.StudentResponse requestFreeRetake(Long sourceEnrollmentId,
+                                                            EnrollmentsDTO.FreeRetakeRequest request,
+                                                            String authorizationHeader) {
+        Long userId = currentUserService.extractUserId(authorizationHeader);
+        Enrollments sourceEnrollment = findEnrollment(sourceEnrollmentId);
+        if (!userId.equals(sourceEnrollment.getUserId())) {
+            throw new ForbiddenException("Bạn không có quyền yêu cầu học lại cho đăng ký này");
+        }
+        if (sourceEnrollment.getSourceEnrollId() != null) {
+            throw new BadRequestException("Chỉ có thể yêu cầu học lại từ enrollment gốc");
+        }
+
+        Classes sourceClass = classesRepository.findById(sourceEnrollment.getClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học gốc"));
+        Courses course = coursesRepository.findById(sourceClass.getCourseId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khóa học"));
+
+        OfficialExamResults latestOfficialResult = officialExamResultsRepository
+                .findFirstByUserIdAndCourseIdOrderByExamDateDesc(userId, course.getId())
+                .orElseThrow(() -> new BadRequestException("Bạn cần nhập kết quả thi chính thức trước khi yêu cầu học lại"));
+        if (!isEligibleForFreeRetake(sourceEnrollment, sourceClass, course, latestOfficialResult)) {
+            throw new BadRequestException("Bạn không đủ điều kiện học lại miễn phí cho khóa học này");
+        }
+
+        boolean alreadyRequested = enrollmentsRepository.findBySourceEnrollId(sourceEnrollmentId).stream()
+                .anyMatch(enrollment -> enrollment.getStatus() != Enrollments.Status.cancelled
+                        && enrollment.getStatus() != Enrollments.Status.rejected);
+        if (alreadyRequested) {
+            throw new BadRequestException("Bạn đã có yêu cầu học lại miễn phí cho khóa học này");
+        }
+
+        Classes targetClass = classesRepository.findById(request.getClassId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học muốn học lại"));
+        if (!Objects.equals(targetClass.getCourseId(), course.getId())) {
+            throw new BadRequestException("Lớp học lại phải thuộc cùng khóa học");
+        }
+
+        int currentStudents = resolveCurrentStudentCount(targetClass.getId());
+        if (targetClass.getMaxStudents() != null && currentStudents >= targetClass.getMaxStudents()) {
+            throw new BadRequestException("Lớp học lại đã đủ sĩ số");
+        }
+
+        Enrollments retakeEnrollment = enrollmentsRepository.save(
+                Enrollments.builder()
+                        .userId(userId)
+                        .classId(targetClass.getId())
+                        .sourceEnrollId(sourceEnrollmentId)
+                        .enrollDate(LocalDateTime.now())
+                        .status(Enrollments.Status.pending)
+                        .freeRetake(true)
+                        .retakeStatus(Enrollments.RetakeStatus.requested)
+                        .build()
+        );
+
+        Map<Long, Classes> classesById = buildClassMap(Set.of(targetClass.getId()));
+        Map<Long, Courses> coursesById = buildCourseMap(Set.of(course.getId()));
+        Map<Long, Payments> paymentsByEnrollmentId = buildPaymentMap(List.of(retakeEnrollment));
+        return EnrollmentsDTO.StudentResponse.fromEntity(
+                retakeEnrollment,
+                course,
+                targetClass,
+                resolveCurrentStudentCount(targetClass.getId()),
+                isEnrollmentPaid(retakeEnrollment, classesById, coursesById, paymentsByEnrollmentId),
+                resolvePaymentStatus(retakeEnrollment, classesById, coursesById, paymentsByEnrollmentId),
+                resolvePaymentMethod(retakeEnrollment, paymentsByEnrollmentId)
+        );
+    }
+
     // Sinh thông báo sau khi học viên gửi đăng ký từ frontend.
     public String getEnrollmentSuccessMessage(boolean isPaymentConfirmed) {
         return isPaymentConfirmed
@@ -447,6 +520,9 @@ public class EnrollmentsService {
     // Trả về phương thức thanh toán đã chọn để FE hiển thị nhất quán ở student/admin.
     private String resolvePaymentMethod(Enrollments enrollment,
                                         Map<Long, Payments> paymentsByEnrollmentId) {
+        if (Boolean.TRUE.equals(enrollment.getFreeRetake())) {
+            return "FREE_RETAKE";
+        }
         Payments payment = paymentsByEnrollmentId.get(enrollment.getId());
         return payment != null && payment.getPaymentMethod() != null ? payment.getPaymentMethod() : null;
     }
@@ -455,6 +531,9 @@ public class EnrollmentsService {
     private boolean isEnrollmentFree(Enrollments enrollment,
                                      Map<Long, Classes> classesById,
                                      Map<Long, Courses> coursesById) {
+        if (Boolean.TRUE.equals(enrollment.getFreeRetake())) {
+            return true;
+        }
         Long courseId = resolveCourseId(enrollment.getClassId(), classesById);
         Courses course = courseId != null ? coursesById.get(courseId) : null;
         return isFreeCourse(course);
@@ -564,6 +643,28 @@ public class EnrollmentsService {
     private Enrollments findEnrollment(Long id) {
         return enrollmentsRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đăng ký"));
+    }
+
+    // Điều kiện học lại miễn phí phải dựa trên kết quả thi chính thức mới nhất và hạn miễn phí của khóa học.
+    private boolean isEligibleForFreeRetake(Enrollments sourceEnrollment,
+                                            Classes sourceClass,
+                                            Courses course,
+                                            OfficialExamResults officialResult) {
+        if (sourceEnrollment.getStatus() != Enrollments.Status.completed
+                && sourceEnrollment.getStatus() != Enrollments.Status.approved) {
+            return false;
+        }
+        if (course.getTargetScore() == null || officialResult.getScore() == null) {
+            return false;
+        }
+        if (officialResult.getScore().compareTo(course.getTargetScore()) >= 0) {
+            return false;
+        }
+        if (sourceClass.getEndDate() == null || officialResult.getExamDate() == null) {
+            return false;
+        }
+        int freeRetakeMonths = course.getFreeRetakeMonths() != null ? course.getFreeRetakeMonths() : 6;
+        return !officialResult.getExamDate().isAfter(sourceClass.getEndDate().plusMonths(freeRetakeMonths));
     }
 
     // Kiểm tra bản ghi đăng ký đã enrich có khớp từ khóa admin theo user hoặc khóa học hay không.

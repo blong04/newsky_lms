@@ -11,3 +11,36 @@
   font-size: 0.875rem;
   color: var(--gray-500);
 }
+
+.take-test__placement-recommendations {
+  margin: 18px 0;
+  display: grid;
+  gap: 14px;
+  text-align: left;
+}
+
+.take-test__placement-block {
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff8f5;
+  border: 1px solid rgba(249, 115, 115, 0.14);
+}
+
+.take-test__placement-title {
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.take-test__placement-list {
+  margin-top: 10px;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.take-test__placement-list li span {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: var(--gray-500);
+}

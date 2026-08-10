@@ -10,4 +10,5 @@ import java.util.List;
 // Repository truy vấn bài thi thử theo loại chứng chỉ.
 public interface TestsRepository extends JpaRepository<Tests, Long> {
     List<Tests> findByType(String type);
+    List<Tests> findByTypeIgnoreCaseAndStatusIgnoreCaseAndPlacementPoolTrue(String type, String status);
 }

@@ -57,8 +57,8 @@ public class UsersService {
         Integer selectedRoleId = request.getRoleId() != null ? request.getRoleId() : 3;
         String rawPassword = request.getPassword() != null && !request.getPassword().isBlank()
                 ? request.getPassword()
-                : "1234";
-        validateNumericPassword(rawPassword);
+                : "123456";
+        validatePassword(rawPassword);
 
         Users user = Users.builder()
                 .name(request.getName())
@@ -116,7 +116,7 @@ public class UsersService {
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new BadRequestException("Mật khẩu hiện tại không đúng");
         }
-        validateNumericPassword(request.getNewPassword());
+        validatePassword(request.getNewPassword());
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
@@ -196,10 +196,10 @@ public class UsersService {
         return name.contains(normalizedKeyword) || email.contains(normalizedKeyword);
     }
 
-    // Mật khẩu mới/tạo tài khoản phải gồm đúng 4 chữ số.
-    private void validateNumericPassword(String password) {
-        if (password == null || !password.matches("\\d{4}")) {
-            throw new BadRequestException("Mật khẩu phải gồm đúng 4 chữ số");
+    // Mật khẩu mới/tạo tài khoản phải đủ tối thiểu 6 ký tự.
+    private void validatePassword(String password) {
+        if (password == null || password.length() < 6) {
+            throw new BadRequestException("Mật khẩu phải có ít nhất 6 ký tự");
         }
     }
 }

@@ -36,6 +36,7 @@ import StudentCourses from "./pages/student/Courses";
 import StudentQuiz from "./pages/student/TakeQuiz";
 import StudentTest from "./pages/student/TakeTest";
 import StudentTests from "./pages/student/Tests";
+import StudentPlacement from "./pages/student/Placement";
 import StudentSchedule from "./pages/student/Schedule";
 import StudentExercises from "./pages/student/Exercises";
 import StudentNotifications from "./pages/student/Notifications";
@@ -93,6 +94,7 @@ export default function App() {
         {/* Student */}
         <Route path="/student" element={<PrivateRoute roles={[3]}><StudentLayout /></PrivateRoute>}>
           <Route index element={<StudentDashboard />} />
+          <Route path="placement" element={<StudentPlacement />} />
           <Route path="courses" element={<StudentCourses />} />
           <Route path="quiz/:quizId" element={<StudentQuiz />} />
           <Route path="tests" element={<StudentTests />} />
