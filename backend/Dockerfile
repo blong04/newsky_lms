@@ -14,6 +14,13 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:17-jre
 WORKDIR /app
 
+# Tải RDS global bundle cert (public, không nhạy cảm) và convert sang truststore
+ADD https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem /app/global-bundle.pem
+RUN keytool -importcert -alias rds-ca \
+    -file /app/global-bundle.pem \
+    -keystore /app/rds-truststore.jks \
+    -storepass changeit -noprompt
+
 # Tạo user riêng, không chạy bằng root
 RUN useradd -m appuser
 USER appuser
@@ -21,4 +28,4 @@ USER appuser
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-Djava.net.preferIPv4Stack=true", "-jar", "app.jar"]
