@@ -44,7 +44,7 @@ import StudentResults from "./pages/student/Results";
 
 // Điều hướng về dashboard mặc định theo vai trò tài khoản hiện tại.
 const getDashboardRoute = (user) => {
-  if (!user) return "/login";
+  if (!user) return "/";
   if (user.roleId === 1) return "/admin";
   if (user.roleId === 2) return "/teacher";
   return "/student";
