@@ -18,7 +18,7 @@ on:
 
 jobs:
   # ────────────────────────────────────────────────────────────
-  # Job 1: Chạy test bằng Maven trên runner (không qua Docker)
+  # Job 1: Chạy test bằng Maven trên runner
   # ────────────────────────────────────────────────────────────
   test:
     name: Run tests
@@ -40,7 +40,7 @@ jobs:
         run: mvn -B test
 
   # ────────────────────────────────────────────────────────────
-  # Job 2: Build Docker image (Dockerfile có sẵn) và push lên DockerHub
+  # Job 2: Build Docker image và push lên DockerHub
   # ────────────────────────────────────────────────────────────
   build-and-push:
     name: Build & Push Docker image
@@ -58,9 +58,24 @@ jobs:
         id: vars
         run: |
           SHORT_SHA=$(git rev-parse --short=7 HEAD)
-          IMAGE_FULL="${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.DOCKERHUB_PROJECT_NAME }}:${SHORT_SHA}"
+          USER_NAME="${{ secrets.DOCKERHUB_USERNAME }}"
+          PROJECT_NAME=$(echo "${{ vars.DOCKERHUB_PROJECT_NAME }}" | tr '[:upper:]' '[:lower:]')
+
+          # Fallback nếu DOCKERHUB_PROJECT_NAME bị rỗng trên UI GitHub
+          if [ -z "$PROJECT_NAME" ]; then
+            PROJECT_NAME="newsky-backend"
+          fi
+
+          IMAGE_FULL="${USER_NAME}/${PROJECT_NAME}:${SHORT_SHA}"
+
           echo "image_tag=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "image_full=${IMAGE_FULL}" >> "$GITHUB_OUTPUT"
+
+          echo "DEBUG: image_tag is -> ${SHORT_SHA}"
+          echo "DEBUG: image_full is -> ${IMAGE_FULL}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Login to DockerHub
         uses: docker/login-action@v3
@@ -74,10 +89,14 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ steps.vars.outputs.image_full }}
+          tags: |
+            ${{ steps.vars.outputs.image_full }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ vars.DOCKERHUB_PROJECT_NAME || 'newsky-backend' }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   # ────────────────────────────────────────────────────────────
-  # Job 3: SSH vào EC2, deploy container, setup nginx, update SSM
+  # Job 3: SSH vào EC2, deploy container và update SSM Parameter
   # ────────────────────────────────────────────────────────────
   deploy:
     name: Deploy to EC2
@@ -85,7 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     env:
-      # --- secrets (nhạy cảm) ---
+      # Secrets
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -99,7 +118,7 @@ jobs:
       APP_PAYMENT_BANK_ACCOUNT_NUMBER: ${{ secrets.APP_PAYMENT_BANK_ACCOUNT_NUMBER }}
       APP_PAYMENT_BANK_ACCOUNT_NAME: ${{ secrets.APP_PAYMENT_BANK_ACCOUNT_NAME }}
       APP_PAYMENT_MOMO_WALLET_ID: ${{ secrets.APP_PAYMENT_MOMO_WALLET_ID }}
-      # --- variables (không nhạy cảm) ---
+      # Variables
       APP_DOMAIN: ${{ vars.APP_DOMAIN }}
       HOST_PORT: ${{ vars.HOST_PORT }}
       CONTAINER_NAME: ${{ vars.CONTAINER_NAME }}
@@ -121,7 +140,8 @@ jobs:
       APP_PAYMENT_MOMO_DISPLAY_NAME: ${{ vars.APP_PAYMENT_MOMO_DISPLAY_NAME }}
       JWT_EXPIRATION: ${{ vars.JWT_EXPIRATION }}
       APP_CORS_ALLOWED_ORIGIN: ${{ vars.APP_CORS_ALLOWED_ORIGIN }}
-      # --- từ job trước ---
+      DOCKERHUB_PROJECT_NAME: ${{ vars.DOCKERHUB_PROJECT_NAME }}
+      # Outputs từ job build-and-push
       DOCKER_IMAGE: ${{ needs.build-and-push.outputs.image_full }}
       IMAGE_TAG: ${{ needs.build-and-push.outputs.image_tag }}
     steps:
@@ -131,54 +151,61 @@ jobs:
           host: ${{ vars.EC2_HOST }}
           username: ${{ vars.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: >-
-            DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,
-            DATABASE_URL,DATABASE_USERNAME,DATABASE_PASSWORD,JWT_SECRET,JWT_EXPIRATION,
-            MAIL_USERNAME,MAIL_PASSWORD,MAIL_HOST,MAIL_PORT,MAIL_SMTP_AUTH,MAIL_SMTP_STARTTLS,
-            APP_MAIL_REGISTRATION_ENABLED,APP_MAIL_FROM,
-            APP_REGISTRATION_OTP_EXPIRE_MINUTES,APP_REGISTRATION_OTP_RESEND_SECONDS,
-            APP_PAYMENT_BANK_NAME,APP_PAYMENT_BANK_BIN,APP_PAYMENT_BANK_ACCOUNT_NUMBER,
-            APP_PAYMENT_BANK_ACCOUNT_NAME,APP_PAYMENT_VNPAY_DISPLAY_NAME,
-            APP_PAYMENT_MOMO_DISPLAY_NAME,APP_PAYMENT_MOMO_WALLET_ID,PORT,
-            APP_DOMAIN,HOST_PORT,CONTAINER_NAME,ENV_FILE_PATH,
-            AWS_REGION,SSM_PARAMETER_NAME,DOCKER_IMAGE,IMAGE_TAG,APP_CORS_ALLOWED_ORIGIN
+          envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,DATABASE_URL,DATABASE_USERNAME,DATABASE_PASSWORD,JWT_SECRET,JWT_EXPIRATION,MAIL_USERNAME,MAIL_PASSWORD,MAIL_HOST,MAIL_PORT,MAIL_SMTP_AUTH,MAIL_SMTP_STARTTLS,APP_MAIL_REGISTRATION_ENABLED,APP_MAIL_FROM,APP_REGISTRATION_OTP_EXPIRE_MINUTES,APP_REGISTRATION_OTP_RESEND_SECONDS,APP_PAYMENT_BANK_NAME,APP_PAYMENT_BANK_BIN,APP_PAYMENT_BANK_ACCOUNT_NUMBER,APP_PAYMENT_BANK_ACCOUNT_NAME,APP_PAYMENT_VNPAY_DISPLAY_NAME,APP_PAYMENT_MOMO_DISPLAY_NAME,APP_PAYMENT_MOMO_WALLET_ID,PORT,APP_DOMAIN,HOST_PORT,CONTAINER_NAME,ENV_FILE_PATH,AWS_REGION,SSM_PARAMETER_NAME,DOCKER_IMAGE,IMAGE_TAG,APP_CORS_ALLOWED_ORIGIN,DOCKERHUB_PROJECT_NAME
           script: |
             set -e
 
-            # 1. Tạo file .env tạm trên EC2
+            # 0. Thiết lập Fallback an toàn cho các biến quan trọng
+            PROJECT_NAME="${DOCKERHUB_PROJECT_NAME:-newsky-backend}"
+            CONTAINER_NAME="${CONTAINER_NAME:-newsky-backend}"
+            HOST_PORT="${HOST_PORT:-8080}"
+            PORT="${PORT:-8080}"
+            ENV_FILE_PATH="${ENV_FILE_PATH:-/tmp/app.env}"
+
+            if [ -z "$DOCKER_IMAGE" ]; then
+              DOCKER_IMAGE="${DOCKERHUB_USERNAME}/${PROJECT_NAME}:${IMAGE_TAG}"
+            fi
+
+            echo "=== DEPLOYMENT INFO ==="
+            echo "Container Name: $CONTAINER_NAME"
+            echo "Docker Image:   $DOCKER_IMAGE"
+            echo "Port Mapping:   ${HOST_PORT}:${PORT}"
+            echo "======================="
+
+            # 1. Tạo file .env tạm trên EC2 (Bọc quotes "" tránh lỗi dấu cách/ký tự đặc biệt)
             mkdir -p "$(dirname "$ENV_FILE_PATH")"
             cat > "$ENV_FILE_PATH" <<EOF
-            PORT=${PORT}
-            DATABASE_URL=${DATABASE_URL}
-            DATABASE_USERNAME=${DATABASE_USERNAME}
-            DATABASE_PASSWORD=${DATABASE_PASSWORD}
-            JWT_SECRET=${JWT_SECRET}
-            JWT_EXPIRATION=${JWT_EXPIRATION}
-            MAIL_HOST=${MAIL_HOST}
-            MAIL_PORT=${MAIL_PORT}
-            MAIL_USERNAME=${MAIL_USERNAME}
-            MAIL_PASSWORD=${MAIL_PASSWORD}
-            MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH}
-            MAIL_SMTP_STARTTLS=${MAIL_SMTP_STARTTLS}
-            APP_MAIL_REGISTRATION_ENABLED=${APP_MAIL_REGISTRATION_ENABLED}
-            APP_MAIL_FROM=${APP_MAIL_FROM}
-            APP_REGISTRATION_OTP_EXPIRE_MINUTES=${APP_REGISTRATION_OTP_EXPIRE_MINUTES}
-            APP_REGISTRATION_OTP_RESEND_SECONDS=${APP_REGISTRATION_OTP_RESEND_SECONDS}
-            APP_PAYMENT_BANK_NAME=${APP_PAYMENT_BANK_NAME}
-            APP_PAYMENT_BANK_BIN=${APP_PAYMENT_BANK_BIN}
-            APP_PAYMENT_BANK_ACCOUNT_NUMBER=${APP_PAYMENT_BANK_ACCOUNT_NUMBER}
-            APP_PAYMENT_BANK_ACCOUNT_NAME=${APP_PAYMENT_BANK_ACCOUNT_NAME}
-            APP_PAYMENT_VNPAY_DISPLAY_NAME=${APP_PAYMENT_VNPAY_DISPLAY_NAME}
-            APP_PAYMENT_MOMO_DISPLAY_NAME=${APP_PAYMENT_MOMO_DISPLAY_NAME}
-            APP_PAYMENT_MOMO_WALLET_ID=${APP_PAYMENT_MOMO_WALLET_ID}
-            APP_CORS_ALLOWED_ORIGIN=${APP_CORS_ALLOWED_ORIGIN}
+            PORT="${PORT}"
+            DATABASE_URL="${DATABASE_URL}"
+            DATABASE_USERNAME="${DATABASE_USERNAME}"
+            DATABASE_PASSWORD="${DATABASE_PASSWORD}"
+            JWT_SECRET="${JWT_SECRET}"
+            JWT_EXPIRATION="${JWT_EXPIRATION}"
+            MAIL_HOST="${MAIL_HOST}"
+            MAIL_PORT="${MAIL_PORT}"
+            MAIL_USERNAME="${MAIL_USERNAME}"
+            MAIL_PASSWORD="${MAIL_PASSWORD}"
+            MAIL_SMTP_AUTH="${MAIL_SMTP_AUTH}"
+            MAIL_SMTP_STARTTLS="${MAIL_SMTP_STARTTLS}"
+            APP_MAIL_REGISTRATION_ENABLED="${APP_MAIL_REGISTRATION_ENABLED}"
+            APP_MAIL_FROM="${APP_MAIL_FROM}"
+            APP_REGISTRATION_OTP_EXPIRE_MINUTES="${APP_REGISTRATION_OTP_EXPIRE_MINUTES}"
+            APP_REGISTRATION_OTP_RESEND_SECONDS="${APP_REGISTRATION_OTP_RESEND_SECONDS}"
+            APP_PAYMENT_BANK_NAME="${APP_PAYMENT_BANK_NAME}"
+            APP_PAYMENT_BANK_BIN="${APP_PAYMENT_BANK_BIN}"
+            APP_PAYMENT_BANK_ACCOUNT_NUMBER="${APP_PAYMENT_BANK_ACCOUNT_NUMBER}"
+            APP_PAYMENT_BANK_ACCOUNT_NAME="${APP_PAYMENT_BANK_ACCOUNT_NAME}"
+            APP_PAYMENT_VNPAY_DISPLAY_NAME="${APP_PAYMENT_VNPAY_DISPLAY_NAME}"
+            APP_PAYMENT_MOMO_DISPLAY_NAME="${APP_PAYMENT_MOMO_DISPLAY_NAME}"
+            APP_PAYMENT_MOMO_WALLET_ID="${APP_PAYMENT_MOMO_WALLET_ID}"
+            APP_CORS_ALLOWED_ORIGIN="${APP_CORS_ALLOWED_ORIGIN}"
             EOF
 
             # 2. Login DockerHub và pull image mới
             echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
             docker pull "$DOCKER_IMAGE"
 
-            # 3. Dừng và xoá container cũ (nếu có)
+            # 3. Dừng và xoá container cũ nếu đang chạy
             docker stop "$CONTAINER_NAME" 2>/dev/null || true
             docker rm "$CONTAINER_NAME" 2>/dev/null || true
 
@@ -186,14 +213,14 @@ jobs:
             docker run -d \
               --name "$CONTAINER_NAME" \
               --restart=always \
-              -p "${HOST_PORT}:8080" \
+              -p "${HOST_PORT}:${PORT}" \
               --env-file "$ENV_FILE_PATH" \
               "$DOCKER_IMAGE"
 
             # 5. Xoá file .env sau khi container đã đọc xong
             rm -f "$ENV_FILE_PATH"
 
-            # 6. Update SSM Parameter (image tag mới) để ASG dùng khi scale
+            # 6. Update SSM Parameter (image tag mới) để Auto Scaling Group nhận phiên bản mới
             export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
             export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
             export AWS_DEFAULT_REGION="$AWS_REGION"
@@ -203,3 +230,5 @@ jobs:
               --value "$IMAGE_TAG" \
               --type "String" \
               --overwrite
+
+            echo "Deploy completed successfully for tag: $IMAGE_TAG"
