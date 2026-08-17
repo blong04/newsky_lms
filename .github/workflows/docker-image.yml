@@ -37,7 +37,7 @@ jobs:
     name: Build & Push Docker image
     needs: test
     runs-on: ubuntu-latest
-    environment: production
+    environment: prod
     outputs:
       image_tag: ${{ steps.vars.outputs.image_tag }}
       image_full: ${{ steps.vars.outputs.image_full }}
@@ -74,7 +74,7 @@ jobs:
     name: Deploy to EC2
     needs: build-and-push
     runs-on: ubuntu-latest
-    environment: production
+    environment: prod
     env:
       # --- secrets (nhạy cảm) ---
       DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
