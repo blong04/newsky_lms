@@ -1,6 +1,15 @@
 name: Deploy to EC2
 
 on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Chọn môi trường deploy'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
   push:
     branches:
       - main
