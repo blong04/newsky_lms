@@ -254,6 +254,15 @@ input, select, textarea { font-family: inherit; }
 /* Shared student patterns */
 .quiz-page { max-width: 900px; margin: 0 auto; animation: fadeIn 0.3s ease; }
 
+.quiz-take-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  max-width: 1160px;
+  margin: 0 auto;
+}
+.quiz-take-layout .quiz-page { flex: 1; min-width: 0; margin: 0; }
+
 .quiz-header {
   background: #fff;
   border-radius: var(--radius);

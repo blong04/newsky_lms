@@ -5,6 +5,7 @@ import { testService } from "../../services/testService";
 import { buildTestSectionsForDisplay } from "../../utils/assessmentSections";
 import { formatCountdown } from "../../utils/format";
 import { normalizeQuestionType } from "../../utils/questionType";
+import QuestionNavigator from "../../components/shared/QuestionNavigator";
 import toast from "react-hot-toast";
 import "./TakeTest.css";
 
@@ -62,6 +63,16 @@ export default function TakeTest() {
 
   const handleAnswer = (questionId, answer) => setAnswers((current) => ({ ...current, [questionId]: answer }));
   const sections = buildTestSectionsForDisplay(test, groups, questions);
+  // Danh sách phẳng câu hỏi kèm số thứ tự hiển thị, dùng cho sidebar điều hướng.
+  const flatQuestions = sections.flatMap((section, sectionIndex) => {
+    const previousQuestionCount = sections
+      .slice(0, sectionIndex)
+      .reduce((total, currentSection) => total + currentSection.questions.length, 0);
+    return section.questions.map((question, index) => ({
+      id: question.id,
+      number: previousQuestionCount + index + 1,
+    }));
+  });
 
   const handleSubmit = async () => {
     if (submitting || submitted) {
@@ -186,7 +197,9 @@ export default function TakeTest() {
   }
 
   return (
-    <div className="quiz-page fade-in take-test">
+    <div className="quiz-take-layout">
+      <QuestionNavigator flatQuestions={flatQuestions} answers={answers} />
+      <div className="quiz-page fade-in take-test">
       <div className="quiz-header">
         <div className="quiz-info">
           <span className={`badge ${test.type === "IELTS" ? "badge-blue" : test.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>{test.type}</span>
@@ -238,6 +251,7 @@ export default function TakeTest() {
           {submitting ? <span className="spinner" /> : isPlacementMode ? "Hoàn thành bài xếp lớp ✅" : "Nộp bài ✅"}
         </button>
       </div>
+      </div>
     </div>
   );
 }
@@ -246,7 +260,7 @@ function QuestionItem({ question, index, answers, onAnswer }) {
   const questionType = normalizeQuestionType(question.questionType);
 
   return (
-    <div className="question-item">
+    <div className="question-item" id={`question-${question.id}`}>
       <p className="question-content">
         <span className="q-num">{index + 1}.</span> {question.content}
       </p>

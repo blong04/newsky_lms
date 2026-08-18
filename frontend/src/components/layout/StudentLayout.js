@@ -6,13 +6,13 @@ import toast from "react-hot-toast";
 import "./Layout.css";
 
 const navItems = [
-  { to: "/student",              icon: "📊", label: "Dashboard",        end: true },
-  { to: "/student/courses",      icon: "📚", label: "Khóa học"          },
-  { to: "/student/schedule",     icon: "📅", label: "Lớp & Lịch học"    },
-  { to: "/student/exercises",    icon: "📝", label: "Bài tập & Kiểm tra"},
-  { to: "/student/tests",        icon: "🧪", label: "Bài thi thử"       },
-  { to: "/student/results",      icon: "🏆", label: "Kết quả"           },  
-  { to: "/student/notifications",icon: "🔔", label: "Thông báo"         },
+  { to: "/student",              label: "Dashboard",        end: true },
+  { to: "/student/courses",      label: "Khóa học"          },
+  { to: "/student/schedule",     label: "Lớp & Lịch học"    },
+  { to: "/student/exercises",    label: "Bài tập & Kiểm tra"},
+  { to: "/student/tests",        label: "Bài thi thử"       },
+  { to: "/student/results",      label: "Kết quả"           },  
+  { to: "/student/notifications",label: "Thông báo"         },
 ];
 
 export default function StudentLayout() {
@@ -68,7 +68,6 @@ export default function StudentLayout() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <span className="logo-icon">🎓</span>
             {!collapsed && <span className="logo-text">NewSky English</span>}
           </div>
           <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)}>
@@ -80,7 +79,6 @@ export default function StudentLayout() {
           {navItems.map(item => (
             <NavLink key={item.to} to={item.to} end={item.end}
               className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
-              <span className="nav-icon">{item.icon}</span>
               {!collapsed && <span>{item.label}</span>}
             </NavLink>
           ))}
@@ -113,14 +111,14 @@ export default function StudentLayout() {
                   </div>
                   <div className="dropdown-divider" />
                   <button className="dropdown-item" onClick={() => openProfile("info")}>
-                    👤 Thông tin cá nhân
+                    Thông tin cá nhân
                   </button>
                   <button className="dropdown-item" onClick={() => openProfile("password")}>
-                    🔒 Đổi mật khẩu
+                    Đổi mật khẩu
                   </button>
                   <div className="dropdown-divider" />
                   <button className="dropdown-item danger" onClick={handleLogout}>
-                    🚪 Đăng xuất
+                    Đăng xuất
                   </button>
                 </div>
               )}

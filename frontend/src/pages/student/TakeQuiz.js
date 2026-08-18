@@ -4,6 +4,7 @@ import { quizService } from "../../services/quizService";
 import { buildQuizSectionsForDisplay } from "../../utils/assessmentSections";
 import { formatCountdown } from "../../utils/format";
 import { normalizeQuestionType } from "../../utils/questionType";
+import QuestionNavigator from "../../components/shared/QuestionNavigator";
 import toast from "react-hot-toast";
 import "./TakeQuiz.css";
 
@@ -57,6 +58,16 @@ export default function TakeQuiz() {
 
   const handleAnswer = (questionId, answer) => setAnswers((current) => ({ ...current, [questionId]: answer }));
   const sections = buildQuizSectionsForDisplay(quiz, groups, questions);
+  // Danh sách phẳng câu hỏi kèm số thứ tự hiển thị, dùng cho sidebar điều hướng.
+  const flatQuestions = sections.flatMap((section, sectionIndex) => {
+    const previousQuestionCount = sections
+      .slice(0, sectionIndex)
+      .reduce((total, currentSection) => total + currentSection.questions.length, 0);
+    return section.questions.map((question, index) => ({
+      id: question.id,
+      number: previousQuestionCount + index + 1,
+    }));
+  });
 
   const handleSubmit = async () => {
     if (submitting || submitted) {
@@ -112,7 +123,9 @@ export default function TakeQuiz() {
   }
 
   return (
-    <div className="quiz-page fade-in take-quiz">
+    <div className="quiz-take-layout">
+      <QuestionNavigator flatQuestions={flatQuestions} answers={answers} />
+      <div className="quiz-page fade-in take-quiz">
       {/* Header quiz cố định để student luôn thấy tiêu đề và đồng hồ. */}
       <div className="quiz-header">
         <div className="quiz-info">
@@ -164,6 +177,7 @@ export default function TakeQuiz() {
           {submitting ? <span className="spinner" /> : "Nộp bài ✅"}
         </button>
       </div>
+      </div>
     </div>
   );
 }
@@ -172,7 +186,7 @@ function QuestionItem({ q, index, answers, onAnswer }) {
   const questionType = normalizeQuestionType(q.questionType);
 
   return (
-    <div className="question-item">
+    <div className="question-item" id={`question-${q.id}`}>
       <p className="question-content">
         <span className="q-num">{index + 1}.</span> {q.content}
       </p>

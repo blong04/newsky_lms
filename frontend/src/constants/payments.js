@@ -4,7 +4,7 @@ export const PAYMENT_METHOD_OPTIONS = [
     value: "BANK_TRANSFER",
     label: "Tài khoản ngân hàng",
     icon: "🏦",
-    description: "Quét QR hoặc chuyển khoản đúng số tiền, admin sẽ kiểm tra rồi phê duyệt.",
+    description: "Quét QR hoặc chuyển khoản đúng số tiền, hệ thống ghi nhận và duyệt vào lớp ngay (demo).",
   },
   {
     value: "VNPAY",
@@ -32,4 +32,4 @@ export const PAYMENT_METHOD_LABELS = Object.fromEntries(
 );
 
 // Các phương thức hiện được mô phỏng như thanh toán thành công ngay.
-export const INSTANT_PAYMENT_METHODS = ["VNPAY", "MOMO"];
+export const INSTANT_PAYMENT_METHODS = ["VNPAY", "MOMO", "BANK_TRANSFER"];

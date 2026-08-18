@@ -211,7 +211,6 @@ export default function AdminCourses() {
 
       <section className="courses-overview-grid">
         <article className="courses-overview-card">
-          <span className="courses-overview-card__icon">📚</span>
           <div>
             <p>Tổng khóa học</p>
             <strong>{totalCourses}</strong>
@@ -219,7 +218,7 @@ export default function AdminCourses() {
         </article>
 
         <article className="courses-overview-card">
-          <span className="courses-overview-card__icon">🚀</span>
+
           <div>
             <p>Đang mở</p>
             <strong>{activeCourses}</strong>
@@ -227,7 +226,7 @@ export default function AdminCourses() {
         </article>
 
         <article className="courses-overview-card">
-          <span className="courses-overview-card__icon">🎯</span>
+
           <div>
             <p>Khóa luyện thi</p>
             <strong>{examCourses}</strong>
@@ -235,7 +234,7 @@ export default function AdminCourses() {
         </article>
 
         <article className="courses-overview-card">
-          <span className="courses-overview-card__icon">🎁</span>
+
           <div>
             <p>Miễn phí</p>
             <strong>{freeCourses}</strong>

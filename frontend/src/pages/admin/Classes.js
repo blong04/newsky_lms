@@ -217,7 +217,7 @@ export default function AdminClasses() {
 
       <section className="classes-overview-grid">
         <article className="classes-overview-card">
-          <span className="classes-overview-card__icon">🏫</span>
+
           <div>
             <p>Tổng lớp</p>
             <strong>{totalClasses}</strong>
@@ -225,7 +225,7 @@ export default function AdminClasses() {
         </article>
 
         <article className="classes-overview-card">
-          <span className="classes-overview-card__icon">🟢</span>
+
           <div>
             <p>Đang học</p>
             <strong>{activeClasses}</strong>
@@ -233,7 +233,7 @@ export default function AdminClasses() {
         </article>
 
         <article className="classes-overview-card">
-          <span className="classes-overview-card__icon">🕒</span>
+
           <div>
             <p>Chờ khai giảng</p>
             <strong>{pendingClasses}</strong>
@@ -241,7 +241,7 @@ export default function AdminClasses() {
         </article>
 
         <article className="classes-overview-card">
-          <span className="classes-overview-card__icon">👥</span>
+
           <div>
             <p>Học viên duyệt</p>
             <strong>{approvedStudents}</strong>

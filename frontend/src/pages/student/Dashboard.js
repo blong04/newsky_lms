@@ -72,24 +72,24 @@ export default function StudentDashboard() {
       {/* Khối chỉ số tổng quan đầu trang. */}
       <div className="stats-grid student-dashboard__stats">
         <article className="stat-card student-dashboard__stat-card student-dashboard__stat-card--active">
-          <div className="stat-icon">📚</div>
+          <h3 className="stat-value">{summary.activeEnrollmentCount ?? activeEnrollments.length}</h3>
           <div className="stat-body">
             <p className="stat-label">Đang học</p>
-            <h3 className="stat-value">{summary.activeEnrollmentCount ?? activeEnrollments.length}</h3>
+            
           </div>
         </article>
         <article className="stat-card student-dashboard__stat-card student-dashboard__stat-card--completed">
-          <div className="stat-icon">✅</div>
+          <h3 className="stat-value">{summary.completedEnrollmentCount ?? completedEnrollments.length}</h3>
           <div className="stat-body">
             <p className="stat-label">Hoàn thành</p>
-            <h3 className="stat-value">{summary.completedEnrollmentCount ?? completedEnrollments.length}</h3>
+            
           </div>
         </article>
         <article className="stat-card student-dashboard__stat-card student-dashboard__stat-card--pending">
-          <div className="stat-icon">⏳</div>
+          <h3 className="stat-value">{summary.pendingEnrollmentCount ?? pendingEnrollments.length}</h3>
           <div className="stat-body">
             <p className="stat-label">Chờ duyệt</p>
-            <h3 className="stat-value">{summary.pendingEnrollmentCount ?? pendingEnrollments.length}</h3>
+            
           </div>
         </article>
       </div>

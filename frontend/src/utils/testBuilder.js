@@ -1,3 +1,5 @@
+import { normalizeQuestionType } from "./questionType";
+
 const QUESTION_TEMPLATE = {
   content: "",
   questionType: "mcq",
@@ -123,6 +125,7 @@ export const splitQuestionsIntoSections = (examType, groups = [], questions = []
           ? sectionQuestions.map((question, questionIndex) => ({
               ...QUESTION_TEMPLATE,
               ...question,
+              questionType: normalizeQuestionType(question.questionType),
               orderNum: questionIndex + 1,
             }))
           : Array.from({ length: blueprintSection?.questionCount || 0 }, (_, questionIndex) => (
@@ -149,6 +152,7 @@ export const splitQuestionsIntoSections = (examType, groups = [], questions = []
           ? {
               ...QUESTION_TEMPLATE,
               ...sectionQuestions[questionIndex],
+              questionType: normalizeQuestionType(sectionQuestions[questionIndex].questionType),
               orderNum: questionIndex + 1,
             }
           : createQuestionDraft(section.allowedQuestionTypes[0], questionIndex + 1)
@@ -172,6 +176,7 @@ export const splitQuestionsIntoSections = (examType, groups = [], questions = []
       questions: sortedQuestions.slice(cursor).map((question, questionIndex) => ({
         ...QUESTION_TEMPLATE,
         ...question,
+        questionType: normalizeQuestionType(question.questionType),
         orderNum: questionIndex + 1,
       })),
     });

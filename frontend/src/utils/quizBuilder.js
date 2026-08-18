@@ -1,3 +1,5 @@
+import { normalizeQuestionType } from "./questionType";
+
 const BASE_QUESTION = {
   content: "",
   questionType: "mcq",
@@ -185,6 +187,7 @@ export const hydrateQuizSections = (examType, examPart, groups = [], questions =
           ? sortedQuestions.map((question, index) => ({
               ...BASE_QUESTION,
               ...question,
+              questionType: normalizeQuestionType(question.questionType),
               orderNum: index + 1,
             }))
           : singleSection.questions,
@@ -208,6 +211,7 @@ export const hydrateQuizSections = (examType, examPart, groups = [], questions =
         ? groupQuestions.map((question, questionIndex) => ({
             ...BASE_QUESTION,
             ...question,
+            questionType: normalizeQuestionType(question.questionType),
             orderNum: questionIndex + 1,
           }))
         : (matchingBlueprint?.questions || []),

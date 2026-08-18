@@ -4,6 +4,7 @@ import { unwrapData } from "../utils/http";
 export const testService = {
   getAll: (params = {}) => api.get("/tests", { params }).then(unwrapData),
   getPlacementStatus: () => api.get("/tests/placement/status").then(unwrapData),
+  resetPlacement: () => api.post("/tests/placement/reset").then(unwrapData),
   getRandomPlacementTest: (type) => api.get("/tests/placement/random", { params: { type } }).then(unwrapData),
   getPlacementTest: (testId) => api.get(`/tests/placement/${testId}`).then(unwrapData),
   submitPlacementTest: (testId, payload) => api.post(`/tests/placement/${testId}/submit`, payload).then(unwrapData),

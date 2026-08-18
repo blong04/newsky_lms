@@ -8,8 +8,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
 
-// Gom request/response cho bước xem trước thanh toán và render QR.
+// Gom request/response cho bước xem trước thanh toán, render QR và thống kê doanh thu.
 public class PaymentsDTO {
 
     @Data
@@ -48,5 +50,62 @@ public class PaymentsDTO {
         private String note;
         private String instruction;
         private String actionLabel;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    // Dùng cho màn quản trị liệt kê từng giao dịch đã join sẵn thông tin học viên/khóa học.
+    public static class AdminResponse {
+        private Long id;
+        private Long enrollmentId;
+        private Long userId;
+        private String userName;
+        private String userEmail;
+        private Long courseId;
+        private String courseName;
+        private Long classId;
+        private String className;
+        private BigDecimal amount;
+        private String paymentMethod;
+        private String status;
+        private LocalDateTime createdAt;
+        private LocalDateTime paidAt;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    // Một dòng doanh thu theo khóa học hoặc theo phương thức thanh toán.
+    public static class RevenueBreakdownItem {
+        private String label;
+        private BigDecimal amount;
+        private Long count;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    // Doanh thu gộp theo tháng để vẽ biểu đồ xu hướng.
+    public static class MonthlyRevenueItem {
+        private String month;
+        private BigDecimal amount;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class StatsResponse {
+        private BigDecimal totalRevenue;
+        private BigDecimal pendingAmount;
+        private Long paidCount;
+        private Long pendingCount;
+        private List<RevenueBreakdownItem> revenueByMethod;
+        private List<RevenueBreakdownItem> revenueByCourse;
+        private List<MonthlyRevenueItem> monthlyRevenue;
     }
 }

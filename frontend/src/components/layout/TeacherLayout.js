@@ -6,11 +6,11 @@ import toast from "react-hot-toast";
 import "./Layout.css";
 
 const navItems = [
-  { to: "/teacher", icon: "📊", label: "Dashboard", end: true },
-  { to: "/teacher/classes", icon: "🏫", label: "Lớp của tôi" },
-  { to: "/teacher/students", icon: "👨‍🎓", label: "Học viên" },
-  { to: "/teacher/assignments", icon: "📋", label: "Bài tập" },
-  { to: "/teacher/notifications", icon: "🔔", label: "Thông báo" },
+  { to: "/teacher", label: "Dashboard", end: true },
+  { to: "/teacher/classes", label: "Lớp của tôi" },
+  { to: "/teacher/students", label: "Học viên" },
+  { to: "/teacher/assignments", label: "Bài tập" },
+  { to: "/teacher/notifications", label: "Thông báo" },
 ];
 
 export default function TeacherLayout() {
@@ -48,7 +48,6 @@ export default function TeacherLayout() {
       <aside className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <span className="logo-icon">🎓</span>
             {!collapsed && <span className="logo-text">NewSky English</span>}
           </div>
           <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)}>
@@ -60,7 +59,6 @@ export default function TeacherLayout() {
           {navItems.map(item => (
             <NavLink key={item.to} to={item.to} end={item.end}
               className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
-              <span className="nav-icon">{item.icon}</span>
               {!collapsed && <span>{item.label}</span>}
             </NavLink>
           ))}
@@ -93,14 +91,14 @@ export default function TeacherLayout() {
                   </div>
                   <div className="dropdown-divider" />
                   <button className="dropdown-item" onClick={() => openProfile("info")}>
-                    👤 Thông tin cá nhân
+                    Thông tin cá nhân
                   </button>
                   <button className="dropdown-item" onClick={() => openProfile("password")}>
-                    🔒 Đổi mật khẩu
+                    Đổi mật khẩu
                   </button>
                   <div className="dropdown-divider" />
                   <button className="dropdown-item danger" onClick={handleLogout}>
-                    🚪 Đăng xuất
+                    Đăng xuất
                   </button>
                 </div>
               )}

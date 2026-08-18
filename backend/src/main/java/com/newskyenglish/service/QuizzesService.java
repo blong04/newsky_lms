@@ -434,6 +434,10 @@ public class QuizzesService {
     private void syncQuizClasses(Long quizId, List<Long> classIds) {
         validateClassIds(classIds);
         quizClassesRepository.deleteByQuizId(quizId);
+        // Flush ngay để DELETE thực sự chạy trước INSERT bên dưới - quiz_classes dùng
+        // IDENTITY nên insert chạy ngay lập tức, nếu không flush sẽ đụng unique key cũ
+        // khi lớp cũ vẫn được giữ lại trong lần sửa này.
+        quizClassesRepository.flush();
         if (classIds == null || classIds.isEmpty()) {
             return;
         }

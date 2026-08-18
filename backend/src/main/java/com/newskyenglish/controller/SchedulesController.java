@@ -45,6 +45,13 @@ public class SchedulesController {
             @RequestBody @Valid SchedulesDTO.UpdateRequest request) {
         return ResponseEntity.ok(ApiResponse.success(scheduleService.update(id, request), "Cập nhật thành công"));
     }
+
+    // Xóa một buổi học khỏi lịch.
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
+        scheduleService.delete(id);
+        return ResponseEntity.ok(ApiResponse.<Void>success(null, "Đã xóa lịch học"));
+    }
 }
 
 

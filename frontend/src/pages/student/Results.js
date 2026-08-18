@@ -192,44 +192,44 @@ export default function StudentResults() {
       {/* Các chỉ số tổng quan đầu trang. */}
       <div className="stats-grid student-results__stats">
         <article className="stat-card student-results__stat-card student-results__stat-card--assignments">
-          <div className="stat-icon">📋</div>
+          <h3 className="stat-value">{assignmentSubmissions.length}</h3>
           <div className="stat-body">
             <p className="stat-label">Bài tập đã nộp</p>
-            <h3 className="stat-value">{assignmentSubmissions.length}</h3>
+            
           </div>
         </article>
         <article className="stat-card student-results__stat-card student-results__stat-card--graded">
-          <div className="stat-icon">✅</div>
+          <h3 className="stat-value">{assignmentSubmissions.filter((item) => item.status === "graded").length}</h3>
           <div className="stat-body">
             <p className="stat-label">Bài tập đã chấm</p>
-            <h3 className="stat-value">{assignmentSubmissions.filter((item) => item.status === "graded").length}</h3>
+            
           </div>
         </article>
         <article className="stat-card student-results__stat-card student-results__stat-card--quizzes">
-          <div className="stat-icon">📝</div>
+          <h3 className="stat-value">{quizSubmissions.length}</h3>
           <div className="stat-body">
             <p className="stat-label">Bài kiểm tra đã làm</p>
-            <h3 className="stat-value">{quizSubmissions.length}</h3>
+            
           </div>
         </article>
         <article className="stat-card student-results__stat-card student-results__stat-card--average">
-          <div className="stat-icon">📊</div>
+          <h3 className="stat-value">{quizAverage}</h3>
           <div className="stat-body">
             <p className="stat-label">Điểm TB bài kiểm tra</p>
-            <h3 className="stat-value">{quizAverage}</h3>
+            
           </div>
         </article>
       </div>
 
       <div className="filter-tabs">
         <button className={`filter-tab-btn ${tab === "assignments" ? "active" : ""}`} onClick={() => setTab("assignments")}>
-          📋 Bài tập ({assignmentSubmissions.length})
+          📋 Bài tập 
         </button>
         <button className={`filter-tab-btn ${tab === "quizzes" ? "active" : ""}`} onClick={() => setTab("quizzes")}>
-          📝 Bài kiểm tra ({quizSubmissions.length})
+          📝 Bài kiểm tra 
         </button>
         <button className={`filter-tab-btn ${tab === "tests" ? "active" : ""}`} onClick={() => setTab("tests")}>
-          🧪 Bài thi thử ({testSubmissions.length})
+          🧪 Bài thi thử 
         </button>
       </div>
 

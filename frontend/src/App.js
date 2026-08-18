@@ -20,6 +20,8 @@ import AdminQuizzes from "./pages/admin/Quizzes";
 import AdminTests from "./pages/admin/Tests";
 import AdminEnrollments from "./pages/admin/Enrollments";
 import AdminNotifications from "./pages/admin/Notifications";
+import AdminSchedules from "./pages/admin/Schedules";
+import AdminPayments from "./pages/admin/Payments";
 
 // Teacher
 import TeacherLayout from "./components/layout/TeacherLayout";
@@ -80,6 +82,8 @@ export default function App() {
           <Route path="tests" element={<AdminTests />} />
           <Route path="notifications" element={<AdminNotifications />} />
           <Route path="enrollments" element={<AdminEnrollments />} />
+          <Route path="schedules" element={<AdminSchedules />} />
+          <Route path="payments" element={<AdminPayments />} />
         </Route>
 
         {/* Teacher */}

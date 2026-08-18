@@ -65,5 +65,14 @@ public class SchedulesService {
 
         return SchedulesDTO.Response.fromEntity(scheduleRepository.save(schedule));
     }
+
+    @Transactional
+    // Xóa một buổi học khỏi lịch.
+    public void delete(Long id) {
+        if (!scheduleRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Không tìm thấy lịch học");
+        }
+        scheduleRepository.deleteById(id);
+    }
 }
 

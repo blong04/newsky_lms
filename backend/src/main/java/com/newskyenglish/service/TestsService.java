@@ -81,6 +81,19 @@ public class TestsService {
         return toTestResponse(test, groups, questions);
     }
 
+    @Transactional
+    // Học viên tự làm lại bài xếp lớp - xóa kết quả cũ để chọn loại chứng chỉ và làm lại từ đầu.
+    public void resetPlacement(String authorizationHeader) {
+        Long userId = currentUserService.extractUserId(authorizationHeader);
+        Users user = findUser(userId);
+
+        user.setPlacementExamType(null);
+        user.setPlacementScore(null);
+        user.setPlacementTestSubmissionId(null);
+        user.setPlacementCompletedAt(null);
+        usersRepository.save(user);
+    }
+
     @Transactional(readOnly = true)
     // Trả về trạng thái placement hiện tại của học viên để frontend quyết định có cần chặn luồng không.
     public TestsDTO.PlacementStatusResponse getPlacementStatus(String authorizationHeader) {
@@ -554,6 +567,10 @@ public class TestsService {
     private void syncTestClasses(Long mockTestId, List<Long> classIds) {
         validateClassIds(classIds);
         testClassesRepository.deleteByMockTestId(mockTestId);
+        // Flush ngay để DELETE thực sự chạy trước INSERT bên dưới - test_classes dùng
+        // IDENTITY nên insert chạy ngay lập tức, nếu không flush sẽ đụng unique key cũ
+        // khi lớp cũ vẫn được giữ lại trong lần sửa này.
+        testClassesRepository.flush();
         if (classIds == null || classIds.isEmpty()) {
             return;
         }

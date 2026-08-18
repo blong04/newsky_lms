@@ -5,8 +5,14 @@ import com.newskyenglish.exception.BadRequestException;
 import com.newskyenglish.exception.ResourceNotFoundException;
 import com.newskyenglish.model.Classes;
 import com.newskyenglish.model.Courses;
+import com.newskyenglish.model.Enrollments;
+import com.newskyenglish.model.Payments;
+import com.newskyenglish.model.Users;
 import com.newskyenglish.repository.ClassesRepository;
 import com.newskyenglish.repository.CoursesRepository;
+import com.newskyenglish.repository.EnrollmentsRepository;
+import com.newskyenglish.repository.PaymentsRepository;
+import com.newskyenglish.repository.UsersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -17,22 +23,31 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-// Sinh metadata checkout và QR preview cho từng phương thức thanh toán.
+// Sinh metadata checkout và QR preview cho từng phương thức thanh toán, và thống kê doanh thu cho admin.
 public class PaymentsService {
 
     private static final String METHOD_BANK_TRANSFER = "BANK_TRANSFER";
     private static final String METHOD_VNPAY = "VNPAY";
     private static final String METHOD_MOMO = "MOMO";
     private static final String METHOD_DEFERRED = "DEFERRED";
+    private static final DateTimeFormatter MONTH_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM");
 
     private final CoursesRepository coursesRepository;
     private final ClassesRepository classesRepository;
     private final CurrentUserService currentUserService;
+    private final PaymentsRepository paymentsRepository;
+    private final EnrollmentsRepository enrollmentsRepository;
+    private final UsersRepository usersRepository;
 
     @Value("${app.payment.bank.bank-name:MB Bank}")
     private String bankName;
@@ -54,6 +69,152 @@ public class PaymentsService {
 
     @Value("${app.payment.momo.wallet-id:0900000000}")
     private String momoWalletId;
+
+    @Transactional(readOnly = true)
+    // Liệt kê toàn bộ giao dịch thanh toán đã join sẵn học viên/khóa học cho màn quản trị.
+    public List<PaymentsDTO.AdminResponse> getAdminPayments(String keyword, String status) {
+        List<PaymentsDTO.AdminResponse> enriched = enrichPayments(paymentsRepository.findAll());
+        String normalizedKeyword = normalizeKeyword(keyword);
+
+        return enriched.stream()
+                .filter(payment -> status == null || status.isBlank() || status.equalsIgnoreCase(payment.getStatus()))
+                .filter(payment -> normalizedKeyword.isBlank()
+                        || safeLower(payment.getUserName()).contains(normalizedKeyword)
+                        || safeLower(payment.getUserEmail()).contains(normalizedKeyword)
+                        || safeLower(payment.getCourseName()).contains(normalizedKeyword))
+                .sorted(Comparator.comparing(
+                        (PaymentsDTO.AdminResponse payment) -> payment.getCreatedAt() != null ? payment.getCreatedAt() : LocalDateTime.MIN
+                ).reversed())
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    // Tổng hợp doanh thu theo trạng thái, phương thức, khóa học và theo tháng.
+    public PaymentsDTO.StatsResponse getPaymentStats() {
+        List<PaymentsDTO.AdminResponse> enriched = enrichPayments(paymentsRepository.findAll());
+
+        List<PaymentsDTO.AdminResponse> paid = enriched.stream()
+                .filter(payment -> "paid".equalsIgnoreCase(payment.getStatus()))
+                .toList();
+        List<PaymentsDTO.AdminResponse> pending = enriched.stream()
+                .filter(payment -> "pending".equalsIgnoreCase(payment.getStatus()))
+                .toList();
+
+        List<PaymentsDTO.RevenueBreakdownItem> revenueByMethod = paid.stream()
+                .collect(Collectors.groupingBy(payment -> payment.getPaymentMethod() == null ? "Khác" : payment.getPaymentMethod()))
+                .entrySet().stream()
+                .map(entry -> PaymentsDTO.RevenueBreakdownItem.builder()
+                        .label(entry.getKey())
+                        .amount(sumAmount(entry.getValue()))
+                        .count((long) entry.getValue().size())
+                        .build())
+                .sorted(Comparator.comparing(PaymentsDTO.RevenueBreakdownItem::getAmount).reversed())
+                .toList();
+
+        List<PaymentsDTO.RevenueBreakdownItem> revenueByCourse = paid.stream()
+                .collect(Collectors.groupingBy(payment -> payment.getCourseName() == null ? "Không xác định" : payment.getCourseName()))
+                .entrySet().stream()
+                .map(entry -> PaymentsDTO.RevenueBreakdownItem.builder()
+                        .label(entry.getKey())
+                        .amount(sumAmount(entry.getValue()))
+                        .count((long) entry.getValue().size())
+                        .build())
+                .sorted(Comparator.comparing(PaymentsDTO.RevenueBreakdownItem::getAmount).reversed())
+                .toList();
+
+        List<PaymentsDTO.MonthlyRevenueItem> monthlyRevenue = paid.stream()
+                .filter(payment -> payment.getPaidAt() != null)
+                .collect(Collectors.groupingBy(payment -> payment.getPaidAt().format(MONTH_FORMATTER)))
+                .entrySet().stream()
+                .map(entry -> PaymentsDTO.MonthlyRevenueItem.builder()
+                        .month(entry.getKey())
+                        .amount(sumAmount(entry.getValue()))
+                        .build())
+                .sorted(Comparator.comparing(PaymentsDTO.MonthlyRevenueItem::getMonth))
+                .toList();
+
+        return PaymentsDTO.StatsResponse.builder()
+                .totalRevenue(sumAmount(paid))
+                .pendingAmount(sumAmount(pending))
+                .paidCount((long) paid.size())
+                .pendingCount((long) pending.size())
+                .revenueByMethod(revenueByMethod)
+                .revenueByCourse(revenueByCourse)
+                .monthlyRevenue(monthlyRevenue)
+                .build();
+    }
+
+    // Join payment -> enrollment -> class -> course/user để trả dữ liệu đầy đủ cho admin.
+    private List<PaymentsDTO.AdminResponse> enrichPayments(List<Payments> payments) {
+        Map<Long, Enrollments> enrollmentsById = enrollmentsRepository.findAllById(payments.stream()
+                        .map(Payments::getEnrollmentId)
+                        .filter(Objects::nonNull)
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(Enrollments::getId, Function.identity()));
+
+        Map<Long, Classes> classesById = classesRepository.findAllById(enrollmentsById.values().stream()
+                        .map(Enrollments::getClassId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(Classes::getId, Function.identity()));
+
+        Map<Long, Courses> coursesById = coursesRepository.findAllById(classesById.values().stream()
+                        .map(Classes::getCourseId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(Courses::getId, Function.identity()));
+
+        Map<Long, Users> usersById = usersRepository.findAllById(enrollmentsById.values().stream()
+                        .map(Enrollments::getUserId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet()))
+                .stream()
+                .collect(Collectors.toMap(Users::getId, Function.identity()));
+
+        return payments.stream()
+                .map(payment -> {
+                    Enrollments enrollment = enrollmentsById.get(payment.getEnrollmentId());
+                    Classes classRoom = enrollment != null ? classesById.get(enrollment.getClassId()) : null;
+                    Courses course = classRoom != null ? coursesById.get(classRoom.getCourseId()) : null;
+                    Users student = enrollment != null ? usersById.get(enrollment.getUserId()) : null;
+
+                    return PaymentsDTO.AdminResponse.builder()
+                            .id(payment.getId())
+                            .enrollmentId(payment.getEnrollmentId())
+                            .userId(enrollment != null ? enrollment.getUserId() : null)
+                            .userName(student != null ? student.getName() : null)
+                            .userEmail(student != null ? student.getEmail() : null)
+                            .courseId(course != null ? course.getId() : null)
+                            .courseName(course != null ? course.getTitle() : null)
+                            .classId(classRoom != null ? classRoom.getId() : null)
+                            .className(classRoom != null ? classRoom.getName() : null)
+                            .amount(payment.getAmount())
+                            .paymentMethod(payment.getPaymentMethod())
+                            .status(payment.getStatus())
+                            .createdAt(payment.getCreatedAt())
+                            .paidAt(payment.getPaidAt())
+                            .build();
+                })
+                .toList();
+    }
+
+    private BigDecimal sumAmount(List<PaymentsDTO.AdminResponse> items) {
+        return items.stream()
+                .map(PaymentsDTO.AdminResponse::getAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    private String normalizeKeyword(String keyword) {
+        return keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String safeLower(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT);
+    }
 
     @Transactional(readOnly = true)
     // Tạo dữ liệu xem trước thanh toán để FE hiển thị QR và hướng dẫn phù hợp.
@@ -112,16 +273,17 @@ public class PaymentsService {
         return normalized;
     }
 
-    // Chỉ VNPAY và MoMo demo mới được xem như thanh toán thành công ngay.
+    // VNPAY, MoMo và chuyển khoản demo đều được xem như thanh toán thành công ngay;
+    // chỉ DEFERRED (nợ học phí) mới cần admin duyệt tay.
     public boolean supportsInstantConfirmation(String paymentMethod) {
         String normalized = normalizePaymentMethod(paymentMethod);
-        return METHOD_VNPAY.equals(normalized) || METHOD_MOMO.equals(normalized);
+        return METHOD_VNPAY.equals(normalized) || METHOD_MOMO.equals(normalized) || METHOD_BANK_TRANSFER.equals(normalized);
     }
 
     // Nhận diện phương thức đòi admin kiểm tra thủ công.
     public boolean requiresManualReview(String paymentMethod) {
         String normalized = normalizePaymentMethod(paymentMethod);
-        return METHOD_BANK_TRANSFER.equals(normalized) || METHOD_DEFERRED.equals(normalized);
+        return METHOD_DEFERRED.equals(normalized);
     }
 
     private PaymentsDTO.PreviewResponse buildBankTransferPreview(BigDecimal amount,
@@ -144,10 +306,10 @@ public class PaymentsService {
                 .accountNumber(bankAccountNumber)
                 .bankName(bankName)
                 .bankBin(bankBin)
-                .manualReviewRequired(true)
-                .mockMode(false)
-                .note("Sau khi chuyển khoản, admin sẽ kiểm tra và phê duyệt để bạn tham gia lớp.")
-                .instruction("Quét QR hoặc chuyển khoản đúng số tiền và nội dung bên dưới.")
+                .manualReviewRequired(false)
+                .mockMode(true)
+                .note("Đây là chuyển khoản demo. Sau khi xác nhận đã chuyển, hệ thống ghi nhận thanh toán và duyệt vào lớp ngay.")
+                .instruction("Quét QR hoặc chuyển khoản đúng số tiền và nội dung bên dưới, sau đó bấm xác nhận.")
                 .actionLabel("Tôi đã gửi chuyển khoản")
                 .build();
     }

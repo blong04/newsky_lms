@@ -71,6 +71,7 @@ public class SecurityConfig {
 
                 .requestMatchers(HttpMethod.GET, "/tests/placement/status", "/tests/placement/random", "/tests/placement/*").hasAnyRole("ADMIN", "STUDENT")
                 .requestMatchers(HttpMethod.POST, "/tests/placement/*/submit").hasAnyRole("ADMIN", "STUDENT")
+                .requestMatchers(HttpMethod.POST, "/tests/placement/reset").hasAnyRole("ADMIN", "STUDENT")
                 .requestMatchers(HttpMethod.GET, "/tests/student/*", "/tests/*/full").authenticated()
                 .requestMatchers(HttpMethod.POST, "/tests/student/*/submit").hasAnyRole("ADMIN", "STUDENT")
                 .requestMatchers(HttpMethod.GET, "/tests/teacher", "/tests/teacher/*/submissions").hasAnyRole("ADMIN", "TEACHER")
@@ -82,6 +83,7 @@ public class SecurityConfig {
 
                 .requestMatchers(HttpMethod.POST, "/schedules", "/schedules/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/schedules", "/schedules/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/schedules", "/schedules/**").hasRole("ADMIN")
 
                 .requestMatchers(HttpMethod.GET,
                     "/quizzes",

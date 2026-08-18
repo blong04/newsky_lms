@@ -238,9 +238,7 @@ export default function StudentCourses() {
       toast.success(
         isPaid
           ? "Đã ghi nhận đăng ký và thanh toán."
-          : selectedPaymentMethod === "BANK_TRANSFER"
-            ? "Đã ghi nhận yêu cầu chuyển khoản. Admin sẽ kiểm tra và phê duyệt."
-            : "Đã gửi yêu cầu đăng ký. Vui lòng chờ admin phê duyệt."
+          : "Đã gửi yêu cầu đăng ký. Vui lòng chờ admin phê duyệt."
       );
       resetEnrollmentFlow();
       await refreshSupportData();

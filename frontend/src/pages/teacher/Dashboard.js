@@ -6,9 +6,9 @@ import { useAuth } from "../../contexts/AuthContext";
 import "./Dashboard.css";
 
 const DASHBOARD_CARDS = [
-  { icon: "🏫", label: "Lớp đang dạy", valueKey: "classCount", tone: "classrooms" },
-  { icon: "📋", label: "Bài tập đã tạo", valueKey: "assignmentCount", tone: "assignments" },
-  { icon: "📝", label: "Bài chờ chấm", valueKey: "pendingCount", tone: "grading" },
+  { label: "Lớp đang dạy", valueKey: "classCount", tone: "classrooms" },
+  { label: "Bài tập đã tạo", valueKey: "assignmentCount", tone: "assignments" },
+  { label: "Bài chờ chấm", valueKey: "pendingCount", tone: "grading" },
 ];
 
 export default function TeacherDashboard() {
@@ -79,10 +79,10 @@ export default function TeacherDashboard() {
       <div className="stats-grid teacher-dashboard__stats">
         {DASHBOARD_CARDS.map((card) => (
           <article key={card.label} className={`stat-card teacher-dashboard__stat-card teacher-dashboard__stat-card--${card.tone}`}>
-            <div className="stat-icon">{card.icon}</div>
+            <h3 className="stat-value">{dashboardSummary[card.valueKey]}</h3>
             <div className="stat-body">
               <p className="stat-label">{card.label}</p>
-              <h3 className="stat-value">{dashboardSummary[card.valueKey]}</h3>
+              
             </div>
           </article>
         ))}

@@ -36,6 +36,14 @@ public class TestsController {
         ));
     }
 
+    // Học viên tự làm lại bài xếp lớp - xóa kết quả cũ để chọn loại chứng chỉ khác hoặc làm lại.
+    @PostMapping("/placement/reset")
+    public ResponseEntity<ApiResponse<Void>> resetPlacement(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        testsService.resetPlacement(authorizationHeader);
+        return ResponseEntity.ok(ApiResponse.<Void>success(null, "Đã đặt lại bài xếp lớp"));
+    }
+
     // Chọn ngẫu nhiên một đề placement TOEIC hoặc IELTS từ pool đã cấu hình.
     @GetMapping("/placement/random")
     public ResponseEntity<ApiResponse<TestsDTO.Response>> getRandomPlacementTest(

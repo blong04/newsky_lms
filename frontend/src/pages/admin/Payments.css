@@ -1,0 +1,86 @@
+.admin-payments__subtitle {
+  color: var(--gray-500);
+  margin-top: 4px;
+}
+
+.admin-payments__grid {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  margin-bottom: 20px;
+}
+
+.admin-payments__content {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .admin-payments__content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-payments__course-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.admin-payments__course-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.admin-payments__course-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+}
+
+.admin-payments__course-head span {
+  color: var(--gray-700);
+}
+
+.admin-payments__course-head strong {
+  color: var(--gray-900);
+}
+
+.admin-payments__course-bar-track {
+  width: 100%;
+  height: 8px;
+  background: var(--gray-100);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.admin-payments__course-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: 999px;
+}
+
+.admin-payments__table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.admin-payments__filters {
+  display: flex;
+  gap: 10px;
+}
+
+.admin-payments__student-name {
+  font-weight: 600;
+}
+
+.admin-payments__muted {
+  color: var(--gray-400);
+  font-size: 0.78rem;
+}

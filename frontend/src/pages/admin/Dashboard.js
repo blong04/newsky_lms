@@ -23,21 +23,20 @@ const FALLBACK_STATS = {
 };
 
 const STAT_CARDS = [
-  { key: "totalUsers", icon: "👥", label: "Tổng người dùng", color: "#2563eb", tone: "users" },
-  { key: "totalStudents", icon: "👨‍🎓", label: "Học viên", color: "#16a34a", tone: "students" },
-  { key: "totalTeachers", icon: "👨‍🏫", label: "Giáo viên", color: "#0ea5e9", tone: "teachers" },
-  { key: "totalCourses", icon: "📚", label: "Khóa học", color: "#d97706", tone: "courses" },
-  { key: "activeClasses", icon: "🏫", label: "Lớp đang học", color: "#7c3aed", tone: "classes" },
-  { key: "pendingEnrollments", icon: "⏳", label: "Chờ đăng ký duyệt", color: "#dc2626", tone: "enrollments" },
+  { key: "totalUsers", label: "Tổng người dùng", color: "#2563eb", tone: "users" },
+  { key: "totalStudents", label: "Học viên", color: "#16a34a", tone: "students" },
+  { key: "totalTeachers", label: "Giáo viên", color: "#0ea5e9", tone: "teachers" },
+  { key: "totalCourses", label: "Khóa học", color: "#d97706", tone: "courses" },
+  { key: "activeClasses", label: "Lớp đang học", color: "#7c3aed", tone: "classes" },
+  { key: "pendingEnrollments", label: "Chờ đăng ký duyệt", color: "#dc2626", tone: "enrollments" },
 ];
 
-function StatCard({ icon, label, value, color, sub, tone }) {
+function StatCard({ label, value, color, sub, tone }) {
   return (
     <article className={`stat-card admin-dashboard__stat-card admin-dashboard__stat-card--${tone}`}>
-      <div className="stat-icon">{icon}</div>
+      <h3 className="stat-value">{value}</h3>
       <div className="stat-body">
         <p className="stat-label">{label}</p>
-        <h3 className="stat-value">{value}</h3>
         {sub && <p className="stat-sub">{sub}</p>}
       </div>
       <span className="admin-dashboard__stat-glow" />
@@ -110,7 +109,6 @@ export default function AdminDashboard() {
         {STAT_CARDS.map((card) => (
           <StatCard
             key={card.key}
-            icon={card.icon}
             label={card.label}
             value={stats[card.key]}
             color={card.color}
