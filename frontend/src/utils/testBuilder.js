@@ -1,4 +1,4 @@
-import { normalizeQuestionType } from "./questionType";
+import { normalizeQuestionType, toDbQuestionType } from "./questionType";
 
 const QUESTION_TEMPLATE = {
   content: "",
@@ -201,7 +201,7 @@ export const serializeTestSections = (sections = []) => {
 
   const questions = sections.flatMap((section) => (
     (section.questions || []).map((question) => ({
-      questionType: question.questionType,
+      questionType: toDbQuestionType(question.questionType),
       content: question.content,
       imageUrl: question.imageUrl || "",
       audioUrl: question.audioUrl || "",

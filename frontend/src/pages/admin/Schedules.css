@@ -27,3 +27,9 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
+
+.admin-schedules__pagination {
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+}

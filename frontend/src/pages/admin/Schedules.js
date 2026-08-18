@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { classService } from "../../services/classService";
 import { scheduleService } from "../../services/scheduleService";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import toast from "react-hot-toast";
 import "./Schedules.css";
 
@@ -25,6 +26,7 @@ export default function AdminSchedules() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [classFilter, setClassFilter] = useState("");
+  const [page, setPage] = useState(1);
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -63,6 +65,15 @@ export default function AdminSchedules() {
       return String(first.startTime || "").localeCompare(String(second.startTime || ""));
     });
   }, [schedules, classFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(visibleSchedules.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedSchedules = visibleSchedules.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   const openCreateModal = () => {
     setEditingId(null);
@@ -153,7 +164,7 @@ export default function AdminSchedules() {
       </div>
 
       <div className="admin-schedules__filter">
-        <select className="filter-select" value={classFilter} onChange={(event) => setClassFilter(event.target.value)}>
+        <select className="filter-select" value={classFilter} onChange={(event) => { setClassFilter(event.target.value); setPage(1); }}>
           <option value="">Tất cả lớp</option>
           {classes.map((classroom) => (
             <option key={classroom.id} value={classroom.id}>{classroom.name}</option>
@@ -175,12 +186,12 @@ export default function AdminSchedules() {
             </tr>
           </thead>
           <tbody>
-            {visibleSchedules.length === 0 ? (
+            {paginatedSchedules.length === 0 ? (
               <tr>
                 <td colSpan={7} className="empty-state"><p>Chưa có lịch học nào</p></td>
               </tr>
             ) : (
-              visibleSchedules.map((schedule) => (
+              paginatedSchedules.map((schedule) => (
                 <tr key={schedule.id}>
                   <td>{getClassName(schedule.classId)}</td>
                   <td>
@@ -207,6 +218,27 @@ export default function AdminSchedules() {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="pagination admin-schedules__pagination">
+          <span className="pagination-info">Trang {page}/{totalPages} — {visibleSchedules.length} buổi học</span>
+          <div className="pagination-btns">
+            <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+              const pageNumber = page <= 3 ? index + 1 : page - 2 + index;
+              if (pageNumber < 1 || pageNumber > totalPages) {
+                return null;
+              }
+              return (
+                <button key={pageNumber} className={`page-btn ${page === pageNumber ? "active" : ""}`} onClick={() => setPage(pageNumber)}>
+                  {pageNumber}
+                </button>
+              );
+            })}
+            <button className="page-btn" disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}>›</button>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="modal-overlay" onClick={closeModal}>

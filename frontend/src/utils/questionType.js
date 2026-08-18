@@ -17,3 +17,11 @@ export function normalizeQuestionType(rawType) {
 
   return "writing";
 }
+
+// Cột question_type trong DB là ENUM('mcq','listening_mcq','reading_mcq','fill_blank',
+// 'matching','short_answer','essay') - không có "writing". normalizeQuestionType() dùng
+// "writing" làm nhóm hiển thị chung cho FE nên phải đổi ngược lại "essay" trước khi lưu,
+// nếu không MySQL báo "Data truncated for column 'question_type'".
+export function toDbQuestionType(frontendType) {
+  return frontendType === "writing" ? "essay" : frontendType;
+}

@@ -16,6 +16,7 @@ import {
 import toast from "react-hot-toast";
 import MediaUploadInput from "../../components/shared/MediaUploadInput";
 import ClassTagPicker from "../../components/shared/ClassTagPicker";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import "./Quizzes.css";
 
 const EXAM_STRUCTURE = {
@@ -67,6 +68,7 @@ export default function AdminQuizzes() {
   // State bộ lọc và modal thao tác.
   const [filterType, setFilterType] = useState("");
   const [viewModal, setViewModal] = useState(null);
+  const [page, setPage] = useState(1);
 
   // Load danh sách lớp một lần để dùng cho hiển thị tên lớp.
   useEffect(() => {
@@ -117,6 +119,15 @@ export default function AdminQuizzes() {
   const getClassCountLabel = (classIds = []) => (
     classIds.length > 0 ? `🏫 ${classIds.length} lớp` : "Chưa gắn lớp"
   );
+
+  const totalPages = Math.max(1, Math.ceil(quizzes.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedQuizzes = quizzes.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   // Đóng editor và trả state về mặc định.
   const resetEditor = () => {
@@ -664,7 +675,7 @@ export default function AdminQuizzes() {
 
       <div className="toolbar">
         <div className="toolbar-left">
-          <select className="filter-select" value={filterType} onChange={(event) => setFilterType(event.target.value)}>
+          <select className="filter-select" value={filterType} onChange={(event) => { setFilterType(event.target.value); setPage(1); }}>
             <option value="">Tất cả chứng chỉ</option>
             <option value="IELTS">IELTS</option>
             <option value="TOEIC">TOEIC</option>
@@ -694,7 +705,7 @@ export default function AdminQuizzes() {
                   <td colSpan={6} className="empty-state"><p>Chưa có bài kiểm tra nào</p></td>
                 </tr>
               ) : (
-                quizzes.map((quiz) => (
+                paginatedQuizzes.map((quiz) => (
                   <tr key={quiz.id}>
                     <td className="admin-quizzes__title-cell">{quiz.title}</td>
                     <td title={getClassNames(getLinkedClassIds(quiz))}>{getClassCountLabel(getLinkedClassIds(quiz))}</td>
@@ -717,6 +728,27 @@ export default function AdminQuizzes() {
           </table>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="pagination admin-quizzes__pagination">
+          <span className="pagination-info">Trang {page}/{totalPages} — {quizzes.length} bài kiểm tra</span>
+          <div className="pagination-btns">
+            <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+              const pageNumber = page <= 3 ? index + 1 : page - 2 + index;
+              if (pageNumber < 1 || pageNumber > totalPages) {
+                return null;
+              }
+              return (
+                <button key={pageNumber} className={`page-btn ${page === pageNumber ? "active" : ""}`} onClick={() => setPage(pageNumber)}>
+                  {pageNumber}
+                </button>
+              );
+            })}
+            <button className="page-btn" disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}>›</button>
+          </div>
+        </div>
+      )}
 
       {/* Modal xem chi tiết quiz. */}
       {viewModal && (

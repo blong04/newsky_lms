@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { paymentService } from "../../services/paymentService";
 import { PAYMENT_METHOD_LABELS } from "../../constants/payments";
 import { formatCoursePrice } from "../../utils/format";
+import { ADMIN_PAYMENTS_COURSE_PAGE_SIZE, DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import {
   BarChart,
   Bar,
@@ -31,6 +32,8 @@ export default function AdminPayments() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [coursePage, setCoursePage] = useState(1);
 
   const loadData = async () => {
     setLoading(true);
@@ -60,13 +63,25 @@ export default function AdminPayments() {
     }))
   ), [stats]);
 
-  const topCourses = useMemo(() => (
-    [...(stats?.revenueByCourse || [])].slice(0, 8)
+  const allCourses = useMemo(() => (
+    stats?.revenueByCourse || []
   ), [stats]);
 
   const maxCourseRevenue = useMemo(() => (
-    Math.max(1, ...topCourses.map((item) => Number(item.amount || 0)))
-  ), [topCourses]);
+    Math.max(1, ...allCourses.map((item) => Number(item.amount || 0)))
+  ), [allCourses]);
+
+  const courseTotalPages = Math.max(1, Math.ceil(allCourses.length / ADMIN_PAYMENTS_COURSE_PAGE_SIZE));
+  const paginatedCourses = allCourses.slice(
+    (coursePage - 1) * ADMIN_PAYMENTS_COURSE_PAGE_SIZE,
+    coursePage * ADMIN_PAYMENTS_COURSE_PAGE_SIZE
+  );
+
+  useEffect(() => {
+    if (coursePage > courseTotalPages) {
+      setCoursePage(courseTotalPages);
+    }
+  }, [coursePage, courseTotalPages]);
 
   const visiblePayments = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -79,6 +94,15 @@ export default function AdminPayments() {
       return matchesStatus && matchesKeyword;
     });
   }, [payments, search, statusFilter]);
+
+  const paymentTotalPages = Math.max(1, Math.ceil(visiblePayments.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedPayments = visiblePayments.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > paymentTotalPages) {
+      setPage(paymentTotalPages);
+    }
+  }, [page, paymentTotalPages]);
 
   if (loading) {
     return <div className="page-loading"><div className="spinner" /></div>;
@@ -95,7 +119,7 @@ export default function AdminPayments() {
 
       <section className="stats-grid admin-payments__grid">
         <article className="stat-card">
-          <div className="stat-icon">💰</div>
+
           <div className="stat-body">
             <p className="stat-label">Tổng doanh thu đã thu</p>
             <h3 className="stat-value">{formatCoursePrice(stats?.totalRevenue)}</h3>
@@ -103,7 +127,7 @@ export default function AdminPayments() {
           </div>
         </article>
         <article className="stat-card">
-          <div className="stat-icon">⏳</div>
+
           <div className="stat-body">
             <p className="stat-label">Đang chờ xử lý</p>
             <h3 className="stat-value">{formatCoursePrice(stats?.pendingAmount)}</h3>
@@ -138,26 +162,37 @@ export default function AdminPayments() {
         </div>
 
         <div className="section-card admin-payments__course-card">
-          <h3 className="section-title">Top khóa học theo doanh thu</h3>
-          {topCourses.length === 0 ? (
+          <h3 className="section-title">Doanh thu theo khóa học</h3>
+          {allCourses.length === 0 ? (
             <div className="empty-state"><p>Chưa có dữ liệu</p></div>
           ) : (
-            <div className="admin-payments__course-list">
-              {topCourses.map((item) => (
-                <div key={item.label} className="admin-payments__course-row">
-                  <div className="admin-payments__course-head">
-                    <span>{item.label}</span>
-                    <strong>{formatCoursePrice(item.amount)}</strong>
+            <>
+              <div className="admin-payments__course-list">
+                {paginatedCourses.map((item) => (
+                  <div key={item.label} className="admin-payments__course-row">
+                    <div className="admin-payments__course-head">
+                      <span>{item.label}</span>
+                      <strong>{formatCoursePrice(item.amount)}</strong>
+                    </div>
+                    <div className="admin-payments__course-bar-track">
+                      <div
+                        className="admin-payments__course-bar-fill"
+                        style={{ width: `${Math.max(4, (Number(item.amount || 0) / maxCourseRevenue) * 100)}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="admin-payments__course-bar-track">
-                    <div
-                      className="admin-payments__course-bar-fill"
-                      style={{ width: `${Math.max(4, (Number(item.amount || 0) / maxCourseRevenue) * 100)}%` }}
-                    />
+                ))}
+              </div>
+              {courseTotalPages > 1 && (
+                <div className="pagination admin-payments__course-pagination">
+                  <span className="pagination-info">Trang {coursePage}/{courseTotalPages}</span>
+                  <div className="pagination-btns">
+                    <button className="page-btn" disabled={coursePage === 1} onClick={() => setCoursePage((current) => current - 1)}>‹</button>
+                    <button className="page-btn" disabled={coursePage === courseTotalPages} onClick={() => setCoursePage((current) => current + 1)}>›</button>
                   </div>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </section>
@@ -170,9 +205,9 @@ export default function AdminPayments() {
               className="search-input"
               placeholder="🔍 Tìm học viên, email, khóa học..."
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => { setSearch(event.target.value); setPage(1); }}
             />
-            <select className="filter-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <select className="filter-select" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPage(1); }}>
               <option value="">Tất cả trạng thái</option>
               <option value="paid">Đã thanh toán</option>
               <option value="pending">Chờ xử lý</option>
@@ -195,12 +230,12 @@ export default function AdminPayments() {
               </tr>
             </thead>
             <tbody>
-              {visiblePayments.length === 0 ? (
+              {paginatedPayments.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="empty-state"><p>Không có giao dịch phù hợp</p></td>
                 </tr>
               ) : (
-                visiblePayments.map((payment) => (
+                paginatedPayments.map((payment) => (
                   <tr key={payment.id}>
                     <td>
                       <p className="admin-payments__student-name">{payment.userName || "—"}</p>
@@ -222,6 +257,27 @@ export default function AdminPayments() {
             </tbody>
           </table>
         </div>
+
+        {paymentTotalPages > 1 && (
+          <div className="pagination admin-payments__table-pagination">
+            <span className="pagination-info">Trang {page}/{paymentTotalPages} — {visiblePayments.length} giao dịch</span>
+            <div className="pagination-btns">
+              <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>
+              {Array.from({ length: Math.min(paymentTotalPages, 5) }, (_, index) => {
+                const pageNumber = page <= 3 ? index + 1 : page - 2 + index;
+                if (pageNumber < 1 || pageNumber > paymentTotalPages) {
+                  return null;
+                }
+                return (
+                  <button key={pageNumber} className={`page-btn ${page === pageNumber ? "active" : ""}`} onClick={() => setPage(pageNumber)}>
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <button className="page-btn" disabled={page === paymentTotalPages} onClick={() => setPage((current) => current + 1)}>›</button>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

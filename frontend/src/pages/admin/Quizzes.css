@@ -497,3 +497,9 @@
     width: 100%;
   }
 }
+
+.admin-quizzes__pagination {
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+}

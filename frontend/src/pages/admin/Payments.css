@@ -84,3 +84,16 @@
   color: var(--gray-400);
   font-size: 0.78rem;
 }
+
+.admin-payments__course-pagination {
+  margin-top: 12px;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.admin-payments__table-pagination {
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+}

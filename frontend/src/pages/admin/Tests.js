@@ -16,6 +16,7 @@ import {
 import toast from "react-hot-toast";
 import MediaUploadInput from "../../components/shared/MediaUploadInput";
 import ClassTagPicker from "../../components/shared/ClassTagPicker";
+import { DEFAULT_TABLE_PAGE_SIZE } from "../../constants/pagination";
 import "./Tests.css";
 
 const INITIAL_FORM = {
@@ -48,6 +49,7 @@ export default function AdminTests() {
   const [sections, setSections] = useState(createSectionsFromBlueprint("IELTS"));
   const [expandedSectionKey, setExpandedSectionKey] = useState("listening-1");
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
 
   // Load danh sách lớp một lần để dùng cho hiển thị tên lớp và editor.
   useEffect(() => {
@@ -73,6 +75,7 @@ export default function AdminTests() {
           type: filterExamType || undefined,
         });
         setTests(testData || []);
+        setPage(1);
       } catch {
         toast.error("Không thể tải dữ liệu bài thi thử");
       } finally {
@@ -103,6 +106,15 @@ export default function AdminTests() {
   const getClassCountLabel = (classIds = []) => (
     classIds.length > 0 ? `🏫 ${classIds.length} lớp` : "Chưa gắn lớp"
   );
+
+  const totalPages = Math.max(1, Math.ceil(tests.length / DEFAULT_TABLE_PAGE_SIZE));
+  const paginatedTests = tests.slice((page - 1) * DEFAULT_TABLE_PAGE_SIZE, page * DEFAULT_TABLE_PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   // Reset toàn bộ editor để quay về list sạch sẽ.
   const resetEditor = () => {
@@ -688,7 +700,7 @@ export default function AdminTests() {
                   <td colSpan={6} className="empty-state"><p>Chưa có bài thi thử nào</p></td>
                 </tr>
               ) : (
-                tests.map((test) => (
+                paginatedTests.map((test) => (
                   <tr key={test.id}>
                     <td>
                       <p className="admin-tests__title">{test.title}</p>
@@ -716,6 +728,27 @@ export default function AdminTests() {
           </table>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="pagination admin-tests__pagination">
+          <span className="pagination-info">Trang {page}/{totalPages} — {tests.length} bài thi thử</span>
+          <div className="pagination-btns">
+            <button className="page-btn" disabled={page === 1} onClick={() => setPage((current) => current - 1)}>‹</button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => {
+              const pageNumber = page <= 3 ? index + 1 : page - 2 + index;
+              if (pageNumber < 1 || pageNumber > totalPages) {
+                return null;
+              }
+              return (
+                <button key={pageNumber} className={`page-btn ${page === pageNumber ? "active" : ""}`} onClick={() => setPage(pageNumber)}>
+                  {pageNumber}
+                </button>
+              );
+            })}
+            <button className="page-btn" disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}>›</button>
+          </div>
+        </div>
+      )}
 
       {/* Modal xem bài thi thử theo từng phần full form đã chia sẵn. */}
       {viewDetail && (
