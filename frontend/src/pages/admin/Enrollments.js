@@ -175,11 +175,7 @@ export default function AdminEnrollments() {
                         </td>
                         <td>
                           <p className="admin-enrollments__name">{enrollment.courseName || `ID: ${enrollment.courseId}`}</p>
-                          {enrollment.examType && (
-                            <span className={`badge ${getExamBadgeClass(enrollment.examType)}`}>
-                              {enrollment.examType}
-                            </span>
-                          )}
+                          
                         </td>
                         <td className="admin-enrollments__class-cell">
                           {enrollment.className || (enrollment.classId ? `ID: ${enrollment.classId}` : "—")}
@@ -202,11 +198,7 @@ export default function AdminEnrollments() {
                               <span className={`badge ${enrollment.paymentStatus === "failed" ? "badge-red" : "badge-yellow"}`}>
                                 {enrollment.paymentStatus === "failed" ? "❌ Lỗi TT" : "⏳ Chưa TT"}
                               </span>
-                              {enrollment.paymentMethod && (
-                                <p className="admin-enrollments__muted admin-enrollments__tiny">
-                                  {PAYMENT_METHOD_LABELS[enrollment.paymentMethod] || enrollment.paymentMethod}
-                                </p>
-                              )}
+                              
                             </div>
                           )}
                         </td>

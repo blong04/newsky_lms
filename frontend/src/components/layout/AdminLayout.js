@@ -10,10 +10,10 @@ const navItems = [
   { to: "/admin/users", label: "Người dùng" },
   { to: "/admin/courses", label: "Khóa học" },
   { to: "/admin/classes", label: "Lớp học" },
-  { to: "/admin/enrollments",label: "Đăng ký học" },
-  { to: "/admin/quizzes", label: "Bài kiểm tra" },
-  { to: "/admin/tests", label: "Bài thi thử" },
   { to: "/admin/schedules", label: "Lịch học" },
+  { to: "/admin/enrollments",label: "Đơn đăng ký" },
+  { to: "/admin/quizzes", label: "Bài kiểm tra" },
+  { to: "/admin/tests", label: "Bài thi thử" }, 
   { to: "/admin/payments", label: "Thanh toán" },
   { to: "/admin/notifications", label: "Thông báo" },
 ];

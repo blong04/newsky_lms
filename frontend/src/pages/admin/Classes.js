@@ -319,9 +319,6 @@ export default function AdminClasses() {
                         <td>
                           <div className="classes-name-cell">
                             <p className="classes-name-cell__title">{classItem.name}</p>
-                            <p className="classes-name-cell__description">
-                              {classItem.description || "Chưa có mô tả lớp học."}
-                            </p>
                           </div>
                         </td>
                         <td>
@@ -560,10 +557,6 @@ export default function AdminClasses() {
                 </div>
               </div>
 
-              <div className="classes-form-note">
-                <strong>Gợi ý:</strong> khi tạo lớp mới, bạn nên gán giáo viên ngay
-                từ đầu để bảng điều phối phản ánh đúng tải giảng dạy.
-              </div>
             </div>
 
             <div className="modal-footer">

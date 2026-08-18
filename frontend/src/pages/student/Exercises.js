@@ -135,8 +135,7 @@ export default function StudentExercises() {
                   <div className="student-exercises__main">
                     <div className="student-exercises__badge-row">
                       <span className="badge badge-orange">{assignment.type || "Bài tập"}</span>
-                      {nearDeadline && !expired && <span className="badge badge-yellow">⚠️ Sắp hết hạn</span>}
-                      {expired && <span className="badge badge-red">❌ Hết hạn</span>}
+                      
                       {assignment.submitted && <span className="badge badge-green">✅ Đã nộp</span>}
                     </div>
 
