@@ -14,6 +14,8 @@ import {
   serializeQuizSections,
 } from "../../utils/quizBuilder";
 import toast from "react-hot-toast";
+import MediaUploadInput from "../../components/shared/MediaUploadInput";
+import ClassTagPicker from "../../components/shared/ClassTagPicker";
 import "./Quizzes.css";
 
 const EXAM_STRUCTURE = {
@@ -110,6 +112,10 @@ export default function AdminQuizzes() {
     classIds.length > 0
       ? classIds.map(getClassName).join(", ")
       : "Chưa gắn lớp"
+  );
+  // Nhãn gọn cho cột LỚP trong bảng list - tránh dồn hàng chục tên lớp vào 1 ô.
+  const getClassCountLabel = (classIds = []) => (
+    classIds.length > 0 ? `🏫 ${classIds.length} lớp` : "Chưa gắn lớp"
   );
 
   // Đóng editor và trả state về mặc định.
@@ -276,21 +282,6 @@ export default function AdminQuizzes() {
 
   const fetchQuizDetail = async (quizId) => quizService.getFullQuiz(quizId);
 
-  const toggleClassSelection = (classId) => {
-    const normalizedClassId = Number(classId);
-    setQuizForm((current) => {
-      const exists = current.classIds.includes(normalizedClassId);
-      const nextClassIds = exists
-        ? current.classIds.filter((item) => item !== normalizedClassId)
-        : [...current.classIds, normalizedClassId];
-      return {
-        ...current,
-        classId: nextClassIds[0] || "",
-        classIds: nextClassIds,
-      };
-    });
-  };
-
   const openViewModal = async (quiz) => {
     try {
       const fullQuiz = await fetchQuizDetail(quiz.id);
@@ -393,24 +384,18 @@ export default function AdminQuizzes() {
             <div className="admin-quizzes__form-stack">
               <div className="form-group">
                 <label>Lớp học áp dụng</label>
-                <div className="admin-quizzes__class-picker">
-                  {classes.map((classroom) => {
-                    const selected = quizForm.classIds.includes(Number(classroom.id));
-                    return (
-                      <button
-                        key={classroom.id}
-                        type="button"
-                        className={`admin-quizzes__class-option ${selected ? "active" : ""}`}
-                        onClick={() => toggleClassSelection(classroom.id)}
-                      >
-                        <span>{classroom.name}</span>
-                        <small>{selected ? "Đã chọn" : "Bấm để gắn"}</small>
-                      </button>
-                    );
-                  })}
-                </div>
+                <ClassTagPicker
+                  classes={classes}
+                  examType={quizForm.examType}
+                  selectedIds={quizForm.classIds}
+                  onChange={(classIds) => setQuizForm((current) => ({
+                    ...current,
+                    classId: classIds[0] || "",
+                    classIds,
+                  }))}
+                />
                 <p className="admin-quizzes__note">
-                  Có thể gắn bài kiểm tra cho một hoặc nhiều lớp cùng lúc.
+                  Chỉ gợi ý lớp cùng loại chứng chỉ ({quizForm.examType}). Có thể gắn cho nhiều lớp cùng lúc.
                 </p>
               </div>
 
@@ -513,10 +498,11 @@ export default function AdminQuizzes() {
                           {section.hasAudio && (
                             <div className="form-group">
                               <label>Audio URL của block</label>
-                              <input
+                              <MediaUploadInput
+                                accept="audio/*"
                                 value={section.audioUrl || ""}
-                                onChange={(event) => updateSectionField(section.clientKey, "audioUrl", event.target.value)}
-                                placeholder="https://... (mp3, wav)"
+                                onChange={(url) => updateSectionField(section.clientKey, "audioUrl", url)}
+                                placeholder="https://... (mp3, wav) hoặc tải file lên"
                               />
                             </div>
                           )}
@@ -567,10 +553,11 @@ export default function AdminQuizzes() {
                           {section.questionHasImage && (
                             <div className="form-group admin-quizzes__question-space">
                               <label>URL ảnh</label>
-                              <input
+                              <MediaUploadInput
+                                accept="image/*"
                                 value={question.imageUrl || ""}
-                                onChange={(event) => updateQuestion(section.clientKey, index, "imageUrl", event.target.value)}
-                                placeholder="https://..."
+                                onChange={(url) => updateQuestion(section.clientKey, index, "imageUrl", url)}
+                                placeholder="https://... hoặc tải file lên"
                               />
                             </div>
                           )}
@@ -578,10 +565,11 @@ export default function AdminQuizzes() {
                           {section.questionHasAudio && (
                             <div className="form-group admin-quizzes__question-space">
                               <label>Audio URL riêng cho câu</label>
-                              <input
+                              <MediaUploadInput
+                                accept="audio/*"
                                 value={question.audioUrl || ""}
-                                onChange={(event) => updateQuestion(section.clientKey, index, "audioUrl", event.target.value)}
-                                placeholder="https://..."
+                                onChange={(url) => updateQuestion(section.clientKey, index, "audioUrl", url)}
+                                placeholder="https://... hoặc tải file lên"
                               />
                             </div>
                           )}
@@ -709,7 +697,7 @@ export default function AdminQuizzes() {
                 quizzes.map((quiz) => (
                   <tr key={quiz.id}>
                     <td className="admin-quizzes__title-cell">{quiz.title}</td>
-                    <td>{getClassNames(getLinkedClassIds(quiz))}</td>
+                    <td title={getClassNames(getLinkedClassIds(quiz))}>{getClassCountLabel(getLinkedClassIds(quiz))}</td>
                     <td>
                       <span className={`badge ${quiz.type === "IELTS" ? "badge-blue" : quiz.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>{quiz.type}</span>
                     </td>
@@ -741,8 +729,16 @@ export default function AdminQuizzes() {
             <div className="modal-body">
               <div className="form-row">
                 <div>
-                  <label className="admin-quizzes__label">Lớp áp dụng</label>
-                  <p className="admin-quizzes__value admin-quizzes__value--strong">{getClassNames(getLinkedClassIds(viewModal.quiz))}</p>
+                  <label className="admin-quizzes__label">Lớp áp dụng ({getLinkedClassIds(viewModal.quiz).length})</label>
+                  <div className="class-chip-list">
+                    {getLinkedClassIds(viewModal.quiz).length === 0 ? (
+                      <p className="admin-quizzes__value">Chưa gắn lớp</p>
+                    ) : (
+                      getLinkedClassIds(viewModal.quiz).map((classId) => (
+                        <span key={classId} className="class-chip-list__item">{getClassName(classId)}</span>
+                      ))
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="admin-quizzes__label">Loại</label>

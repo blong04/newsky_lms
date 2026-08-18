@@ -1,0 +1,21 @@
+.media-upload-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.media-upload-input__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.media-upload-input__btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.media-upload-input__btn--busy {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

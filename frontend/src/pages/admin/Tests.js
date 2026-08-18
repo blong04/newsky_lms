@@ -14,6 +14,8 @@ import {
   splitQuestionsIntoSections,
 } from "../../utils/testBuilder";
 import toast from "react-hot-toast";
+import MediaUploadInput from "../../components/shared/MediaUploadInput";
+import ClassTagPicker from "../../components/shared/ClassTagPicker";
 import "./Tests.css";
 
 const INITIAL_FORM = {
@@ -96,6 +98,10 @@ export default function AdminTests() {
     classIds.length > 0
       ? classIds.map(getClassName).join(", ")
       : "Chưa gắn lớp"
+  );
+  // Nhãn gọn cho cột LỚP trong bảng list - tránh dồn hàng chục tên lớp vào 1 ô.
+  const getClassCountLabel = (classIds = []) => (
+    classIds.length > 0 ? `🏫 ${classIds.length} lớp` : "Chưa gắn lớp"
   );
 
   // Reset toàn bộ editor để quay về list sạch sẽ.
@@ -273,21 +279,6 @@ export default function AdminTests() {
     }
   };
 
-  const toggleClassSelection = (classId) => {
-    const normalizedClassId = Number(classId);
-    setForm((current) => {
-      const exists = current.classIds.includes(normalizedClassId);
-      const nextClassIds = exists
-        ? current.classIds.filter((item) => item !== normalizedClassId)
-        : [...current.classIds, normalizedClassId];
-      return {
-        ...current,
-        classId: nextClassIds[0] || "",
-        classIds: nextClassIds,
-      };
-    });
-  };
-
   if (editorMode) {
     return (
       <div className="admin-page fade-in admin-tests admin-tests--editor">
@@ -360,24 +351,18 @@ export default function AdminTests() {
             <div className="admin-tests__form-stack">
               <div className="form-group">
                 <label>Lớp học áp dụng</label>
-                <div className="admin-tests__class-picker">
-                  {classes.map((classroom) => {
-                    const selected = form.classIds.includes(Number(classroom.id));
-                    return (
-                      <button
-                        key={classroom.id}
-                        type="button"
-                        className={`admin-tests__class-option ${selected ? "active" : ""}`}
-                        onClick={() => toggleClassSelection(classroom.id)}
-                      >
-                        <span>{classroom.name}</span>
-                        <small>{selected ? "Đã chọn" : "Bấm để gắn"}</small>
-                      </button>
-                    );
-                  })}
-                </div>
+                <ClassTagPicker
+                  classes={classes}
+                  examType={form.examType}
+                  selectedIds={form.classIds}
+                  onChange={(classIds) => setForm((current) => ({
+                    ...current,
+                    classId: classIds[0] || "",
+                    classIds,
+                  }))}
+                />
                 <p className="admin-tests__note">
-                  Có thể gắn bài thi thử cho nhiều lớp cùng lúc.
+                  Chỉ gợi ý lớp cùng loại chứng chỉ ({form.examType}). Có thể gắn cho nhiều lớp cùng lúc.
                 </p>
               </div>
 
@@ -515,10 +500,11 @@ export default function AdminTests() {
                             {section.hasAudio && (
                               <div className="form-group">
                                 <label>Audio URL của block</label>
-                                <input
+                                <MediaUploadInput
+                                  accept="audio/*"
                                   value={section.audioUrl || ""}
-                                  onChange={(event) => updateSectionField(section.clientKey, "audioUrl", event.target.value)}
-                                  placeholder="https://... (mp3, wav)"
+                                  onChange={(url) => updateSectionField(section.clientKey, "audioUrl", url)}
+                                  placeholder="https://... (mp3, wav) hoặc tải file lên"
                                 />
                               </div>
                             )}
@@ -571,10 +557,11 @@ export default function AdminTests() {
                             {section.questionHasImage && (
                               <div className="form-group">
                                 <label>URL ảnh cho câu hỏi</label>
-                                <input
+                                <MediaUploadInput
+                                  accept="image/*"
                                   value={question.imageUrl || ""}
-                                  onChange={(event) => updateQuestion(section.clientKey, questionIndex, "imageUrl", event.target.value)}
-                                  placeholder="https://..."
+                                  onChange={(url) => updateQuestion(section.clientKey, questionIndex, "imageUrl", url)}
+                                  placeholder="https://... hoặc tải file lên"
                                 />
                               </div>
                             )}
@@ -707,7 +694,7 @@ export default function AdminTests() {
                       <p className="admin-tests__title">{test.title}</p>
                       <p className="admin-tests__muted">{test.description || "Không có mô tả"}</p>
                     </td>
-                    <td>{getClassNames(getLinkedClassIds(test))}</td>
+                    <td title={getClassNames(getLinkedClassIds(test))}>{getClassCountLabel(getLinkedClassIds(test))}</td>
                     <td>
                       <span className={`badge ${test.type === "IELTS" ? "badge-blue" : test.type === "TOEIC" ? "badge-green" : "badge-gray"}`}>
                         {test.type}
@@ -741,8 +728,16 @@ export default function AdminTests() {
             <div className="modal-body">
               <div className="admin-tests__summary-grid">
                 <div className="admin-tests__summary-card">
-                  <span>Lớp</span>
-                  <strong>{getClassNames(getLinkedClassIds(viewDetail.test))}</strong>
+                  <span>Lớp ({getLinkedClassIds(viewDetail.test).length})</span>
+                  <div className="class-chip-list">
+                    {getLinkedClassIds(viewDetail.test).length === 0 ? (
+                      <strong>Chưa gắn lớp</strong>
+                    ) : (
+                      getLinkedClassIds(viewDetail.test).map((classId) => (
+                        <span key={classId} className="class-chip-list__item">{getClassName(classId)}</span>
+                      ))
+                    )}
+                  </div>
                 </div>
                 <div className="admin-tests__summary-card">
                   <span>Chứng chỉ</span>

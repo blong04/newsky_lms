@@ -127,7 +127,6 @@ export default function StudentTests() {
                   <p className="student-tests__description">{test.description || "Bài thi thử full form cho lớp học này."}</p>
 
                   <div className="student-tests__meta">
-                    <span>🏫 {getClassNames(test)}</span>
                     <span>🔁 {attemptCount}/{attemptsAllowed} lần</span>
                     {latestScore != null && <span className="student-tests__score">Điểm gần nhất: {latestScore}/{test.totalScore || 100}</span>}
                   </div>

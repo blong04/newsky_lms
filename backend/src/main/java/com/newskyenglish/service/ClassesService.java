@@ -43,14 +43,23 @@ public class ClassesService {
                 .map(Classes::getTeacherId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet()));
+        Map<Long, Courses> coursesById = buildCourseMap(classes.stream()
+                .map(Classes::getCourseId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet()));
         Map<Long, Integer> currentStudentsByClassId = buildCurrentStudentMap(classes);
 
         return classes.stream()
-                .map(item -> ClassesDTO.Response.fromEntity(
-                        item,
-                        currentStudentsByClassId.getOrDefault(item.getId(), 0),
-                        teacherNamesById.get(item.getTeacherId())
-                ))
+                .map(item -> {
+                    Courses course = coursesById.get(item.getCourseId());
+                    return ClassesDTO.Response.fromEntity(
+                            item,
+                            currentStudentsByClassId.getOrDefault(item.getId(), 0),
+                            teacherNamesById.get(item.getTeacherId()),
+                            course != null ? course.getTitle() : null,
+                            course != null ? course.getExamType() : null
+                    );
+                })
                 .filter(response -> matchesAdminKeyword(response, keyword))
                 .filter(response -> status == null || status == response.getStatus())
                 .toList();

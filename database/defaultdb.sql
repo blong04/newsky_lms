@@ -1840,6 +1840,69 @@ INSERT INTO `users` (`user_id`, `full_name`, `email`, `password`, `phone`, `addr
 (144, 'Quang Nè', 'dh52201675@student.stu.edu.vn', '$2y$12$KT19VIARHCwJMZL5/TyIA.GYlkjB1yZcOCWLYmibJyf0TAdea80u.', NULL, NULL, 3, NULL, NULL, NULL, NULL, NULL, '2025-12-02 10:57:03', '2025-12-02 10:57:03', 1, 'active', NULL, NULL),
 (147, 'A ha ha', 'asda@gmail.com', '$2a$10$L1ZUwZJeMGhnPtqEWfbztenaMsyDTjwpiqKNk25gOOwBl5C3JNhh.', NULL, NULL, 2, NULL, NULL, NULL, NULL, NULL, '2026-07-17 22:07:59', '2026-07-17 22:07:59', 0, 'active', NULL, NULL);
 
+-- ============================================================
+-- Bổ sung dữ liệu demo (2026-08-18):
+--   1) Khóa học "IELTS Pre-Intermediate" (course_id 2) có thêm
+--      lớp active thứ 2 -> đảm bảo 1 khóa học có >= 2 lớp đang mở.
+--   2) Lớp IELTS_PRE_EVE_01 (class_id 2, đã có học viên demo
+--      abc@gmail.com enrollment approved) được bổ sung để có
+--      đủ >= 3 bài tập, >= 3 bài kiểm tra, >= 5 bài thi thử,
+--      tất cả đều active và có sẵn câu hỏi để làm được.
+-- Constraint FK được ALTER TABLE thêm vào cuối file nên các
+-- INSERT dưới đây (chạy trước ALTER TABLE) không bị chặn bởi
+-- thứ tự tham chiếu khóa ngoại.
+-- ============================================================
+
+-- 1) Lớp active thứ 2 cho course_id = 2
+INSERT INTO `classes` (`class_id`, `course_id`, `teacher_id`, `class_name`, `description`, `max_students`, `start_date`, `end_date`, `status`, `created_at`, `updated_at`) VALUES
+(21, 2, 3, 'IELTS_PRE_EVE_02', 'Lop pre-intermediate buoi toi ca 2, mo them do nhu cau ghi danh tang cao.', 20, '2026-09-01', '2026-10-27', 'active', '2026-08-18 09:00:00', '2026-08-18 09:00:00');
+
+-- 2) Bai tap thu 3 cho class_id = 2 (da co san assign_id 1, 2)
+INSERT INTO `assignments` (`assign_id`, `class_id`, `title`, `description`, `type`, `due_date`, `max_score`, `status`, `created_at`, `updated_at`) VALUES
+(13, 2, 'Vocabulary log: describing daily routines', 'Ghi lai 10 tu/cum tu moi hoc duoc trong tuan va dat cau vi du cho tung tu.', 'worksheet', '2026-09-05 21:00:00', 10.00, 'active', '2026-08-18 09:00:00', '2026-08-18 09:00:00');
+
+-- 3) Gan them 2 bai kiem tra (quiz) IELTS da co san cho class_id = 2
+--    (da co quiz_id 1, bo sung quiz_id 2 va 3 -> du 3 bai kiem tra)
+INSERT INTO `quiz_classes` (`quiz_class_id`, `quiz_id`, `class_id`, `open_time`, `close_time`, `created_at`) VALUES
+(9, 2, 2, '2026-08-18 00:00:00', '2026-09-10 23:59:59', '2026-08-18 09:10:00'),
+(10, 3, 2, '2026-08-18 00:00:00', '2026-09-10 23:59:59', '2026-08-18 09:10:00');
+
+-- 4) Tao them 3 bai thi thu (mock test) IELTS moi
+INSERT INTO `mock_tests` (`test_id`, `title`, `description`, `type`, `part`, `time_limit`, `total_score`, `attempts_allowed`, `status`, `is_placement_pool`, `created_at`, `updated_at`) VALUES
+(7, 'IELTS Academic Mock 03 - Remote Work Trends', 'Full mock IELTS voi chu de remote work, van phong linh hoat va do thi hoa.', 'IELTS', 'Full Test', 165, 9.00, 2, 'active', 0, '2026-08-18 09:20:00', '2026-08-18 09:20:00'),
+(8, 'IELTS Academic Mock 04 - Renewable Energy', 'Full mock IELTS voi passage ve nang luong tai tao va chi phi dien sinh hoat.', 'IELTS', 'Full Test', 165, 9.00, 2, 'active', 0, '2026-08-18 09:25:00', '2026-08-18 09:25:00'),
+(9, 'IELTS Academic Mock 05 - Library Digitisation', 'Full mock IELTS voi chu de so hoa thu vien va tiep can nghien cuu tu xa.', 'IELTS', 'Full Test', 165, 9.00, 2, 'active', 0, '2026-08-18 09:30:00', '2026-08-18 09:30:00');
+
+-- 5) Question group + cau hoi cho 3 mock test moi (moi bai 1 passage, 5 cau)
+INSERT INTO `question_groups` (`group_id`, `quiz_id`, `assign_id`, `title`, `passage_text`, `image_url`, `audio_url`, `instructions`, `order_num`, `mock_test_id`) VALUES
+(608, NULL, NULL, 'Reading Passage - Remote Work Trends', 'This passage discusses how flexible work arrangements have changed commuting patterns and office space demand in major cities.', NULL, NULL, 'Questions 1-5 refer to the passage.', 1, 7),
+(609, NULL, NULL, 'Reading Passage - Renewable Energy', 'This passage reviews how solar and wind adoption has affected household electricity costs over the past decade.', NULL, NULL, 'Questions 1-5 refer to the passage.', 1, 8),
+(610, NULL, NULL, 'Reading Passage - Library Digitisation', 'This passage examines how university libraries digitised archives to support remote research access.', NULL, NULL, 'Questions 1-5 refer to the passage.', 1, 9);
+
+INSERT INTO `questions` (`question_id`, `group_id`, `question_type`, `question_text`, `image_url`, `audio_url`, `order_num`, `option_a`, `option_b`, `option_c`, `option_d`, `correct_answer`, `explanation`) VALUES
+(6201, 608, 'reading_mcq', 'Remote Work Trends - Question 1: What change is mentioned regarding city commuting?', NULL, NULL, 1, 'It increased significantly.', 'It decreased for many workers.', 'It stayed exactly the same.', 'It was banned by local government.', 'B', 'Thong tin duoc neu trong doan van ve xu huong lam viec tu xa.'),
+(6202, 608, 'reading_mcq', 'Remote Work Trends - Question 2: What effect did remote work have on office space demand?', NULL, NULL, 2, 'It increased demand sharply.', 'It had no measurable effect.', 'It reduced demand in many areas.', 'It only affected small businesses.', 'C', 'Thong tin duoc neu trong doan van ve xu huong lam viec tu xa.'),
+(6203, 608, 'reading_mcq', 'Remote Work Trends - Question 3: According to the passage, who benefited most from flexible arrangements?', NULL, NULL, 3, 'Workers with long commutes.', 'Workers who prefer offices.', 'Employers only.', 'No one benefited.', 'A', 'Thong tin duoc neu trong doan van ve xu huong lam viec tu xa.'),
+(6204, 608, 'reading_mcq', 'Remote Work Trends - Question 4: What is one challenge mentioned for companies?', NULL, NULL, 4, 'Maintaining team communication.', 'Increasing office rent.', 'Hiring more staff.', 'Reducing salaries.', 'A', 'Thong tin duoc neu trong doan van ve xu huong lam viec tu xa.'),
+(6205, 608, 'reading_mcq', 'Remote Work Trends - Question 5: What does the passage suggest about the future of office space?', NULL, NULL, 5, 'It will expand rapidly.', 'It may be redesigned for flexible use.', 'It will disappear completely.', 'It will remain unchanged.', 'B', 'Thong tin duoc neu trong doan van ve xu huong lam viec tu xa.'),
+(6206, 609, 'reading_mcq', 'Renewable Energy - Question 1: What has adoption of solar and wind power affected?', NULL, NULL, 1, 'Household electricity costs.', 'Only industrial costs.', 'Nothing measurable.', 'Only government spending.', 'A', 'Thong tin duoc neu trong doan van ve nang luong tai tao.'),
+(6207, 609, 'reading_mcq', 'Renewable Energy - Question 2: Over what period does the passage examine this change?', NULL, NULL, 2, 'One year.', 'The past decade.', 'Six months.', 'A single season.', 'B', 'Thong tin duoc neu trong doan van ve nang luong tai tao.'),
+(6208, 609, 'reading_mcq', 'Renewable Energy - Question 3: What trend is described for household costs?', NULL, NULL, 3, 'A steady increase.', 'No clear pattern.', 'A gradual decrease in some regions.', 'An immediate spike.', 'C', 'Thong tin duoc neu trong doan van ve nang luong tai tao.'),
+(6209, 609, 'reading_mcq', 'Renewable Energy - Question 4: What barrier to adoption is mentioned?', NULL, NULL, 4, 'Lack of consumer interest.', 'High upfront installation cost.', 'Legal restrictions.', 'Weather patterns only.', 'B', 'Thong tin duoc neu trong doan van ve nang luong tai tao.'),
+(6210, 609, 'reading_mcq', 'Renewable Energy - Question 5: What does the passage predict for the future?', NULL, NULL, 5, 'Continued growth in adoption.', 'A return to fossil fuels.', 'No further change.', 'A ban on renewable energy.', 'A', 'Thong tin duoc neu trong doan van ve nang luong tai tao.'),
+(6211, 610, 'reading_mcq', 'Library Digitisation - Question 1: Why did university libraries digitise archives?', NULL, NULL, 1, 'To reduce staff numbers.', 'To support remote research access.', 'To save on printing costs only.', 'To close physical branches.', 'B', 'Thong tin duoc neu trong doan van ve so hoa thu vien.'),
+(6212, 610, 'reading_mcq', 'Library Digitisation - Question 2: Who benefits most from digitised archives?', NULL, NULL, 2, 'Only on-campus staff.', 'Remote researchers and students.', 'Only library administrators.', 'No one in particular.', 'B', 'Thong tin duoc neu trong doan van ve so hoa thu vien.'),
+(6213, 610, 'reading_mcq', 'Library Digitisation - Question 3: What challenge is mentioned in the digitisation process?', NULL, NULL, 3, 'High scanning and storage costs.', 'Lack of student interest.', 'Legal bans on scanning.', 'No challenges were mentioned.', 'A', 'Thong tin duoc neu trong doan van ve so hoa thu vien.'),
+(6214, 610, 'reading_mcq', 'Library Digitisation - Question 4: What format change is described?', NULL, NULL, 4, 'Physical to digital archives.', 'Digital to physical archives.', 'No format change occurred.', 'Audio to video format.', 'A', 'Thong tin duoc neu trong doan van ve so hoa thu vien.'),
+(6215, 610, 'reading_mcq', 'Library Digitisation - Question 5: What does the passage suggest about future library services?', NULL, NULL, 5, 'They will remain print-only.', 'They will continue expanding digital access.', 'They will be discontinued.', 'They will merge with bookstores.', 'B', 'Thong tin duoc neu trong doan van ve so hoa thu vien.');
+
+-- 6) Gan 4 bai thi thu cho class_id = 2 (da co san test_id 3 -> du 5 bai)
+INSERT INTO `test_classes` (`test_class_id`, `mock_test_id`, `class_id`, `open_time`, `close_time`, `created_at`) VALUES
+(8, 4, 2, '2026-08-18 08:00:00', '2026-09-10 23:00:00', '2026-08-18 09:40:00'),
+(9, 7, 2, '2026-08-18 08:00:00', '2026-09-10 23:00:00', '2026-08-18 09:40:00'),
+(10, 8, 2, '2026-08-18 08:00:00', '2026-09-10 23:00:00', '2026-08-18 09:40:00'),
+(11, 9, 2, '2026-08-18 08:00:00', '2026-09-10 23:00:00', '2026-08-18 09:40:00');
+
 --
 -- Các ràng buộc cho các bảng đã đổ
 --

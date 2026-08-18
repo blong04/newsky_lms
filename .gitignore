@@ -1,4 +1,5 @@
 backend/target/
+backend/test/
 .vscode/
 frontend/node_modules/
 frontend/build/

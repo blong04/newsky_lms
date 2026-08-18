@@ -7,9 +7,11 @@ import { officialExamResultService } from "../../services/officialExamResultServ
 import { paymentService } from "../../services/paymentService";
 import { CLASS_STATUS_BADGES, CLASS_STATUS_LABELS } from "../../constants/classes";
 import { LEVEL_LABELS } from "../../constants/courses";
-import { ENROLLMENT_STATUS_META } from "../../constants/enrollments";
+import { ACTIVE_ENROLLMENT_STATUSES, ENROLLMENT_STATUS_META } from "../../constants/enrollments";
 import { INSTANT_PAYMENT_METHODS, PAYMENT_METHOD_LABELS, PAYMENT_METHOD_OPTIONS } from "../../constants/payments";
 import { STUDENT_COURSE_PAGE_SIZE } from "../../constants/pagination";
+import { uploadService } from "../../services/uploadService";
+import MediaUploadInput from "../../components/shared/MediaUploadInput";
 import toast from "react-hot-toast";
 import "./Courses.css";
 
@@ -48,6 +50,7 @@ export default function StudentCourses() {
     score: "",
     examDate: "",
     note: "",
+    certificateUrl: "",
   });
 
   // Load đồng thời gợi ý khóa học, các lớp, enrollment hiện có và điểm thi chính thức.
@@ -250,7 +253,7 @@ export default function StudentCourses() {
 
   const openOfficialResultModal = (course) => {
     setOfficialModalCourse(course);
-    setOfficialForm({ score: "", examDate: "", note: "" });
+    setOfficialForm({ score: "", examDate: "", note: "", certificateUrl: "" });
     setOfficialFeedback(null);
     setRetakeClassId("");
   };
@@ -278,6 +281,7 @@ export default function StudentCourses() {
         score: Number(officialForm.score),
         examDate: officialForm.examDate,
         note: officialForm.note,
+        certificateUrl: officialForm.certificateUrl,
       });
       setOfficialFeedback(response);
       await refreshSupportData();
@@ -465,7 +469,7 @@ export default function StudentCourses() {
                         {enrollment?.status === "pending" && (
                           <button className="btn btn-danger btn-sm" onClick={() => handleCancelEnroll(enrollment)}>Hủy</button>
                         )}
-                        {enrollment && (
+                        {enrollment && ACTIVE_ENROLLMENT_STATUSES.includes(enrollment.status) && (
                           <button className="btn btn-ghost btn-sm" onClick={() => openOfficialResultModal(course)}>Điểm thi</button>
                         )}
                       </div>
@@ -635,7 +639,7 @@ export default function StudentCourses() {
 
                   {previewLoading && <div className="student-courses__qr-loading"><div className="spinner" /></div>}
 
-                  {!previewLoading && selectedPaymentMethod && paymentPreview?.qrCodeUrl && (
+                  {!previewLoading && selectedPaymentMethod && paymentPreview?.qrImageUrl && (
                     <div className="student-courses__qr-panel">
                       <div className="student-courses__qr-head">
                         <div>
@@ -645,7 +649,7 @@ export default function StudentCourses() {
                           </p>
                         </div>
                       </div>
-                      <img src={paymentPreview.qrCodeUrl} alt="QR thanh toán" className="student-courses__qr-image" />
+                      <img src={paymentPreview.qrImageUrl} alt="QR thanh toán" className="student-courses__qr-image" />
                     </div>
                   )}
 
@@ -716,6 +720,16 @@ export default function StudentCourses() {
                   value={officialForm.note}
                   onChange={(event) => setOfficialForm((current) => ({ ...current, note: event.target.value }))}
                   placeholder="Ví dụ: thi tại IIG, kết quả chính thức nhận ngày..."
+                />
+              </label>
+              <label className="student-courses__field">
+                <span>Ảnh/PDF chứng chỉ (nếu có)</span>
+                <MediaUploadInput
+                  accept="image/*,application/pdf"
+                  value={officialForm.certificateUrl}
+                  onChange={(url) => setOfficialForm((current) => ({ ...current, certificateUrl: url }))}
+                  onUpload={uploadService.uploadCertificate}
+                  placeholder="Chưa có file, bấm Tải file lên để đính kèm"
                 />
               </label>
 
