@@ -175,18 +175,25 @@ jobs:
             # 1. Tạo file .env tạm trên EC2 (Bọc quotes "" tránh lỗi dấu cách/ký tự đặc biệt)
             mkdir -p "$(dirname "$ENV_FILE_PATH")"
             cat > "$ENV_FILE_PATH" <<EOF
+            SPRING_DATASOURCE_URL=${DATABASE_URL}
+            SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME}
+            SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
+            SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+            SPRING_JPA_HIBERNATE_DDL_AUTO=none
+            SPRING_JPA_HIBERNATE_NAMING_PHYSICAL_STRATEGY=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+            SPRING_JPA_HIBERNATE_NAMING_IMPLICIT_STRATEGY=org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+            SPRING_JPA_SHOW_SQL=true
+            SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.MySQLDialect
+            SPRING_MAIL_HOST=${MAIL_HOST}
+            SPRING_MAIL_PORT=${MAIL_PORT}
+            SPRING_MAIL_USERNAME=${MAIL_USERNAME}
+            SPRING_MAIL_PASSWORD=${MAIL_PASSWORD}
+            SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH}
+            SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=${MAIL_SMTP_STARTTLS}
+            APP_MAIL_BRAND_NAME=NewSky English
             PORT=${PORT}
-            DATABASE_URL=${DATABASE_URL}
-            DATABASE_USERNAME=${DATABASE_USERNAME}
-            DATABASE_PASSWORD=${DATABASE_PASSWORD}
             JWT_SECRET=${JWT_SECRET}
             JWT_EXPIRATION=${JWT_EXPIRATION}
-            MAIL_HOST=${MAIL_HOST}
-            MAIL_PORT=${MAIL_PORT}
-            MAIL_USERNAME=${MAIL_USERNAME}
-            MAIL_PASSWORD=${MAIL_PASSWORD}
-            MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH}
-            MAIL_SMTP_STARTTLS=${MAIL_SMTP_STARTTLS}
             APP_MAIL_REGISTRATION_ENABLED=${APP_MAIL_REGISTRATION_ENABLED}
             APP_MAIL_FROM=${APP_MAIL_FROM}
             APP_REGISTRATION_OTP_EXPIRE_MINUTES=${APP_REGISTRATION_OTP_EXPIRE_MINUTES}
