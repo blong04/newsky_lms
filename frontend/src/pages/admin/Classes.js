@@ -144,6 +144,10 @@ export default function AdminClasses() {
       toast.error("Chọn khóa học và nhập tên lớp");
       return;
     }
+    if (form.startDate && form.endDate && form.startDate >= form.endDate) {
+      toast.error("Ngày bắt đầu phải sớm hơn ngày kết thúc");
+      return;
+    }
 
     try {
       const payload = {

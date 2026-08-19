@@ -2,6 +2,7 @@ package com.newskyenglish.service;
 
 import com.newskyenglish.dto.classes.ClassesDTO;
 import com.newskyenglish.dto.enrollments.EnrollmentsDTO;
+import com.newskyenglish.exception.BadRequestException;
 import com.newskyenglish.exception.ForbiddenException;
 import com.newskyenglish.exception.ResourceNotFoundException;
 import com.newskyenglish.model.Classes;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -143,6 +145,8 @@ public class ClassesService {
     @Transactional
     // Tạo mới một lớp học từ dữ liệu admin nhập vào.
     public ClassesDTO.Response create(ClassesDTO.CreateRequest request) {
+        validateDateRange(request.getStartDate(), request.getEndDate());
+
         Classes classRoom = Classes.builder()
                 .courseId(request.getCourseId())
                 .teacherId(request.getTeacherId())
@@ -174,6 +178,8 @@ public class ClassesService {
         if (request.getStartDate() != null) classRoom.setStartDate(request.getStartDate());
         if (request.getEndDate() != null) classRoom.setEndDate(request.getEndDate());
         if (request.getStatus() != null) classRoom.setStatus(request.getStatus());
+
+        validateDateRange(classRoom.getStartDate(), classRoom.getEndDate());
 
         return ClassesDTO.Response.fromEntity(
                 classesRepository.save(classRoom),
@@ -249,6 +255,13 @@ public class ClassesService {
     private Classes findClass(Long id) {
         return classesRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lớp học"));
+    }
+
+    // Chặn tạo/sửa lớp với ngày kết thúc không sau ngày bắt đầu.
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null && !startDate.isBefore(endDate)) {
+            throw new BadRequestException("Ngày bắt đầu phải sớm hơn ngày kết thúc");
+        }
     }
 
     // Kiểm tra lớp học có khớp từ khóa quản trị theo tên lớp, khóa học hoặc giáo viên hay không.
